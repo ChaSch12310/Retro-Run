@@ -43,7 +43,6 @@ const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
 const upgradePanelEl = document.getElementById("upgradePanel");
 const upgradeActionsEl = document.getElementById("upgradeActions");
-const touchControlButtons = document.querySelectorAll("[data-move]");
 
 const CONFIG = {
   width: canvas.width,
@@ -248,6 +247,8 @@ let cameraWorldRow = 0;
 let pendingMove = { x: 0, y: 0 };
 let currentLevel = 0;
 let pendingUpgrade = false;
+let swipeStart = null;
+const SWIPE_THRESHOLD = 28;
 
 const UPGRADE_POOL = [
   {
@@ -349,6 +350,10 @@ function applyDeviceProfile() {
 
 function usesTouchControls() {
   return document.body.dataset.device === "tablet" || document.body.dataset.device === "mobile";
+}
+
+function touchInputReady() {
+  return usesTouchControls() && gameState === "playing" && overlayEl.classList.contains("hidden");
 }
 
 function resetGame() {
@@ -1795,20 +1800,45 @@ window.addEventListener("keyup", (event) => {
   keys.delete(event.key.toLowerCase());
 });
 
-touchControlButtons.forEach((button) => {
-  button.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    const move = button.dataset.move;
-    if (move === "up") {
-      queueMove(0, 1);
-    } else if (move === "down") {
-      queueMove(0, -1);
-    } else if (move === "left") {
-      queueMove(-1, 0);
-    } else if (move === "right") {
-      queueMove(1, 0);
-    }
-  });
+window.addEventListener("pointerdown", (event) => {
+  if (!touchInputReady()) {
+    return;
+  }
+
+  event.preventDefault();
+  swipeStart = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+  };
+});
+
+window.addEventListener("pointerup", (event) => {
+  if (!touchInputReady() || !swipeStart || event.pointerId !== swipeStart.id) {
+    swipeStart = null;
+    return;
+  }
+
+  event.preventDefault();
+  const dx = event.clientX - swipeStart.x;
+  const dy = event.clientY - swipeStart.y;
+  swipeStart = null;
+
+  if (Math.hypot(dx, dy) < SWIPE_THRESHOLD) {
+    return;
+  }
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    queueMove(dx > 0 ? 1 : -1, 0);
+  } else {
+    queueMove(0, dy < 0 ? 1 : -1);
+  }
+});
+
+window.addEventListener("pointercancel", (event) => {
+  if (swipeStart?.id === event.pointerId) {
+    swipeStart = null;
+  }
 });
 
 startButton.addEventListener("click", () => {
