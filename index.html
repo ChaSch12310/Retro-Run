@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gridiron Dash</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="top-title">
+        <h1>Retro Run</h1>
+      </header>
+
+      <aside class="info-panel">
+        <div class="scoreboard">
+          <div class="score-card">
+            <span class="label">Opponent</span>
+            <strong id="teamName">49ers</strong>
+          </div>
+          <div class="score-card">
+            <span class="label">Stage</span>
+            <strong id="stageValue">1</strong>
+          </div>
+          <div class="score-card">
+            <span class="label">Game</span>
+            <strong id="gameNumberValue">1</strong>
+          </div>
+          <div class="score-card">
+            <span class="label">Yards</span>
+            <strong><span id="distanceValue">0</span> / <span id="milestoneValue">50 yds</span></strong>
+          </div>
+          <div class="score-card">
+            <span class="label">Best</span>
+            <strong id="bestValue">0</strong>
+          </div>
+          <div class="score-card">
+            <span class="label">Season Best</span>
+            <strong id="seasonBestValue">0</strong>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-pill">
+            <span class="label">Downs Left</span>
+            <strong id="downsValue">4</strong>
+          </div>
+          <div class="status-pill">
+            <span class="label">Attempts</span>
+            <strong id="attemptsValue">1</strong>
+          </div>
+        </div>
+
+        <div class="instructions">
+          <h2>How To Play</h2>
+          <p>Use `WASD` or the arrow keys to move the ball carrier up the field and dodge defenders.</p>
+          <p>Reach the end zone at 50 yards to move to the next NFL matchup. Downs reset every 25 yards.</p>
+        </div>
+      </aside>
+
+      <section class="play-panel">
+        <div class="canvas-frame">
+          <canvas
+            id="gameCanvas"
+            width="540"
+            height="720"
+            aria-label="Gridiron Dash game"
+          ></canvas>
+          <div class="overlay" id="overlay">
+            <div class="homepage" id="homepagePanel">
+              <div class="homepage-hero" id="homepageHero">
+                <p class="homepage-kicker">Franchise Hub</p>
+                <h2 id="overlayTitle">Kickoff</h2>
+                <p id="overlayText">
+                  Cross the field, dodge defenders, and start your season.
+                </p>
+              </div>
+
+              <div class="franchise-module" id="onboardingPanel" hidden>
+                <div class="module-head">
+                  <h3>Create Franchise</h3>
+                  <span>Career Start</span>
+                </div>
+                <div class="setup-grid">
+                  <label class="setup-field">
+                    <span class="label">Team Name</span>
+                    <input id="teamNameInput" type="text" maxlength="28" value="Bay City Falcons" />
+                  </label>
+                  <label class="setup-field">
+                    <span class="label">Runner Name</span>
+                    <input id="runnerNameInput" type="text" maxlength="24" value="D. Carter" />
+                  </label>
+                  <label class="setup-field">
+                    <span class="label">Primary</span>
+                    <input id="teamPrimaryInput" type="color" value="#f0bf43" />
+                  </label>
+                  <label class="setup-field">
+                    <span class="label">Secondary</span>
+                    <input id="teamSecondaryInput" type="color" value="#2e3547" />
+                  </label>
+                </div>
+                <button id="createFranchiseButton" type="button">Create Franchise</button>
+              </div>
+
+              <div id="franchiseMainContent">
+
+              <div class="franchise-card">
+                <div>
+                  <p class="label">Your Team</p>
+                  <strong id="homeTeamName">Bay City Falcons</strong>
+                </div>
+                <div>
+                  <p class="label">Next Opponent</p>
+                  <strong id="nextOpponentName">49ers</strong>
+                </div>
+              </div>
+
+              <div class="season-strip">
+                <div class="season-chip">
+                  <p class="label">Season</p>
+                  <strong id="seasonYearValue">1</strong>
+                </div>
+                <div class="season-chip">
+                  <p class="label">Record</p>
+                  <strong id="seasonRecordValue">0-0</strong>
+                </div>
+                <div class="season-chip">
+                  <p class="label">Fans</p>
+                  <strong id="fanSupportValue">50%</strong>
+                </div>
+              </div>
+
+              <div class="franchise-dashboard">
+                <div class="franchise-module">
+                  <div class="module-head">
+                    <h3>Franchise Buzz</h3>
+                    <span id="fanMoodLabel">Steady</span>
+                  </div>
+                  <div class="fan-meter">
+                    <div class="fan-meter-fill" id="fanMeterFill"></div>
+                  </div>
+                  <p id="fanSummaryText">Fans are waiting for a big season opener.</p>
+                </div>
+
+                <div class="franchise-module">
+                  <div class="module-head">
+                    <h3>Season Schedule</h3>
+                    <span id="seasonStatusValue">Week 1</span>
+                  </div>
+                  <div class="schedule-list" id="seasonSchedule"></div>
+                </div>
+              </div>
+
+              <div class="runner-select">
+                <div class="runner-select-head">
+                  <h3>Featured Player</h3>
+                  <p id="runnerSelectionStatus">Franchise Starter</p>
+                </div>
+                <div class="runner-grid" id="runnerGrid"></div>
+              </div>
+
+              <div class="runner-feature" id="runnerFeatureCard">
+                <div class="module-head">
+                  <h3>Player Spotlight</h3>
+                  <span id="runnerFeatureRole">Speed</span>
+                </div>
+                <strong id="runnerFeatureName">J. Blaze</strong>
+                <p id="runnerFeatureText">Explosive in space and perfect for stretch runs.</p>
+              </div>
+
+              <div class="runner-feature" id="upgradePanel" hidden>
+                <div class="module-head">
+                  <h3>Postgame Upgrade</h3>
+                  <span>Win Bonus</span>
+                </div>
+                <p>Pick one upgrade for your starter before the next game.</p>
+                <div class="upgrade-actions" id="upgradeActions"></div>
+              </div>
+
+              <div class="homepage-actions">
+                <button id="restartCareerButton" class="secondary-button" type="button">
+                  Restart Career
+                </button>
+                <button id="restartSeasonButton" class="secondary-button" type="button">
+                  Restart Season
+                </button>
+              </div>
+              </div>
+            </div>
+
+            <button id="startButton">Start Run</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
