@@ -189,6 +189,10 @@ p {
   margin-top: 8px;
 }
 
+.touch-instructions {
+  display: none;
+}
+
 .play-panel {
   grid-area: play;
   padding: 14px;
@@ -254,6 +258,10 @@ canvas {
 }
 
 .overlay.hidden {
+  display: none;
+}
+
+.touch-controls {
   display: none;
 }
 
@@ -690,6 +698,72 @@ body[data-device="tablet"] .franchise-dashboard {
   grid-template-columns: 1fr;
 }
 
+body[data-device="tablet"] .keyboard-instructions,
+body[data-device="mobile"] .keyboard-instructions {
+  display: none;
+}
+
+body[data-device="tablet"] .touch-instructions,
+body[data-device="mobile"] .touch-instructions {
+  display: block;
+}
+
+body[data-device="tablet"] .touch-controls,
+body[data-device="mobile"] .touch-controls {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 8px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+body[data-device="tablet"] .overlay:not(.hidden) + .touch-controls,
+body[data-device="mobile"] .overlay:not(.hidden) + .touch-controls {
+  display: none;
+}
+
+.touch-button {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: #17120a;
+  background: var(--team-accent);
+  border: 3px solid var(--line);
+  font-size: 0.82rem;
+  line-height: 1;
+  box-shadow:
+    inset 0 -5px 0 rgba(0, 0, 0, 0.18),
+    0 4px 0 rgba(8, 15, 22, 0.35);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.touch-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.touch-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.touch-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.touch-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
 body[data-device="laptop"] .game-shell {
   width: min(1420px, calc(100vw - 28px));
   height: 100dvh;
@@ -765,6 +839,18 @@ body[data-device="mobile"] canvas {
 body[data-device="mobile"] .overlay {
   inset: 6px;
   padding: 14px;
+}
+
+body[data-device="mobile"] .touch-controls {
+  right: 10px;
+  bottom: 10px;
+  grid-template-columns: repeat(3, 50px);
+  grid-template-rows: repeat(3, 42px);
+  gap: 6px;
+}
+
+body[data-device="mobile"] .touch-button {
+  font-size: 0.72rem;
 }
 
 body[data-device="mobile"] .homepage {

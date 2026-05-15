@@ -43,6 +43,7 @@ const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
 const upgradePanelEl = document.getElementById("upgradePanel");
 const upgradeActionsEl = document.getElementById("upgradeActions");
+const touchControlButtons = document.querySelectorAll("[data-move]");
 
 const CONFIG = {
   width: canvas.width,
@@ -344,6 +345,10 @@ function applyDeviceProfile() {
   document.body.dataset.device = detectDeviceProfile();
   document.body.dataset.orientation =
     window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+}
+
+function usesTouchControls() {
+  return document.body.dataset.device === "tablet" || document.body.dataset.device === "mobile";
 }
 
 function resetGame() {
@@ -1759,6 +1764,13 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (usesTouchControls()) {
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "a", "s", "d"].includes(event.key.toLowerCase())) {
+      event.preventDefault();
+    }
+    return;
+  }
+
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) {
     event.preventDefault();
   }
@@ -1781,6 +1793,22 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("keyup", (event) => {
   keys.delete(event.key.toLowerCase());
+});
+
+touchControlButtons.forEach((button) => {
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    const move = button.dataset.move;
+    if (move === "up") {
+      queueMove(0, 1);
+    } else if (move === "down") {
+      queueMove(0, -1);
+    } else if (move === "left") {
+      queueMove(-1, 0);
+    } else if (move === "right") {
+      queueMove(1, 0);
+    }
+  });
 });
 
 startButton.addEventListener("click", () => {
