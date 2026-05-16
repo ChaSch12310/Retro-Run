@@ -17,8 +17,11 @@ const overlayTextEl = document.getElementById("overlayText");
 const startButton = document.getElementById("startButton");
 const restartSeasonButton = document.getElementById("restartSeasonButton");
 const restartCareerButton = document.getElementById("restartCareerButton");
+const switchFranchiseButton = document.getElementById("switchFranchiseButton");
 const createFranchiseButton = document.getElementById("createFranchiseButton");
 const homepagePanelEl = document.getElementById("homepagePanel");
+const loadSavePanelEl = document.getElementById("loadSavePanel");
+const franchiseSlotGridEl = document.getElementById("franchiseSlotGrid");
 const homepageHeroEl = document.getElementById("homepageHero");
 const onboardingPanelEl = document.getElementById("onboardingPanel");
 const franchiseMainContentEl = document.getElementById("franchiseMainContent");
@@ -209,8 +212,8 @@ const PLAYER_NAME_POOL = ["D. Carter", "M. Brooks", "R. Hayes", "T. Daniels", "J
 const storageKey = "gridiron-dash-best";
 const seasonStorageKey = "gridiron-dash-season-progress";
 const franchiseStorageKey = "gridiron-dash-franchise";
-let bestDistance = Number(localStorage.getItem(storageKey) || 0);
-let seasonCheckpointLevel = Number(localStorage.getItem(seasonStorageKey) || 0);
+const franchiseSlotsStorageKey = "gridiron-dash-franchise-slots";
+const MAX_FRANCHISE_SLOTS = 5;
 const GAMES_PER_SEASON = 18;
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
@@ -228,12 +231,15 @@ const DEFAULT_FRANCHISE = {
   team: null,
   player: null,
   pendingUpgradeChoices: [],
+  seasonCheckpointLevel: 0,
+  savedAt: 0,
 };
-let franchise = loadFranchise();
-if (Object.keys(franchise.seasonBests).length === 0 && bestDistance > 0) {
-  franchise.seasonBests.legacy = bestDistance;
-  saveFranchise();
-}
+let franchiseSlots = loadFranchiseSlots();
+let activeSlotIndex = null;
+let slotSelectOpen = true;
+let franchise = createDefaultFranchise();
+let bestDistance = 0;
+let seasonCheckpointLevel = 0;
 recomputeBestDistance();
 
 let laneSeed = 0;
@@ -364,7 +370,6 @@ function resetGame() {
 function restartSeason() {
   const seasonStart = currentSeasonStartLevel();
   seasonCheckpointLevel = seasonStart;
-  localStorage.setItem(seasonStorageKey, String(seasonStart));
   currentLevel = seasonStart;
   franchise.player = resetPlayerToBaseline(franchise.player || createFranchisePlayer());
   franchise.wins = 0;
@@ -388,22 +393,11 @@ function restartSeason() {
 
 function restartCareer() {
   const freshName = PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
-  franchise = {
-    ...DEFAULT_FRANCHISE,
-    team: { ...HOME_TEAM },
-    player: createFranchisePlayer(freshName),
-    setupComplete: false,
-    history: [],
-    attemptsByGame: {},
-    seasonBests: {},
-    pendingUpgradeChoices: [],
-  };
+  franchise = createDefaultFranchise(freshName);
   bestDistance = 0;
   seasonCheckpointLevel = 0;
   currentLevel = 0;
   pendingUpgrade = false;
-  localStorage.setItem(storageKey, "0");
-  localStorage.setItem(seasonStorageKey, "0");
   saveFranchise();
   teamNameInputEl.value = HOME_TEAM.name;
   runnerNameInputEl.value = freshName;
@@ -470,47 +464,198 @@ function startLevel() {
   updateHud();
 }
 
-function loadFranchise() {
-  const raw = localStorage.getItem(franchiseStorageKey);
-  if (!raw) {
-    return {
-      ...DEFAULT_FRANCHISE,
-      history: [],
-      team: { ...HOME_TEAM },
-      player: createFranchisePlayer(),
-    };
+function createDefaultFranchise(forcedName = null) {
+  return {
+    ...DEFAULT_FRANCHISE,
+    history: [],
+    attemptsByGame: {},
+    seasonBests: {},
+    team: { ...HOME_TEAM },
+    player: createFranchisePlayer(forcedName),
+    pendingUpgradeChoices: [],
+    seasonCheckpointLevel: 0,
+    savedAt: Date.now(),
+  };
+}
+
+function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
+  const parsed = rawFranchise && typeof rawFranchise === "object" ? rawFranchise : {};
+  return {
+    ...DEFAULT_FRANCHISE,
+    ...parsed,
+    history: Array.isArray(parsed.history) ? parsed.history.slice(-24) : [],
+    attemptsByGame: parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
+      ? parsed.attemptsByGame
+      : {},
+    seasonBests: parsed.seasonBests && typeof parsed.seasonBests === "object"
+      ? parsed.seasonBests
+      : {},
+    setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
+    team: parsed.team || { ...HOME_TEAM },
+    player: parsed.player || createFranchisePlayer(),
+    pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
+    seasonCheckpointLevel: Number(parsed.seasonCheckpointLevel || 0),
+    savedAt: Number(parsed.savedAt || Date.now()),
+  };
+}
+
+function normalizeSlot(rawSlot) {
+  if (!rawSlot || typeof rawSlot !== "object") {
+    return null;
+  }
+
+  const slotFranchise = normalizeFranchise(rawSlot.franchise || rawSlot, true);
+  const slotCheckpoint = Number(
+    rawSlot.seasonCheckpointLevel ?? slotFranchise.seasonCheckpointLevel ?? 0
+  );
+  slotFranchise.seasonCheckpointLevel = slotCheckpoint;
+
+  return {
+    franchise: slotFranchise,
+    seasonCheckpointLevel: slotCheckpoint,
+    savedAt: Number(rawSlot.savedAt || slotFranchise.savedAt || Date.now()),
+  };
+}
+
+function emptySlots() {
+  return Array.from({ length: MAX_FRANCHISE_SLOTS }, () => null);
+}
+
+function loadFranchiseSlots() {
+  const rawSlots = localStorage.getItem(franchiseSlotsStorageKey);
+  if (rawSlots) {
+    try {
+      const parsedSlots = JSON.parse(rawSlots);
+      if (Array.isArray(parsedSlots)) {
+        const slots = emptySlots();
+        parsedSlots.slice(0, MAX_FRANCHISE_SLOTS).forEach((slot, index) => {
+          slots[index] = normalizeSlot(slot);
+        });
+        return slots;
+      }
+    } catch {
+      return emptySlots();
+    }
+  }
+
+  const legacyRaw = localStorage.getItem(franchiseStorageKey);
+  if (!legacyRaw) {
+    return emptySlots();
   }
 
   try {
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_FRANCHISE,
-      ...parsed,
-      history: Array.isArray(parsed.history) ? parsed.history.slice(-24) : [],
-      attemptsByGame: parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
-        ? parsed.attemptsByGame
-        : {},
-      seasonBests: parsed.seasonBests && typeof parsed.seasonBests === "object"
-        ? parsed.seasonBests
-        : {},
-      setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : true,
-      team: parsed.team || { ...HOME_TEAM },
-      player: parsed.player || createFranchisePlayer(),
-      pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
+    const legacyFranchise = normalizeFranchise(JSON.parse(legacyRaw), true);
+    const legacyCheckpoint = Number(localStorage.getItem(seasonStorageKey) || legacyFranchise.seasonCheckpointLevel || 0);
+    const legacyBest = Number(localStorage.getItem(storageKey) || 0);
+    legacyFranchise.seasonCheckpointLevel = legacyCheckpoint;
+    if (Object.keys(legacyFranchise.seasonBests).length === 0 && legacyBest > 0) {
+      legacyFranchise.seasonBests.legacy = legacyBest;
+    }
+
+    const slots = emptySlots();
+    slots[0] = {
+      franchise: legacyFranchise,
+      seasonCheckpointLevel: legacyCheckpoint,
+      savedAt: Date.now(),
     };
+    localStorage.setItem(franchiseSlotsStorageKey, JSON.stringify(slots));
+    return slots;
   } catch {
-    return {
-      ...DEFAULT_FRANCHISE,
-      history: [],
-      setupComplete: true,
-      team: { ...HOME_TEAM },
-      player: createFranchisePlayer(),
-    };
+    return emptySlots();
   }
 }
 
+function saveFranchiseSlots() {
+  localStorage.setItem(franchiseSlotsStorageKey, JSON.stringify(franchiseSlots));
+}
+
 function saveFranchise() {
-  localStorage.setItem(franchiseStorageKey, JSON.stringify(franchise));
+  if (activeSlotIndex === null) {
+    return;
+  }
+
+  franchise.seasonCheckpointLevel = seasonCheckpointLevel;
+  franchise.savedAt = Date.now();
+  franchiseSlots[activeSlotIndex] = {
+    franchise,
+    seasonCheckpointLevel,
+    savedAt: franchise.savedAt,
+  };
+  saveFranchiseSlots();
+}
+
+function openFranchiseSlots() {
+  if (activeSlotIndex !== null) {
+    saveFranchise();
+  }
+
+  slotSelectOpen = true;
+  gameState = "menu";
+  pendingUpgrade = false;
+  showOverlay();
+  updateStartOverlay();
+  updateHud();
+}
+
+function selectFranchiseSlot(index) {
+  const slot = franchiseSlots[index];
+  activeSlotIndex = index;
+  slotSelectOpen = false;
+
+  if (slot) {
+    franchise = normalizeFranchise(slot.franchise, true);
+    seasonCheckpointLevel = Number(slot.seasonCheckpointLevel ?? franchise.seasonCheckpointLevel ?? 0);
+  } else {
+    const freshName = PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
+    franchise = createDefaultFranchise(freshName);
+    seasonCheckpointLevel = 0;
+  }
+
+  currentLevel = seasonCheckpointLevel;
+  pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
+  recomputeBestDistance();
+  showOverlay();
+  updateStartOverlay();
+  updateHud();
+}
+
+function renderFranchiseSlots() {
+  franchiseSlotGridEl.innerHTML = "";
+  franchiseSlots.forEach((slot, index) => {
+    const item = document.createElement("div");
+    const isActive = activeSlotIndex === index;
+    item.className = `franchise-slot${slot ? "" : " empty"}${isActive ? " active" : ""}`;
+
+    if (slot) {
+      const slotFranchise = normalizeFranchise(slot.franchise, true);
+      const checkpoint = Number(slot.seasonCheckpointLevel ?? slotFranchise.seasonCheckpointLevel ?? 0);
+      const week = (checkpoint % GAMES_PER_SEASON) + 1;
+      const status = slotFranchise.setupComplete
+        ? `S${slotFranchise.year} W${week} | ${slotFranchise.wins}-${slotFranchise.losses} | ${slotFranchise.player.name}`
+        : "Setup needed";
+      item.innerHTML = `
+        <div>
+          <strong>Slot ${index + 1}: ${slotFranchise.team.name}</strong>
+          <span>${status}</span>
+        </div>
+      `;
+    } else {
+      item.innerHTML = `
+        <div>
+          <strong>Slot ${index + 1}: Empty</strong>
+          <span>Create a new franchise in this slot</span>
+        </div>
+      `;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "slot-button";
+    button.textContent = slot ? (isActive ? "Current" : "Load") : "New";
+    button.addEventListener("click", () => selectFranchiseSlot(index));
+    item.appendChild(button);
+    franchiseSlotGridEl.appendChild(item);
+  });
 }
 
 function createFranchisePlayer(forcedName = null) {
@@ -590,7 +735,6 @@ function recomputeBestDistance() {
   bestDistance = Object.values(franchise.seasonBests)
     .map((value) => Number(value) || 0)
     .reduce((max, value) => Math.max(max, value), 0);
-  localStorage.setItem(storageKey, String(bestDistance));
 }
 
 function buildUpgradeChoices() {
@@ -844,12 +988,13 @@ function updateDistance() {
   const seasonKey = String(franchise.year);
   if (seasonProgress > currentSeasonBest()) {
     franchise.seasonBests[seasonKey] = seasonProgress;
+    recomputeBestDistance();
     saveFranchise();
   }
 
   if (seasonProgress > bestDistance) {
     bestDistance = seasonProgress;
-    localStorage.setItem(storageKey, String(bestDistance));
+    saveFranchise();
   }
 
   if (player.distance >= CONFIG.progressMilestone) {
@@ -999,7 +1144,6 @@ function completeLevel() {
   const tries = franchise.attemptsByGame[gameKey] || 1;
   const result = tries > 10 ? "L" : "W";
   seasonCheckpointLevel = currentLevel + 1;
-  localStorage.setItem(seasonStorageKey, String(seasonCheckpointLevel));
   if (result === "W") {
     franchise.wins += 1;
   } else {
@@ -1056,14 +1200,26 @@ function advanceLevel() {
 }
 
 function syncFranchiseSetupState() {
-  document.body.classList.toggle("franchise-setup-pending", !franchise.setupComplete);
+  document.body.classList.toggle("franchise-slot-selecting", slotSelectOpen);
+  document.body.classList.toggle("franchise-setup-pending", !slotSelectOpen && !franchise.setupComplete);
 }
 
 function updateStartOverlay() {
   syncFranchiseSetupState();
   homepagePanelEl.hidden = false;
+  if (slotSelectOpen) {
+    loadSavePanelEl.hidden = false;
+    homepageHeroEl.hidden = true;
+    onboardingPanelEl.hidden = true;
+    franchiseMainContentEl.hidden = true;
+    startButton.hidden = true;
+    renderFranchiseSlots();
+    return;
+  }
+
   const homeTeam = currentHomeTeam();
   const setupReady = franchise.setupComplete;
+  loadSavePanelEl.hidden = true;
   homepageHeroEl.hidden = !setupReady;
   onboardingPanelEl.hidden = franchise.setupComplete;
   franchiseMainContentEl.hidden = !setupReady;
@@ -1842,7 +1998,7 @@ window.addEventListener("pointercancel", (event) => {
 });
 
 startButton.addEventListener("click", () => {
-  if (!franchise.setupComplete) {
+  if (slotSelectOpen || !franchise.setupComplete) {
     return;
   }
   if (gameState === "levelComplete") {
@@ -1854,6 +2010,7 @@ startButton.addEventListener("click", () => {
 
 restartSeasonButton.addEventListener("click", restartSeason);
 restartCareerButton.addEventListener("click", restartCareer);
+switchFranchiseButton.addEventListener("click", openFranchiseSlots);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
 window.addEventListener("resize", applyDeviceProfile);
 window.addEventListener("orientationchange", applyDeviceProfile);

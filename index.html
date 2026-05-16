@@ -69,6 +69,14 @@
           ></canvas>
           <div class="overlay" id="overlay">
             <div class="homepage" id="homepagePanel">
+              <div class="franchise-module load-save-panel" id="loadSavePanel" hidden>
+                <div class="module-head">
+                  <h3>Load Franchise</h3>
+                  <span>5 Slots Max</span>
+                </div>
+                <div class="franchise-slot-grid" id="franchiseSlotGrid"></div>
+              </div>
+
               <div class="homepage-hero" id="homepageHero">
                 <p class="homepage-kicker">Franchise Hub</p>
                 <h2 id="overlayTitle">Kickoff</h2>
@@ -181,6 +189,9 @@
               <div class="homepage-actions">
                 <button id="restartCareerButton" class="secondary-button" type="button">
                   Restart Career
+                </button>
+                <button id="switchFranchiseButton" class="secondary-button" type="button">
+                  Load / Save
                 </button>
                 <button id="restartSeasonButton" class="secondary-button" type="button">
                   Restart Season

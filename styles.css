@@ -95,7 +95,18 @@ body.franchise-setup-pending #startButton {
   display: none !important;
 }
 
+body.franchise-slot-selecting #homepageHero,
+body.franchise-slot-selecting #onboardingPanel,
+body.franchise-slot-selecting #franchiseMainContent,
+body.franchise-slot-selecting #startButton {
+  display: none !important;
+}
+
 body.franchise-setup-pending #onboardingPanel {
+  display: block !important;
+}
+
+body.franchise-slot-selecting #loadSavePanel {
   display: block !important;
 }
 
@@ -328,6 +339,57 @@ canvas {
   padding: 14px;
 }
 
+.load-save-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.franchise-slot-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.franchise-slot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(12, 25, 38, 0.72);
+  border: 3px solid var(--line);
+  text-align: left;
+}
+
+.franchise-slot.active {
+  border-color: var(--team-accent);
+  background: rgba(226, 187, 79, 0.16);
+}
+
+.franchise-slot.empty {
+  background: rgba(12, 25, 38, 0.48);
+}
+
+.franchise-slot strong {
+  display: block;
+  color: var(--team-accent);
+  text-transform: uppercase;
+}
+
+.franchise-slot span {
+  display: block;
+  margin-top: 4px;
+  color: #dce4d2;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.slot-button {
+  min-width: 96px;
+  padding-inline: 12px;
+}
+
 .season-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -554,8 +616,8 @@ canvas {
 }
 
 .homepage-actions {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -662,7 +724,8 @@ button:active {
 
   .season-strip,
   .franchise-dashboard,
-  .setup-grid {
+  .setup-grid,
+  .homepage-actions {
     grid-template-columns: 1fr;
   }
 }
