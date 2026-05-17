@@ -110,6 +110,10 @@ body.franchise-slot-selecting #loadSavePanel {
   display: block !important;
 }
 
+.load-save-panel[hidden] {
+  display: none !important;
+}
+
 .top-title h1 {
   margin: 0;
   padding: 6px 18px 2px;
