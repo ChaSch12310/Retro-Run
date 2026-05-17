@@ -394,6 +394,11 @@ canvas {
   padding-inline: 12px;
 }
 
+.franchise-slot.active .slot-button {
+  background: var(--team-secondary);
+  color: var(--team-accent);
+}
+
 .season-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
