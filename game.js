@@ -16,7 +16,6 @@ const overlayTitleEl = document.getElementById("overlayTitle");
 const overlayTextEl = document.getElementById("overlayText");
 const startButton = document.getElementById("startButton");
 const restartSeasonButton = document.getElementById("restartSeasonButton");
-const restartCareerButton = document.getElementById("restartCareerButton");
 const switchFranchiseButton = document.getElementById("switchFranchiseButton");
 const eraseSaveButton = document.getElementById("eraseSaveButton");
 const createFranchiseButton = document.getElementById("createFranchiseButton");
@@ -389,23 +388,6 @@ function restartSeason() {
   saveFranchise();
   updateStartOverlay();
   renderUpgradeOptions();
-  updateHud();
-}
-
-function restartCareer() {
-  const freshName = PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
-  franchise = createDefaultFranchise(freshName);
-  bestDistance = 0;
-  seasonCheckpointLevel = 0;
-  currentLevel = 0;
-  pendingUpgrade = false;
-  saveFranchise();
-  teamNameInputEl.value = HOME_TEAM.name;
-  runnerNameInputEl.value = freshName;
-  teamPrimaryInputEl.value = HOME_TEAM.primary;
-  teamSecondaryInputEl.value = HOME_TEAM.secondary;
-  showOverlay();
-  updateStartOverlay();
   updateHud();
 }
 
@@ -2036,7 +2018,6 @@ startButton.addEventListener("click", () => {
 });
 
 restartSeasonButton.addEventListener("click", restartSeason);
-restartCareerButton.addEventListener("click", restartCareer);
 switchFranchiseButton.addEventListener("click", openFranchiseSlots);
 eraseSaveButton.addEventListener("click", eraseActiveSave);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
