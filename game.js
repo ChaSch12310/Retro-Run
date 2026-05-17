@@ -18,6 +18,7 @@ const startButton = document.getElementById("startButton");
 const restartSeasonButton = document.getElementById("restartSeasonButton");
 const restartCareerButton = document.getElementById("restartCareerButton");
 const switchFranchiseButton = document.getElementById("switchFranchiseButton");
+const eraseSaveButton = document.getElementById("eraseSaveButton");
 const createFranchiseButton = document.getElementById("createFranchiseButton");
 const homepagePanelEl = document.getElementById("homepagePanel");
 const loadSavePanelEl = document.getElementById("loadSavePanel");
@@ -614,6 +615,32 @@ function selectFranchiseSlot(index) {
   currentLevel = seasonCheckpointLevel;
   pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
   recomputeBestDistance();
+  showOverlay();
+  updateStartOverlay();
+  updateHud();
+}
+
+function eraseActiveSave() {
+  if (activeSlotIndex === null) {
+    return;
+  }
+
+  const slotName = currentHomeTeam().name;
+  const confirmed = window.confirm(`Erase the save for ${slotName}? This cannot be undone.`);
+  if (!confirmed) {
+    return;
+  }
+
+  franchiseSlots[activeSlotIndex] = null;
+  saveFranchiseSlots();
+  activeSlotIndex = null;
+  slotSelectOpen = true;
+  franchise = createDefaultFranchise();
+  bestDistance = 0;
+  seasonCheckpointLevel = 0;
+  currentLevel = 0;
+  pendingUpgrade = false;
+  gameState = "menu";
   showOverlay();
   updateStartOverlay();
   updateHud();
@@ -2011,6 +2038,7 @@ startButton.addEventListener("click", () => {
 restartSeasonButton.addEventListener("click", restartSeason);
 restartCareerButton.addEventListener("click", restartCareer);
 switchFranchiseButton.addEventListener("click", openFranchiseSlots);
+eraseSaveButton.addEventListener("click", eraseActiveSave);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
 window.addEventListener("resize", applyDeviceProfile);
 window.addEventListener("orientationchange", applyDeviceProfile);

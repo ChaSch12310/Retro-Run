@@ -399,6 +399,11 @@ canvas {
   color: var(--team-accent);
 }
 
+.danger-button {
+  background: #6d2731;
+  color: var(--text);
+}
+
 .season-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -626,7 +631,7 @@ canvas {
 
 .homepage-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
