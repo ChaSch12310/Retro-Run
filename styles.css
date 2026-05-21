@@ -77,8 +77,11 @@ body[data-device="mobile"] {
 .top-title {
   grid-area: title;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 6px;
+  text-align: center;
 }
 
 .info-panel {
@@ -122,6 +125,21 @@ body.franchise-slot-selecting #loadSavePanel {
   text-transform: uppercase;
   color: var(--text);
   text-shadow: 0 3px 0 rgba(8, 15, 22, 0.45);
+}
+
+.support-link {
+  max-width: min(92vw, 760px);
+  color: var(--text);
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-decoration: underline;
+  text-transform: none;
+}
+
+.support-link:hover {
+  color: var(--team-accent);
 }
 
 .play-panel::before {
