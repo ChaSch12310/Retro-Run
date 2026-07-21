@@ -72,6 +72,8 @@ assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);
 assert.match(html, /id="hoopHustleButton"/);
 assert.match(html, /Hoop Hustle/);
+assert.match(html, /<p>Choose a game to enter the arcade<\/p>/);
+assert.doesNotMatch(html, /More games can be added here/);
 assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s*<\/button>\s*<\/h1>/s);
 assert.match(html, /<h2><button[^>]+id="creatorTrigger"[^>]*>How<\/button> To Play<\/h2>/);
 assert.match(html, /id="characterPreview"/);
