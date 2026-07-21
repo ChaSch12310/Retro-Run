@@ -70,6 +70,7 @@ const creatorPasswordInputEl = document.getElementById("creatorPasswordInput");
 const creatorSpeedInputEl = document.getElementById("creatorSpeedInput");
 const creatorPowerInputEl = document.getElementById("creatorPowerInput");
 const creatorCutInputEl = document.getElementById("creatorCutInput");
+const creatorCutLabelEl = document.getElementById("creatorCutLabel");
 const creatorAttemptsTextEl = document.getElementById("creatorAttemptsText");
 const creatorMessageEl = document.getElementById("creatorMessage");
 const creatorCancelButtonEl = document.getElementById("creatorCancelButton");
@@ -642,9 +643,11 @@ function restartSeason() {
   currentLevel = seasonStart;
   franchise.wins = 0;
   franchise.losses = 0;
-  franchise.lastResult = isSoccerMode()
-    ? `Season ${franchise.year} has been reset. Supporters want a stronger campaign this time.`
-    : `Season ${franchise.year} has been reset. Fans want a cleaner run this time.`;
+  franchise.lastResult = isBasketballMode()
+    ? `Season ${franchise.year} has been reset. Fans are ready for another title chase.`
+    : isSoccerMode()
+      ? `Season ${franchise.year} has been reset. Supporters want a stronger campaign this time.`
+      : `Season ${franchise.year} has been reset. Fans want a cleaner run this time.`;
   franchise.history = franchise.history.filter((entry) => entry.season !== franchise.year);
   for (const key of Object.keys(franchise.attemptsByGame)) {
     if (key.startsWith(`${franchise.year}-`)) {
@@ -676,9 +679,11 @@ function createFranchiseFromForm() {
     name: runnerName,
     appearance,
   };
-  franchise.lastResult = isSoccerMode()
-    ? "National team created. Time to start your campaign."
-    : "Franchise created. Time to start your career.";
+  franchise.lastResult = isBasketballMode()
+    ? "Basketball franchise created. Time to take the court."
+    : isSoccerMode()
+      ? "National team created. Time to start your campaign."
+      : "Franchise created. Time to start your career.";
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   saveFranchise();
@@ -1650,6 +1655,7 @@ function launchFieldGoal() {
   fieldGoalActionButtonEl.textContent = copy.launchingButton;
   fieldGoalActionButtonEl.disabled = true;
   fieldGoalBallEl.classList.add("in-flight");
+  fieldGoalSceneEl.classList.add("shot-launched");
   startSoccerKeeperDive();
 }
 
@@ -1698,7 +1704,8 @@ function updateFieldGoalFlight(time) {
   const distanceScale = 1 - progress * 0.32;
   const ballScaleX = (0.72 + launchShapeProgress * 0.28) * distanceScale;
   const ballScaleY = (1.18 - launchShapeProgress * 0.18) * distanceScale;
-  fieldGoalBallEl.style.left = `${50 + (targetLeft - 50) * eased}%`;
+  const launchLeft = isBasketballMode() ? 28 : 50;
+  fieldGoalBallEl.style.left = `${launchLeft + (targetLeft - launchLeft) * eased}%`;
   fieldGoalBallEl.style.bottom = `${-18 + Math.sin(progress * Math.PI * 0.5) * (heightGain + 26)}%`;
   fieldGoalBallEl.style.scale = isBasketballMode()
     ? `${(0.72 + launchShapeProgress * 0.28) * distanceScale}`
@@ -1713,12 +1720,14 @@ function updateFieldGoalFlight(time) {
     const copy = kickChallengeCopy();
     fieldGoalStatusEl.textContent = fieldGoalKickMade ? copy.madeStatus : copy.missedStatus;
     fieldGoalStatusEl.classList.add(fieldGoalKickMade ? "made" : "missed");
+    fieldGoalSceneEl.classList.add(fieldGoalKickMade ? "shot-made" : "shot-missed");
   }
 }
 
 function resetFieldGoalBall() {
+  fieldGoalSceneEl.classList.remove("shot-launched", "shot-made", "shot-missed");
   fieldGoalBallEl.classList.remove("in-flight");
-  fieldGoalBallEl.style.left = "50%";
+  fieldGoalBallEl.style.left = isBasketballMode() ? "28%" : "50%";
   fieldGoalBallEl.style.bottom = "-18%";
   fieldGoalBallEl.style.scale = isBasketballMode() ? "0.72" : "0.72 1.18";
   fieldGoalBallEl.style.rotate = usesRoundBall() ? "0deg" : "-15deg";
@@ -1825,9 +1834,9 @@ function tutorialSlides() {
     {
       badge: "Power",
       title: `Build Your ${athlete[0].toUpperCase()}${athlete.slice(1)}`,
-      text: `Your featured ${athlete} has Speed, Power, and Cut ratings.`,
+      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : "Cut"} ratings.`,
       items: [
-        `Speed and Cut upgrades can add bonus movement burst to your ${athlete}.`,
+        `Speed and ${basketball ? "Handles" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
         basketball
           ? "Power controls strong finishes: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
           : soccer
@@ -2158,7 +2167,9 @@ function completeLevel() {
         : isSoccerMode()
           ? `Huge goal-scoring win over ${beatenTeam.name}. Supporters are roaring.`
           : `Huge field-goal win over the ${beatenTeam.name}. Fans are roaring.`)
-      : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
+      : isBasketballMode()
+        ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
+        : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
   }
   saveFranchise();
   const teams = currentOpponentTeams();
@@ -2235,6 +2246,7 @@ function applyGameModeUi() {
   createCareerTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
   createFranchiseButton.textContent = soccer ? "Create National Team" : "Create Franchise";
   playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : "Runner Name";
+  creatorCutLabelEl.textContent = basketball ? "Handles" : "Cut";
 }
 
 function updateGameLibrarySelection() {
@@ -2444,7 +2456,23 @@ function renderFranchiseDashboard() {
 
 function runnerFeatureSummary(runner) {
   const role = isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : "back";
-  return `${runner.name} is your lone featured ${role}. SPD ${runner.speed}, PWR ${runner.power}, CUT ${runner.cut}, upgrades ${runner.upgrades}.`;
+  const thirdRating = isBasketballMode() ? "HND" : "CUT";
+  return `${runner.name} is your lone featured ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.`;
+}
+
+function upgradeDisplayCopy(upgrade) {
+  if (!isBasketballMode()) {
+    return { title: upgrade.title, description: upgrade.description };
+  }
+
+  const basketballTitles = {
+    cut: "Handle Boost",
+    balance: "Finishing Drill",
+  };
+  return {
+    title: basketballTitles[upgrade.key] || upgrade.title,
+    description: upgrade.description.replace(/cut/gi, "handles"),
+  };
 }
 
 function renderUpgradeOptions() {
@@ -2462,10 +2490,11 @@ function renderUpgradeOptions() {
     .map((key) => getUpgradeByKey(key))
     .filter(Boolean)
     .forEach((upgrade) => {
+    const display = upgradeDisplayCopy(upgrade);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "upgrade-button";
-    button.innerHTML = `<strong>${upgrade.title}</strong><span>${upgrade.description}</span>`;
+    button.innerHTML = `<strong>${display.title}</strong><span>${display.description}</span>`;
     button.addEventListener("click", () => applyUpgrade(upgrade));
     upgradeActionsEl.appendChild(button);
   });
@@ -2477,7 +2506,8 @@ function applyUpgrade(upgrade) {
   }
   upgrade.apply(franchise.player);
   franchise.player.upgrades += 1;
-  franchise.lastResult = `${franchise.player.name} earned a ${upgrade.title.toLowerCase()} after the last win.`;
+  const display = upgradeDisplayCopy(upgrade);
+  franchise.lastResult = `${franchise.player.name} earned a ${display.title.toLowerCase()} after the last win.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   saveFranchise();
@@ -2651,6 +2681,11 @@ function drawSidelineAprons() {
 }
 
 function drawStadiumOverlay() {
+  if (isBasketballMode()) {
+    drawBasketballArenaOverlay();
+    return;
+  }
+
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
   const topDeckY = 116;
@@ -2675,6 +2710,38 @@ function drawStadiumOverlay() {
   ctx.fillStyle = "#8a6b40";
   ctx.fillRect(fieldLeft + 6, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
   ctx.fillRect(fieldRight - 12, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
+}
+
+function drawBasketballArenaOverlay() {
+  const courtLeft = 38;
+  const courtRight = CONFIG.width - 38;
+
+  ctx.fillStyle = "#111923";
+  ctx.fillRect(0, 116, courtLeft, 8);
+  ctx.fillRect(courtRight, 116, CONFIG.width - courtRight, 8);
+  ctx.fillStyle = "#65b7e8";
+  ctx.fillRect(4, 122, 30, CONFIG.height - 180);
+  ctx.fillRect(CONFIG.width - 34, 122, 30, CONFIG.height - 180);
+  ctx.fillStyle = "#173049";
+  for (let y = 130; y < CONFIG.height - 70; y += 30) {
+    ctx.fillRect(7, y, 24, 18);
+    ctx.fillRect(CONFIG.width - 31, y, 24, 18);
+    ctx.fillStyle = y % 60 === 10 ? "#f0bf43" : "#f6f3de";
+    ctx.fillRect(11, y + 4, 7, 7);
+    ctx.fillRect(CONFIG.width - 27, y + 4, 7, 7);
+    ctx.fillStyle = "#173049";
+  }
+
+  ctx.fillStyle = PALETTE.outline;
+  ctx.fillRect(courtLeft - 4, 116, 4, CONFIG.height - 116);
+  ctx.fillRect(courtRight, 116, 4, CONFIG.height - 116);
+  ctx.fillRect(0, CONFIG.height - 58, CONFIG.width, 6);
+  ctx.fillStyle = "#253b50";
+  ctx.fillRect(54, CONFIG.height - 52, CONFIG.width - 108, 18);
+  ctx.fillStyle = "#f0bf43";
+  for (let x = 68; x < CONFIG.width - 68; x += 46) {
+    ctx.fillRect(x, CONFIG.height - 47, 26, 5);
+  }
 }
 
 function drawField(time) {
@@ -2708,7 +2775,35 @@ function drawField(time) {
     }
   }
 
+  if (isBasketballMode()) {
+    drawBasketballCourtOverlay();
+  }
   drawChainMarkers();
+}
+
+function drawBasketballCourtOverlay() {
+  const courtLeft = 52;
+  const courtRight = CONFIG.width - 52;
+  const paintTop = laneTop(endzoneStartRow());
+  const paintBottom = paintTop + CONFIG.endzoneRows * CONFIG.laneHeight;
+
+  if (paintBottom < 0 || paintTop > CONFIG.height) {
+    return;
+  }
+
+  ctx.strokeStyle = PALETTE.line;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(CONFIG.width / 2, paintTop, 112, 0, Math.PI);
+  ctx.stroke();
+  ctx.strokeRect(CONFIG.width / 2 - 72, paintTop, 144, CONFIG.endzoneRows * CONFIG.laneHeight);
+
+  ctx.fillStyle = PALETTE.outline;
+  ctx.fillRect(CONFIG.width / 2 - 40, paintBottom - 18, 80, 5);
+  ctx.fillStyle = "#df5f25";
+  ctx.fillRect(CONFIG.width / 2 - 24, paintBottom - 13, 48, 5);
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(courtLeft, paintTop - 2, courtRight - courtLeft, 4);
 }
 
 function drawChainMarkers() {
@@ -3261,6 +3356,9 @@ function drawScoreboardBar() {
 
   drawTeamChip(44, barY + 13, 194, 31, homeTeam, "YOUR TEAM", true);
   drawLabel("VS", 259, barY + 34, PALETTE.cream, 12);
+  if (isBasketballMode()) {
+    drawLabel("Q4", 260, barY + 17, "#65b7e8", 8);
+  }
   drawTeamChip(302, barY + 13, 194, 31, opponent, "OPPONENT", false);
 
   drawHudChip(44, barY + 50, 142, 24, `${mode.distanceAbbr} ${String(player.distance).padStart(3, "0")}`);
@@ -3391,6 +3489,7 @@ function hideOverlay() {
 
 function renderRunnerCards() {
   const runner = currentRunner();
+  const thirdRating = isBasketballMode() ? "HND" : "CUT";
   runnerSelectionStatusEl.textContent = "1 Starter Active";
   runnerGridEl.innerHTML = "";
   const card = document.createElement("div");
@@ -3403,7 +3502,7 @@ function renderRunnerCards() {
     <div class="runner-meta">
       <span>SPD ${runner.speed}</span>
       <span>PWR ${runner.power}</span>
-      <span>CUT ${runner.cut}</span>
+      <span>${thirdRating} ${runner.cut}</span>
     </div>
   `;
   runnerGridEl.appendChild(card);

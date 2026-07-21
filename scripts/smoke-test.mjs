@@ -91,6 +91,9 @@ assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
 assert.match(styles, /body\[data-game="basketball"\] \.basketball-backboard/);
 assert.match(styles, /body\[data-game="basketball"\] \.kick-ball/);
+assert.match(styles, /body\[data-game="basketball"\] \.basketball-shooter/);
+assert.match(styles, /@keyframes basketball-jump-shot/);
+assert.match(styles, /@keyframes basketball-ball-swish/);
 assert.match(styles, /\.play-game-label\s*\{[^}]*background:\s*var\(--card-accent\)/s);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
@@ -198,6 +201,8 @@ globalThis.__retroRunTest = {
   },
   advanceFieldGoalFlight(time) { updateFieldGoalFlight(time); },
   get fieldGoalKickMade() { return fieldGoalKickMade; },
+  get gameState() { return gameState; },
+  getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
   drawChainMarkers,
   setChainRows(lineRow, targetRow) {
@@ -304,7 +309,11 @@ assert.equal(body.dataset.game, "basketball");
 assert.equal(elements.get("distanceLabel").textContent, "Feet");
 assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
 assert.equal(elements.get("playerNameLabel").textContent, "Guard Name");
+assert.equal(elements.get("creatorCutLabel").textContent, "Handles");
 assert.match(game.tutorial[0].items[0], /50 feet/);
+assert.match(game.tutorial[2].text, /Handles/);
+assert.equal(game.getUpgradeDisplay("cut").title, "Handle Boost");
+assert.match(game.getUpgradeDisplay("elite").description, /handles/);
 game.selectFranchiseSlot(0);
 elements.get("teamNameInput").value = "Dubs";
 elements.get("runnerNameInput").value = "J. Parker";
@@ -315,6 +324,7 @@ game.createFranchiseFromForm();
 assert.ok(storage.has("hoop-hustle-franchise-slots"));
 assert.equal(game.currentSeasonOpponentNames.includes("Warriors"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Lakers"), true);
+assert.match(elements.get("runnerGrid").children.at(-1).innerHTML, /HND 50/);
 game.startLevel();
 game.setChainRows(2, 3);
 drawnFillColors.length = 0;
@@ -323,6 +333,7 @@ game.render(1000);
 assert.equal(drawnFillColors.includes("#d5a45b"), true);
 assert.equal(drawnFillColors.includes("#d86b20"), true);
 assert.equal(drawnFillColors.includes("#b8764e"), true);
+assert.equal(drawnFillColors.includes("#65b7e8"), true);
 assert.equal(drawnLabels.some((label) => label.text === "11"), true);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
@@ -333,16 +344,30 @@ game.drawScoreboardBar();
 assert.equal(drawnLabels.some((label) => label.text === "DUBS"), true);
 assert.equal(drawnLabels.some((label) => label.text.startsWith("FT ")), true);
 assert.equal(drawnLabels.some((label) => label.text.startsWith("POSS ")), true);
+assert.equal(drawnLabels.some((label) => label.text === "Q4"), true);
 game.startFieldGoal();
 assert.equal(elements.get("kickChallengeTitle").textContent, "Shot for the Win");
 assert.equal(elements.get("fieldGoalBall").style.bottom, "-18%");
+assert.equal(elements.get("fieldGoalBall").style.left, "28%");
 assert.equal(elements.get("fieldGoalBall").style.scale, "0.72");
+game.launchTestShot(60, 70);
+assert.equal(game.fieldGoalKickMade, false);
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-launched"), true);
+game.advanceFieldGoalFlight(2000);
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-missed"), true);
+game.startFieldGoal();
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-missed"), false);
 game.launchTestShot(0, 70);
 assert.equal(game.fieldGoalKickMade, true);
 assert.equal(elements.get("fieldGoalBall").classList.contains("in-flight"), true);
-game.advanceFieldGoalFlight(1450);
+game.advanceFieldGoalFlight(2000);
 assert.ok(Number.parseFloat(elements.get("fieldGoalBall").style.bottom) > 0);
 assert.equal(elements.get("soccerKeeper").classList.contains("diving"), false);
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), true);
+game.advanceFieldGoalFlight(3000);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(elements.get("overlayTitle").textContent, "Swish!");
+assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);

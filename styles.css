@@ -1070,7 +1070,8 @@ body[data-game="soccer"] .kick-aim-marker {
 }
 
 .basketball-backboard,
-.basketball-rim {
+.basketball-rim,
+.basketball-shooter {
   display: none;
 }
 
@@ -1141,6 +1142,122 @@ body[data-game="basketball"] .basketball-rim::after {
     repeating-linear-gradient(65deg, transparent 0 7px, rgba(246, 243, 222, 0.8) 7px 9px),
     repeating-linear-gradient(-65deg, transparent 0 7px, rgba(246, 243, 222, 0.8) 7px 9px);
   clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%);
+}
+
+body[data-game="basketball"] .basketball-shooter {
+  --shooter-primary: var(--home-team-primary);
+  --shooter-secondary: var(--home-team-secondary);
+  position: absolute;
+  z-index: 3;
+  left: 28%;
+  bottom: -2px;
+  display: block;
+  width: 25px;
+  height: 38px;
+  translate: -50% 0;
+  background: var(--shooter-primary);
+  border: 3px solid #111016;
+  box-shadow:
+    -9px 13px 0 -6px var(--shooter-secondary),
+    9px 13px 0 -6px var(--shooter-secondary),
+    -8px 28px 0 -6px #efc79d,
+    8px 28px 0 -6px #efc79d;
+  transform-origin: 50% 100%;
+}
+
+body[data-game="basketball"] .basketball-shooter::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: -17px;
+  width: 11px;
+  height: 11px;
+  background: #efc79d;
+  border: 3px solid #111016;
+  box-shadow: 0 -4px 0 #302218;
+}
+
+body[data-game="basketball"] .basketball-shooter::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  width: 9px;
+  height: 18px;
+  background: #efc79d;
+  border: 3px solid #111016;
+  box-shadow: 28px 0 0 -3px #111016, 28px 0 0 #efc79d;
+  transform-origin: 24px 3px;
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-launched .basketball-shooter {
+  animation: basketball-jump-shot 620ms cubic-bezier(0.2, 0.72, 0.25, 1) forwards;
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-launched .basketball-shooter::after {
+  animation: basketball-release-arms 430ms steps(3, end) forwards;
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-made .basketball-rim {
+  animation: basketball-rim-rattle 420ms steps(4, end);
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-made .basketball-rim::after {
+  animation: basketball-net-swish 520ms ease-out;
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-missed .basketball-backboard {
+  animation: basketball-backboard-flash 360ms steps(2, end);
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-made .kick-ball {
+  animation: basketball-ball-swish 480ms ease-in forwards;
+}
+
+body[data-game="basketball"] .field-goal-scene.shot-missed .kick-ball {
+  animation: basketball-ball-carom 520ms ease-out forwards;
+}
+
+@keyframes basketball-jump-shot {
+  0% { transform: translateY(0) scaleY(0.92); }
+  36% { transform: translateY(-18px) scaleY(1.04); }
+  62% { transform: translateY(-21px) scaleY(1); }
+  100% { transform: translateY(0) scaleY(0.96); }
+}
+
+@keyframes basketball-release-arms {
+  0% { transform: translateY(0) rotate(0deg); }
+  45% { transform: translateY(-12px) rotate(-8deg); }
+  100% { transform: translateY(-16px) rotate(4deg); }
+}
+
+@keyframes basketball-rim-rattle {
+  0%, 100% { translate: -50% 0; }
+  25% { translate: calc(-50% - 4px) 1px; }
+  50% { translate: calc(-50% + 4px) -1px; }
+  75% { translate: calc(-50% - 2px) 1px; }
+}
+
+@keyframes basketball-net-swish {
+  0% { transform: scaleY(0.75); filter: brightness(1); }
+  45% { transform: scaleY(1.35); filter: brightness(1.5); }
+  100% { transform: scaleY(1); filter: brightness(1); }
+}
+
+@keyframes basketball-backboard-flash {
+  50% { background: rgba(255, 221, 141, 0.96); }
+}
+
+@keyframes basketball-ball-swish {
+  0% { opacity: 1; translate: -50% 0; }
+  55% { opacity: 1; translate: -50% 18px; }
+  100% { opacity: 0; translate: -50% 40px; scale: 0.48; }
+}
+
+@keyframes basketball-ball-carom {
+  0% { opacity: 1; translate: -50% 0; }
+  45% { opacity: 1; translate: calc(-50% + 24px) -12px; }
+  100% { opacity: 0; translate: calc(-50% + 50px) 44px; scale: 0.52; }
 }
 
 body[data-game="basketball"] .kick-ball {
@@ -2388,11 +2505,18 @@ button:active {
   }
 
   .game-card-copy {
-    padding: 12px 10px 8px;
+    gap: 7px;
+    padding: 11px 6px 7px;
   }
 
   .game-card-copy strong {
-    font-size: clamp(1rem, 5vw, 1.45rem);
+    font-size: clamp(0.82rem, 4vw, 1.12rem);
+    overflow-wrap: normal;
+  }
+
+  .game-card-tag {
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
   }
 
   .game-card-copy > span:last-child {
@@ -2400,9 +2524,14 @@ button:active {
   }
 
   .play-game-label {
-    margin: 0 10px 10px;
+    margin: 0 6px 8px;
     padding: 9px 7px;
-    font-size: 0.72rem;
+    font-size: 0;
+  }
+
+  .play-game-label::after {
+    content: "Play";
+    font-size: 0.68rem;
   }
 
   .play-panel::before {
