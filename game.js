@@ -297,6 +297,66 @@ const BASKETBALL_TEAMS = [
   { name: "Raptors", primary: "#ce1141", secondary: "#751027", accent: "#b4975a", fieldTint: "#d6a55e", fieldStripe: "#c28c46", uiText: "#f6f3de" },
 ];
 
+// These original pixel monograms identify teams without reproducing official logos.
+const TEAM_VENUE_MARKS = {
+  "49ers": "SF",
+  Chiefs: "KC",
+  Eagles: "PHI",
+  Cowboys: "DAL",
+  Packers: "GB",
+  Bills: "BUF",
+  Ravens: "BAL",
+  Dolphins: "MIA",
+  Vikings: "MIN",
+  Bengals: "CIN",
+  Lions: "DET",
+  Jets: "NYJ",
+  Brazil: "BRA",
+  Argentina: "ARG",
+  France: "FRA",
+  England: "ENG",
+  Spain: "ESP",
+  Germany: "GER",
+  Italy: "ITA",
+  Netherlands: "NED",
+  Portugal: "POR",
+  Japan: "JPN",
+  Mexico: "MEX",
+  Morocco: "MAR",
+  Lakers: "LAL",
+  Celtics: "BOS",
+  Warriors: "GSW",
+  Bulls: "CHI",
+  Knicks: "NYK",
+  Heat: "MIA",
+  Suns: "PHX",
+  Mavericks: "DAL",
+  Nuggets: "DEN",
+  Bucks: "MIL",
+  Spurs: "SAS",
+  Raptors: "TOR",
+};
+
+function teamVenueIdentity(team) {
+  const name = String(team?.name || "TEAM");
+  const hash = [...name].reduce((total, character, index) => (
+    total + character.charCodeAt(0) * (index + 3)
+  ), 0);
+  const fallbackMark = name
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+
+  return {
+    mark: TEAM_VENUE_MARKS[name] || fallbackMark || "RR",
+    badgeShape: hash % 4,
+    surfacePattern: Math.floor(hash / 4) % 4,
+    motif: Math.floor(hash / 11) % 4,
+  };
+}
+
 const LEGACY_SOCCER_OPPONENTS = {
   "North London": "Brazil",
   "Mersey Blue": "Argentina",
@@ -2562,14 +2622,15 @@ function drawStadiumBackdrop() {
 
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
+  const team = currentTeam();
 
   ctx.fillStyle = PALETTE.sky;
   ctx.fillRect(0, 0, CONFIG.width, 76);
   ctx.fillStyle = "#d8eefc";
   ctx.fillRect(0, 64, CONFIG.width, 3);
 
-  drawGrandstandBand(76, 18, "#70879f", PALETTE.crowdMid, 16);
-  drawGrandstandBand(94, 18, "#516781", PALETTE.crowdDark, 18);
+  drawGrandstandBand(76, 18, team.primary, team.secondary, 16);
+  drawGrandstandBand(94, 18, team.secondary, team.accent, 18);
 
   ctx.fillStyle = "#6b7f93";
   ctx.fillRect(fieldLeft, 76, fieldRight - fieldLeft, 6);
@@ -2578,7 +2639,7 @@ function drawStadiumBackdrop() {
     ctx.fillRect(x, 78, 12, 2);
   }
 
-  ctx.fillStyle = "#9a7a48";
+  ctx.fillStyle = team.accent;
   ctx.fillRect(38, 112, CONFIG.width - 76, 4);
   ctx.fillStyle = PALETTE.asphalt;
   ctx.fillRect(0, 116, CONFIG.width, CONFIG.height - 116);
@@ -2606,6 +2667,7 @@ function drawStadiumBackdrop() {
 function drawBasketballArenaBackdrop() {
   const courtLeft = 38;
   const courtRight = CONFIG.width - 38;
+  const team = currentTeam();
 
   ctx.fillStyle = "#111a28";
   ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
@@ -2617,15 +2679,15 @@ function drawBasketballArenaBackdrop() {
     ctx.fillRect(x + 8, 27, 18, 3);
   }
 
-  drawGrandstandBand(70, 22, "#40526a", PALETTE.crowdMid, 15);
-  drawGrandstandBand(92, 24, "#28384d", PALETTE.crowdDark, 17);
+  drawGrandstandBand(70, 22, team.secondary, team.primary, 15);
+  drawGrandstandBand(92, 24, team.primary, team.accent, 17);
   ctx.fillStyle = "#0b111b";
   ctx.fillRect(0, 116, CONFIG.width, 10);
 
   ctx.fillStyle = "#202d3b";
   ctx.fillRect(0, 126, courtLeft, CONFIG.height - 126);
   ctx.fillRect(courtRight, 126, CONFIG.width - courtRight, CONFIG.height - 126);
-  ctx.fillStyle = "#ba7f3e";
+  ctx.fillStyle = team.accent;
   ctx.fillRect(courtLeft, 116, courtRight - courtLeft, 10);
   ctx.fillRect(courtLeft, CONFIG.height - 56, courtRight - courtLeft, 10);
 
@@ -2690,6 +2752,7 @@ function drawStadiumOverlay() {
   const fieldRight = CONFIG.width - 38;
   const topDeckY = 116;
   const lowerDeckY = CONFIG.height - 58;
+  const team = currentTeam();
 
   ctx.fillStyle = "#2b3d52";
   ctx.fillRect(0, topDeckY, 38, CONFIG.height - topDeckY);
@@ -2707,7 +2770,7 @@ function drawStadiumOverlay() {
     ctx.fillRect(CONFIG.width - 34, y, 30, 8);
   }
 
-  ctx.fillStyle = "#8a6b40";
+  ctx.fillStyle = team.accent;
   ctx.fillRect(fieldLeft + 6, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
   ctx.fillRect(fieldRight - 12, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
 }
@@ -2715,21 +2778,22 @@ function drawStadiumOverlay() {
 function drawBasketballArenaOverlay() {
   const courtLeft = 38;
   const courtRight = CONFIG.width - 38;
+  const team = currentTeam();
 
   ctx.fillStyle = "#111923";
   ctx.fillRect(0, 116, courtLeft, 8);
   ctx.fillRect(courtRight, 116, CONFIG.width - courtRight, 8);
-  ctx.fillStyle = "#65b7e8";
+  ctx.fillStyle = team.accent;
   ctx.fillRect(4, 122, 30, CONFIG.height - 180);
   ctx.fillRect(CONFIG.width - 34, 122, 30, CONFIG.height - 180);
-  ctx.fillStyle = "#173049";
+  ctx.fillStyle = team.secondary;
   for (let y = 130; y < CONFIG.height - 70; y += 30) {
     ctx.fillRect(7, y, 24, 18);
     ctx.fillRect(CONFIG.width - 31, y, 24, 18);
-    ctx.fillStyle = y % 60 === 10 ? "#f0bf43" : "#f6f3de";
+    ctx.fillStyle = y % 60 === 10 ? team.primary : team.uiText;
     ctx.fillRect(11, y + 4, 7, 7);
     ctx.fillRect(CONFIG.width - 27, y + 4, 7, 7);
-    ctx.fillStyle = "#173049";
+    ctx.fillStyle = team.secondary;
   }
 
   ctx.fillStyle = PALETTE.outline;
@@ -2738,7 +2802,7 @@ function drawBasketballArenaOverlay() {
   ctx.fillRect(0, CONFIG.height - 58, CONFIG.width, 6);
   ctx.fillStyle = "#253b50";
   ctx.fillRect(54, CONFIG.height - 52, CONFIG.width - 108, 18);
-  ctx.fillStyle = "#f0bf43";
+  ctx.fillStyle = team.accent;
   for (let x = 68; x < CONFIG.width - 68; x += 46) {
     ctx.fillRect(x, CONFIG.height - 47, 26, 5);
   }
@@ -2748,6 +2812,7 @@ function drawField(time) {
   const team = currentTeam();
   const startRow = Math.floor(cameraRow()) - 1;
   const endRow = Math.ceil(cameraRow()) + CONFIG.rowsVisible + 1;
+  const visibleRows = [];
 
   for (let row = startRow; row <= endRow; row += 1) {
     if (row < 0) {
@@ -2761,9 +2826,14 @@ function drawField(time) {
     }
 
     drawLaneBase(y, row, team, lane);
+    visibleRows.push({ row, lane, y });
+  }
 
+  drawTeamVenueDetails(team);
+
+  visibleRows.forEach(({ lane, y }) => {
     if (!lane) {
-      continue;
+      return;
     }
 
     if (lane.type === "sideline") {
@@ -2773,19 +2843,38 @@ function drawField(time) {
     if (lane.type === "defenders") {
       drawDefenderLane(y, lane, team, time);
     }
-  }
+  });
 
-  if (isBasketballMode()) {
-    drawBasketballCourtOverlay();
-  }
   drawChainMarkers();
 }
 
-function drawBasketballCourtOverlay() {
+function drawTeamVenueDetails(team) {
+  const midfieldY = laneTop(27) + CONFIG.laneHeight / 2;
+  if (midfieldY > -80 && midfieldY < CONFIG.height + 80) {
+    drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, isBasketballMode() ? 82 : 72);
+  }
+
+  if (isBasketballMode()) {
+    drawBasketballCourtOverlay(team);
+  } else if (isSoccerMode()) {
+    drawSoccerPenaltyOverlay(team);
+  } else {
+    drawFootballEndzoneOverlay(team);
+  }
+}
+
+function endAreaBounds() {
+  const firstRow = endzoneStartRow();
+  const lastRow = firstRow + CONFIG.endzoneRows - 1;
+  const top = laneTop(lastRow);
+  const bottom = laneTop(firstRow) + CONFIG.laneHeight;
+  return { top, bottom, height: bottom - top };
+}
+
+function drawBasketballCourtOverlay(team) {
   const courtLeft = 52;
   const courtRight = CONFIG.width - 52;
-  const paintTop = laneTop(endzoneStartRow());
-  const paintBottom = paintTop + CONFIG.endzoneRows * CONFIG.laneHeight;
+  const { top: paintTop, bottom: paintBottom, height: paintHeight } = endAreaBounds();
 
   if (paintBottom < 0 || paintTop > CONFIG.height) {
     return;
@@ -2794,16 +2883,195 @@ function drawBasketballCourtOverlay() {
   ctx.strokeStyle = PALETTE.line;
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.arc(CONFIG.width / 2, paintTop, 112, 0, Math.PI);
+  ctx.arc(CONFIG.width / 2, paintTop + 22, 126, 0, Math.PI);
   ctx.stroke();
-  ctx.strokeRect(CONFIG.width / 2 - 72, paintTop, 144, CONFIG.endzoneRows * CONFIG.laneHeight);
+  ctx.strokeRect(CONFIG.width / 2 - 72, paintTop, 144, paintHeight);
+
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.arc(CONFIG.width / 2, paintBottom, 48, Math.PI, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.arc(CONFIG.width / 2, paintTop + 32, 42, 0, Math.PI);
+  ctx.stroke();
+
+  for (let y = paintTop + 24; y < paintBottom - 10; y += 26) {
+    ctx.fillStyle = team.accent;
+    ctx.fillRect(CONFIG.width / 2 - 78, y, 6, 3);
+    ctx.fillRect(CONFIG.width / 2 + 72, y, 6, 3);
+  }
 
   ctx.fillStyle = PALETTE.outline;
-  ctx.fillRect(CONFIG.width / 2 - 40, paintBottom - 18, 80, 5);
+  ctx.fillRect(CONFIG.width / 2 - 40, paintTop + 5, 80, 5);
   ctx.fillStyle = "#df5f25";
-  ctx.fillRect(CONFIG.width / 2 - 24, paintBottom - 13, 48, 5);
+  ctx.fillRect(CONFIG.width / 2 - 24, paintTop + 10, 48, 5);
   ctx.fillStyle = PALETTE.line;
-  ctx.fillRect(courtLeft, paintTop - 2, courtRight - courtLeft, 4);
+  ctx.fillRect(courtLeft, paintTop, courtRight - courtLeft, 4);
+  ctx.fillRect(CONFIG.width / 2 - 4, paintBottom - 5, 8, 8);
+}
+
+function drawSoccerPenaltyOverlay(team) {
+  const fieldLeft = 52;
+  const fieldRight = CONFIG.width - 52;
+  const { top, bottom, height } = endAreaBounds();
+
+  if (bottom < 0 || top > CONFIG.height) {
+    return;
+  }
+
+  ctx.strokeStyle = PALETTE.line;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(fieldLeft + 54, top, fieldRight - fieldLeft - 108, height);
+  ctx.strokeRect(CONFIG.width / 2 - 76, top, 152, 64);
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(CONFIG.width / 2 - 4, top + 102, 8, 8);
+
+  ctx.beginPath();
+  ctx.arc(CONFIG.width / 2, top + 106, 46, 0.18 * Math.PI, 0.82 * Math.PI);
+  ctx.stroke();
+
+  ctx.strokeStyle = team.accent;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(fieldLeft, top, 20, 0, Math.PI / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(fieldRight, top, 20, Math.PI / 2, Math.PI);
+  ctx.stroke();
+
+  ctx.fillStyle = PALETTE.outline;
+  ctx.fillRect(CONFIG.width / 2 - 48, top - 4, 96, 6);
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(CONFIG.width / 2 - 40, top - 10, 80, 5);
+}
+
+function drawFootballEndzoneOverlay(team) {
+  const fieldLeft = 52;
+  const fieldRight = CONFIG.width - 52;
+  const { top, bottom } = endAreaBounds();
+
+  if (bottom < 0 || top > CONFIG.height) {
+    return;
+  }
+
+  ctx.fillStyle = team.accent;
+  ctx.fillRect(fieldLeft, top, fieldRight - fieldLeft, 5);
+  ctx.fillRect(fieldLeft, bottom - 5, fieldRight - fieldLeft, 5);
+  drawTeamPixelBadge(team, CONFIG.width / 2, (top + bottom) / 2, 76);
+}
+
+function drawTeamPixelBadge(team, centerX, centerY, size) {
+  const identity = teamVenueIdentity(team);
+  const half = size / 2;
+  const inner = size - 12;
+
+  ctx.save();
+  ctx.globalAlpha = 0.96;
+  ctx.fillStyle = PALETTE.outline;
+  ctx.strokeStyle = team.accent;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  if (identity.badgeShape === 1) {
+    ctx.arc(centerX, centerY, half, 0, Math.PI * 2);
+  } else if (identity.badgeShape === 2) {
+    ctx.moveTo(centerX, centerY - half);
+    ctx.lineTo(centerX + half, centerY);
+    ctx.lineTo(centerX, centerY + half);
+    ctx.lineTo(centerX - half, centerY);
+    ctx.closePath();
+  } else if (identity.badgeShape === 3) {
+    ctx.moveTo(centerX - half, centerY - half);
+    ctx.lineTo(centerX + half, centerY - half);
+    ctx.lineTo(centerX + half - 6, centerY + half - 12);
+    ctx.lineTo(centerX, centerY + half);
+    ctx.lineTo(centerX - half + 6, centerY + half - 12);
+    ctx.closePath();
+  } else {
+    ctx.rect(centerX - half, centerY - half, size, size);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = team.primary;
+  if (identity.badgeShape === 1) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, inner / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillRect(centerX - inner / 2, centerY - inner / 2, inner, inner);
+  }
+
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = team.accent;
+  if (identity.motif === 0) {
+    ctx.fillRect(centerX - inner / 2, centerY - 5, inner, 10);
+  } else if (identity.motif === 1) {
+    ctx.fillRect(centerX - 5, centerY - inner / 2, 10, inner);
+    ctx.fillRect(centerX - inner / 2, centerY - 5, inner, 10);
+  } else if (identity.motif === 2) {
+    ctx.fillRect(centerX - inner / 2, centerY - inner / 2, 12, 12);
+    ctx.fillRect(centerX + inner / 2 - 12, centerY - inner / 2, 12, 12);
+    ctx.fillRect(centerX - inner / 2, centerY + inner / 2 - 12, 12, 12);
+    ctx.fillRect(centerX + inner / 2 - 12, centerY + inner / 2 - 12, 12, 12);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(centerX - inner / 2, centerY - 10);
+    ctx.lineTo(centerX, centerY + 8);
+    ctx.lineTo(centerX + inner / 2, centerY - 10);
+    ctx.lineTo(centerX + inner / 2, centerY + 2);
+    ctx.lineTo(centerX, centerY + 20);
+    ctx.lineTo(centerX - inner / 2, centerY + 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  const previousAlign = ctx.textAlign;
+  ctx.textAlign = "center";
+  drawOutlinedLabel(
+    identity.mark,
+    centerX,
+    centerY + Math.max(6, size * 0.11),
+    team.uiText,
+    teamNameOutlineColor(team.uiText),
+    Math.max(13, Math.round(size * 0.24))
+  );
+  ctx.textAlign = previousAlign || "start";
+  ctx.restore();
+}
+
+function drawTeamSurfacePattern(y, row, team, left, right, material = "turf") {
+  const identity = teamVenueIdentity(team);
+  const width = right - left;
+  ctx.save();
+  ctx.globalAlpha = material === "wood" ? 0.16 : 0.11;
+  ctx.fillStyle = material === "wood" ? team.secondary : team.primary;
+
+  if (identity.surfacePattern === 0) {
+    for (let x = left + 18; x < right; x += 58) {
+      ctx.fillRect(x, y, 16, CONFIG.laneHeight);
+    }
+  } else if (identity.surfacePattern === 1) {
+    const block = 54;
+    for (let x = left; x < right; x += block) {
+      if ((Math.floor((x - left) / block) + row) % 2 === 0) {
+        ctx.fillRect(x, y, Math.min(block, right - x), CONFIG.laneHeight);
+      }
+    }
+  } else if (identity.surfacePattern === 2) {
+    const shift = (row * 19) % 72;
+    for (let x = left - 72 + shift; x < right; x += 72) {
+      ctx.fillRect(x, y + 8, 34, 7);
+      ctx.fillRect(x + 18, y + 25, 34, 7);
+      ctx.fillRect(x + 36, y + 42, 34, 7);
+    }
+  } else {
+    ctx.fillRect(left + width * 0.25 - 5, y, 10, CONFIG.laneHeight);
+    ctx.fillRect(left + width * 0.75 - 5, y, 10, CONFIG.laneHeight);
+  }
+  ctx.restore();
 }
 
 function drawChainMarkers() {
@@ -2855,21 +3123,20 @@ function drawLaneBase(y, row, team, lane) {
     for (let x = fieldLeft + 16; x < fieldRight - 18; x += 18) {
       ctx.fillRect(x, y + 6, 8, CONFIG.laneHeight - 12);
     }
+    drawTeamSurfacePattern(y, row, team, fieldLeft + 14, fieldRight - 14);
     ctx.fillStyle = PALETTE.line;
     ctx.fillRect(fieldLeft + 10, y, 4, CONFIG.laneHeight);
     ctx.fillRect(fieldRight - 14, y, 4, CONFIG.laneHeight);
 
-    if (row === endzoneStartRow() + 1) {
-      drawLabel("END ZONE", fieldLeft + 110, y + 39, team.uiText, 18);
-    }
     return;
   }
 
   ctx.fillStyle = stripeColor;
   ctx.fillRect(fieldLeft + 8, y, fieldWidth - 16, CONFIG.laneHeight);
 
-  ctx.fillStyle = row % 2 === 0 ? PALETTE.turfLight : PALETTE.turfMid;
+  ctx.fillStyle = stripeColor;
   ctx.fillRect(fieldLeft + 12, y, fieldWidth - 24, CONFIG.laneHeight);
+  drawTeamSurfacePattern(y, row, team, fieldLeft + 14, fieldRight - 14);
 
   ctx.fillStyle = PALETTE.line;
   ctx.fillRect(fieldLeft + 10, y, 4, CONFIG.laneHeight);
@@ -2904,6 +3171,7 @@ function drawBasketballLaneBase(y, row, team, lane) {
   ctx.fillRect(courtRight - 8, y, 8, CONFIG.laneHeight);
   ctx.fillStyle = wood;
   ctx.fillRect(courtLeft + 8, y, courtWidth - 16, CONFIG.laneHeight);
+  drawTeamSurfacePattern(y, row, team, courtLeft + 10, courtRight - 10, "wood");
 
   ctx.fillStyle = "rgba(78, 43, 24, 0.2)";
   for (let x = courtLeft + 18 + (row % 2) * 18; x < courtRight - 18; x += 38) {
@@ -2935,9 +3203,6 @@ function drawBasketballLaneBase(y, row, team, lane) {
     ctx.strokeStyle = team.accent;
     ctx.lineWidth = 4;
     ctx.strokeRect(courtLeft + 120, y - 1, courtWidth - 240, CONFIG.laneHeight + 2);
-    if (row === endzoneStartRow() + 1) {
-      drawLabel("THE PAINT", courtLeft + 173, y + 38, team.uiText, 16);
-    }
   }
 }
 
@@ -2945,7 +3210,6 @@ function drawSoccerLaneBase(y, row, team, lane) {
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
   const fieldWidth = fieldRight - fieldLeft;
-  const isPenaltyArea = lane && lane.type === "endzone";
   const stripeColor = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
 
   ctx.fillStyle = "#244f34";
@@ -2953,6 +3217,7 @@ function drawSoccerLaneBase(y, row, team, lane) {
   ctx.fillRect(fieldRight - 8, y, 8, CONFIG.laneHeight);
   ctx.fillStyle = stripeColor;
   ctx.fillRect(fieldLeft + 8, y, fieldWidth - 16, CONFIG.laneHeight);
+  drawTeamSurfacePattern(y, row, team, fieldLeft + 14, fieldRight - 14);
 
   ctx.fillStyle = PALETTE.line;
   ctx.fillRect(fieldLeft + 10, y, 4, CONFIG.laneHeight);
@@ -2973,23 +3238,6 @@ function drawSoccerLaneBase(y, row, team, lane) {
     ctx.stroke();
     ctx.fillStyle = PALETTE.line;
     ctx.fillRect(CONFIG.width / 2 - 3, y + CONFIG.laneHeight / 2 - 3, 6, 6);
-  }
-
-  if (isPenaltyArea) {
-    ctx.strokeStyle = PALETTE.line;
-    ctx.lineWidth = 4;
-    ctx.strokeRect(fieldLeft + 86, y - 1, fieldWidth - 172, CONFIG.laneHeight + 2);
-
-    if (row === endzoneStartRow()) {
-      ctx.fillStyle = PALETTE.line;
-      ctx.fillRect(fieldLeft + 14, y, fieldWidth - 28, 5);
-    }
-
-    if (row === endzoneStartRow() + 1) {
-      drawLabel("PENALTY AREA", fieldLeft + 126, y + 38, PALETTE.line, 16);
-      ctx.fillStyle = PALETTE.line;
-      ctx.fillRect(CONFIG.width / 2 - 4, y + 47, 8, 8);
-    }
   }
 
   for (let x = fieldLeft + 16; x < fieldRight - 18; x += 34) {

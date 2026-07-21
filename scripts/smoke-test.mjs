@@ -97,6 +97,11 @@ assert.match(styles, /body\[data-game="basketball"\] \.basketball-shooter/);
 assert.match(styles, /@keyframes basketball-jump-shot/);
 assert.match(styles, /@keyframes basketball-ball-swish/);
 assert.match(styles, /\.play-game-label\s*\{[^}]*background:\s*var\(--card-accent\)/s);
+assert.doesNotMatch(source, /drawLabel\("THE PAINT"/);
+assert.doesNotMatch(source, /drawLabel\("PENALTY AREA"/);
+assert.match(source, /const TEAM_VENUE_MARKS = \{/);
+assert.match(source, /function drawTeamPixelBadge\(/);
+assert.match(source, /function drawSoccerPenaltyOverlay\(/);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
 const canvas = elements.get("gameCanvas");
@@ -187,6 +192,8 @@ globalThis.__retroRunTest = {
   get runnerHair() { return currentRunner().appearance.hair; },
   get runnerNumber() { return currentRunner().appearance.number; },
   get currentSeasonOpponentNames() { return currentSeasonOpponents().map((team) => team.name); },
+  get currentVenueIdentity() { return teamVenueIdentity(currentTeam()); },
+  get venueIdentities() { return currentTeams().map((team) => teamVenueIdentity(team)); },
   get tutorial() { return tutorialSlides(); },
   selectFranchiseSlot,
   createFranchiseFromForm,
@@ -211,6 +218,7 @@ globalThis.__retroRunTest = {
     player.firstDownLineRow = lineRow;
     player.firstDownTargetRow = targetRow;
   },
+  setCameraRow(row) { cameraWorldRow = row; },
   drawScoreboardBar,
   normalizeFranchise,
   render,
@@ -259,6 +267,8 @@ assert.equal(elements.get("creatorModal").hidden, true);
 assert.notEqual(game.currentTeamName, "Brazil");
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
+assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
+assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
 game.selectFranchiseSlot(1);
 elements.get("teamNameInput").value = "Oranje";
 game.createFranchiseFromForm();
@@ -268,7 +278,8 @@ game.selectFranchiseSlot(0);
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
 game.startLevel();
-game.setChainRows(2, 3);
+game.setChainRows(20, 23);
+game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
 game.render(1000);
@@ -277,6 +288,7 @@ assert.equal(drawnFillColors.includes("#d2a24a"), true);
 assert.equal(drawnFillColors.includes("#2f8fff"), true);
 assert.equal(drawnFillColors.includes("#f1d24b"), false);
 assert.equal(drawnLabels.some((label) => label.text === "23"), true);
+assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
 drawnLabels.length = 0;
 game.drawScoreboardBar();
 assert.equal(drawnLabels.some((label) => label.text === "BRA-ZIL"), true);
@@ -304,6 +316,8 @@ assert.equal(game.gameLibraryOpen, true);
 assert.equal(elements.get("creatorTrigger").disabled, true);
 game.openHoopHustle();
 assert.equal(game.activeGameId, "basketball");
+assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
+assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
 assert.equal(elements.get("hoopHustleButton").classList.contains("selected"), true);
 assert.equal(elements.get("pitchDashButton").classList.contains("selected"), false);
 assert.equal(elements.get("hoopHustleButton").attributes.get("aria-pressed"), "true");
@@ -328,15 +342,17 @@ assert.equal(game.currentSeasonOpponentNames.includes("Warriors"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Lakers"), true);
 assert.match(elements.get("runnerGrid").children.at(-1).innerHTML, /HND 50/);
 game.startLevel();
-game.setChainRows(2, 3);
+game.setChainRows(20, 23);
+game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
 game.render(1000);
 assert.equal(drawnFillColors.includes("#d5a45b"), true);
 assert.equal(drawnFillColors.includes("#d86b20"), true);
 assert.equal(drawnFillColors.includes("#b8764e"), true);
-assert.equal(drawnFillColors.includes("#65b7e8"), true);
+assert.equal(drawnFillColors.includes("#fdb927"), true);
 assert.equal(drawnLabels.some((label) => label.text === "11"), true);
+assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
 assert.equal(drawnFillColors.includes("#2f8fff"), true);
@@ -375,6 +391,8 @@ elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);
 game.openGridironDash();
 assert.equal(game.activeGameId, "gridiron");
+assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
+assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
 assert.equal(elements.get("gridironDashButton").classList.contains("selected"), true);
 assert.equal(elements.get("hoopHustleButton").classList.contains("selected"), false);
 assert.equal(body.dataset.game, "football");
@@ -390,7 +408,8 @@ game.createFranchiseFromForm();
 assert.notEqual(game.currentTeamName, "49ers");
 assert.equal(game.currentSeasonOpponentNames.includes("49ers"), false);
 game.startLevel();
-game.setChainRows(2, 3);
+game.setChainRows(20, 23);
+game.setCameraRow(20);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
 assert.equal(drawnFillColors.includes("#2f8fff"), true);
@@ -417,6 +436,7 @@ game.render(1000);
 assert.equal(drawnFillColors.includes("#6d4c41"), true);
 assert.equal(drawnFillColors.includes("#9ea7b8"), true);
 assert.equal(drawnLabels.some((label) => label.text === "42"), true);
+assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
 
 assert.ok(storage.has("pitch-dash-franchise-slots"));
 assert.ok(storage.has("gridiron-dash-franchise-slots"));
