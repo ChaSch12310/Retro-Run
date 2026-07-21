@@ -10,6 +10,11 @@ const downsEl = document.getElementById("downsValue");
 const attemptsEl = document.getElementById("attemptsValue");
 const stageEl = document.getElementById("stageValue");
 const milestoneEl = document.getElementById("milestoneValue");
+const distanceLabelEl = document.getElementById("distanceLabel");
+const downsLabelEl = document.getElementById("downsLabel");
+const keyboardInstructionsEl = document.getElementById("keyboardInstructions");
+const touchInstructionsEl = document.getElementById("touchInstructions");
+const progressInstructionsEl = document.getElementById("progressInstructions");
 
 const overlayEl = document.getElementById("overlay");
 const overlayTitleEl = document.getElementById("overlayTitle");
@@ -21,16 +26,25 @@ const eraseSaveButton = document.getElementById("eraseSaveButton");
 const createFranchiseButton = document.getElementById("createFranchiseButton");
 const homepagePanelEl = document.getElementById("homepagePanel");
 const loadSavePanelEl = document.getElementById("loadSavePanel");
+const loadCareerTitleEl = document.getElementById("loadCareerTitle");
 const franchiseSlotGridEl = document.getElementById("franchiseSlotGrid");
 const homepageHeroEl = document.getElementById("homepageHero");
+const careerHubLabelEl = document.getElementById("careerHubLabel");
 const onboardingPanelEl = document.getElementById("onboardingPanel");
+const createCareerTitleEl = document.getElementById("createCareerTitle");
 const franchiseMainContentEl = document.getElementById("franchiseMainContent");
 const homeTeamNameEl = document.getElementById("homeTeamName");
 const nextOpponentNameEl = document.getElementById("nextOpponentName");
 const teamNameInputEl = document.getElementById("teamNameInput");
 const runnerNameInputEl = document.getElementById("runnerNameInput");
+const playerNameLabelEl = document.getElementById("playerNameLabel");
 const teamPrimaryInputEl = document.getElementById("teamPrimaryInput");
 const teamSecondaryInputEl = document.getElementById("teamSecondaryInput");
+const playerSkinInputEl = document.getElementById("playerSkinInput");
+const playerHairInputEl = document.getElementById("playerHairInput");
+const playerNumberInputEl = document.getElementById("playerNumberInput");
+const characterPreviewEl = document.getElementById("characterPreview");
+const characterNumberPreviewEl = document.getElementById("characterNumberPreview");
 const runnerGridEl = document.getElementById("runnerGrid");
 const runnerSelectionStatusEl = document.getElementById("runnerSelectionStatus");
 const seasonYearValueEl = document.getElementById("seasonYearValue");
@@ -46,6 +60,57 @@ const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
 const upgradePanelEl = document.getElementById("upgradePanel");
 const upgradeActionsEl = document.getElementById("upgradeActions");
+const creatorTriggerEl = document.getElementById("creatorTrigger");
+const arcadeHomeButtonEl = document.getElementById("arcadeHomeButton");
+const creatorModalEl = document.getElementById("creatorModal");
+const creatorLoginFormEl = document.getElementById("creatorLoginForm");
+const creatorLevelsFormEl = document.getElementById("creatorLevelsForm");
+const creatorUsernameInputEl = document.getElementById("creatorUsernameInput");
+const creatorPasswordInputEl = document.getElementById("creatorPasswordInput");
+const creatorSpeedInputEl = document.getElementById("creatorSpeedInput");
+const creatorPowerInputEl = document.getElementById("creatorPowerInput");
+const creatorCutInputEl = document.getElementById("creatorCutInput");
+const creatorAttemptsTextEl = document.getElementById("creatorAttemptsText");
+const creatorMessageEl = document.getElementById("creatorMessage");
+const creatorCancelButtonEl = document.getElementById("creatorCancelButton");
+const creatorCloseButtonEl = document.getElementById("creatorCloseButton");
+const gameLibraryScreenEl = document.getElementById("gameLibraryScreen");
+const gridironDashButtonEl = document.getElementById("gridironDashButton");
+const pitchDashButtonEl = document.getElementById("pitchDashButton");
+const hoopHustleButtonEl = document.getElementById("hoopHustleButton");
+const gameLibraryButtonEl = document.getElementById("gameLibraryButton");
+const fieldGoalPanelEl = document.getElementById("fieldGoalPanel");
+const fieldGoalTimerEl = document.getElementById("fieldGoalTimer");
+const fieldGoalSceneEl = document.getElementById("fieldGoalScene");
+const fieldGoalInstructionsEl = document.getElementById("fieldGoalInstructions");
+const fieldGoalBallEl = document.getElementById("fieldGoalBall");
+const soccerKeeperEl = document.getElementById("soccerKeeper");
+const fieldGoalAimMarkerEl = document.getElementById("fieldGoalAimMarker");
+const fieldGoalPowerMeterEl = document.getElementById("fieldGoalPowerMeter");
+const fieldGoalAimMeterEl = document.getElementById("fieldGoalAimMeter");
+const fieldGoalPowerNeedleEl = document.getElementById("fieldGoalPowerNeedle");
+const fieldGoalAimNeedleEl = document.getElementById("fieldGoalAimNeedle");
+const fieldGoalAimValueEl = document.getElementById("fieldGoalAimValue");
+const fieldGoalPowerValueEl = document.getElementById("fieldGoalPowerValue");
+const fieldGoalStaticControlsEl = document.getElementById("fieldGoalStaticControls");
+const fieldGoalStaticAimInputEl = document.getElementById("fieldGoalStaticAimInput");
+const fieldGoalStaticPowerInputEl = document.getElementById("fieldGoalStaticPowerInput");
+const fieldGoalStaticAimValueEl = document.getElementById("fieldGoalStaticAimValue");
+const fieldGoalStaticPowerValueEl = document.getElementById("fieldGoalStaticPowerValue");
+const fieldGoalStatusEl = document.getElementById("fieldGoalStatus");
+const fieldGoalActionButtonEl = document.getElementById("fieldGoalActionButton");
+const kickChallengeKickerEl = document.getElementById("kickChallengeKicker");
+const kickChallengeTitleEl = document.getElementById("kickChallengeTitle");
+const creatorKickModeTextEl = document.getElementById("creatorKickModeText");
+const tutorialPanelEl = document.getElementById("tutorialPanel");
+const tutorialStepEl = document.getElementById("tutorialStep");
+const tutorialBadgeEl = document.getElementById("tutorialBadge");
+const tutorialTitleEl = document.getElementById("tutorialTitle");
+const tutorialTextEl = document.getElementById("tutorialText");
+const tutorialListEl = document.getElementById("tutorialList");
+const tutorialDotsEl = document.getElementById("tutorialDots");
+const tutorialBackButtonEl = document.getElementById("tutorialBackButton");
+const tutorialNextButtonEl = document.getElementById("tutorialNextButton");
 
 const CONFIG = {
   width: canvas.width,
@@ -90,7 +155,7 @@ const PALETTE = {
   white: "#f6f3de",
 };
 
-const TEAMS = [
+const FOOTBALL_TEAMS = [
   {
     name: "49ers",
     primary: "#aa0000",
@@ -201,19 +266,169 @@ const TEAMS = [
   },
 ];
 
+const SOCCER_TEAMS = [
+  { name: "Brazil", primary: "#ffdf00", secondary: "#002776", accent: "#009c3b", fieldTint: "#3f8b4d", fieldStripe: "#2f713d", uiText: "#172c56" },
+  { name: "Argentina", primary: "#74acdf", secondary: "#f6f3de", accent: "#d4a62a", fieldTint: "#428d4f", fieldStripe: "#30733e", uiText: "#173b67" },
+  { name: "France", primary: "#1d3f8f", secondary: "#142755", accent: "#ed2939", fieldTint: "#438e50", fieldStripe: "#31743f", uiText: "#f6f3de" },
+  { name: "England", primary: "#f6f3de", secondary: "#172b4d", accent: "#ce1126", fieldTint: "#3d894b", fieldStripe: "#2e703c", uiText: "#172b4d" },
+  { name: "Spain", primary: "#c60b1e", secondary: "#7b101c", accent: "#ffc400", fieldTint: "#438f50", fieldStripe: "#32753f", uiText: "#f6f3de" },
+  { name: "Germany", primary: "#f6f3de", secondary: "#17151a", accent: "#dd0000", fieldTint: "#408c4e", fieldStripe: "#2f733e", uiText: "#17151a" },
+  { name: "Italy", primary: "#0066b3", secondary: "#003d70", accent: "#f6f3de", fieldTint: "#448e50", fieldStripe: "#32743f", uiText: "#f6f3de" },
+  { name: "Netherlands", primary: "#f36c21", secondary: "#1b365d", accent: "#f6f3de", fieldTint: "#3f8a4c", fieldStripe: "#2f713d", uiText: "#17151a" },
+  { name: "Portugal", primary: "#c8102e", secondary: "#046a38", accent: "#f2c94c", fieldTint: "#428c4e", fieldStripe: "#30723d", uiText: "#f6f3de" },
+  { name: "Japan", primary: "#1f4e99", secondary: "#142e5f", accent: "#bc002d", fieldTint: "#448f51", fieldStripe: "#327540", uiText: "#f6f3de" },
+  { name: "Mexico", primary: "#006847", secondary: "#173c32", accent: "#ce1126", fieldTint: "#408c4e", fieldStripe: "#2f733e", uiText: "#f6f3de" },
+  { name: "Morocco", primary: "#c1272d", secondary: "#7e171d", accent: "#006233", fieldTint: "#438e50", fieldStripe: "#31743f", uiText: "#f6f3de" },
+];
+
+const BASKETBALL_TEAMS = [
+  { name: "Lakers", primary: "#552583", secondary: "#2f1748", accent: "#fdb927", fieldTint: "#d5a45b", fieldStripe: "#c79149", uiText: "#fdb927" },
+  { name: "Celtics", primary: "#007a33", secondary: "#00471f", accent: "#ba9653", fieldTint: "#d8ad69", fieldStripe: "#c9944d", uiText: "#f6f3de" },
+  { name: "Warriors", primary: "#1d428a", secondary: "#12295a", accent: "#ffc72c", fieldTint: "#d7aa62", fieldStripe: "#c78f45", uiText: "#ffc72c" },
+  { name: "Bulls", primary: "#ce1141", secondary: "#7c0a28", accent: "#f6f3de", fieldTint: "#d5a65f", fieldStripe: "#c38d48", uiText: "#f6f3de" },
+  { name: "Knicks", primary: "#006bb6", secondary: "#003e6b", accent: "#f58426", fieldTint: "#d8aa64", fieldStripe: "#c5904a", uiText: "#f6f3de" },
+  { name: "Heat", primary: "#98002e", secondary: "#5e001c", accent: "#f9a01b", fieldTint: "#d4a25b", fieldStripe: "#c28a45", uiText: "#f6f3de" },
+  { name: "Suns", primary: "#1d1160", secondary: "#100936", accent: "#e56020", fieldTint: "#d7a65f", fieldStripe: "#c48d47", uiText: "#f6f3de" },
+  { name: "Mavericks", primary: "#00538c", secondary: "#002b49", accent: "#b8c4ca", fieldTint: "#d6aa65", fieldStripe: "#c4914b", uiText: "#f6f3de" },
+  { name: "Nuggets", primary: "#0e2240", secondary: "#071324", accent: "#fec524", fieldTint: "#d8ac66", fieldStripe: "#c4934d", uiText: "#fec524" },
+  { name: "Bucks", primary: "#00471b", secondary: "#002b11", accent: "#eee1c6", fieldTint: "#d5a760", fieldStripe: "#c48e48", uiText: "#eee1c6" },
+  { name: "Spurs", primary: "#c4ced4", secondary: "#54585a", accent: "#111016", fieldTint: "#d8aa64", fieldStripe: "#c5904a", uiText: "#111016" },
+  { name: "Raptors", primary: "#ce1141", secondary: "#751027", accent: "#b4975a", fieldTint: "#d6a55e", fieldStripe: "#c28c46", uiText: "#f6f3de" },
+];
+
+const LEGACY_SOCCER_OPPONENTS = {
+  "North London": "Brazil",
+  "Mersey Blue": "Argentina",
+  "Manchester Sky": "France",
+  "West London": "England",
+  "Madrid Royal": "Spain",
+  Catalonia: "Germany",
+  "Milan Rosso": "Italy",
+  "Turin Stripes": "Netherlands",
+  "Paris Stars": "Portugal",
+  "Munich Red": "Japan",
+  "Lisbon Green": "Mexico",
+  Amsterdam: "Morocco",
+};
+
 const HOME_TEAM = {
   name: "Bay City Falcons",
   primary: "#f0bf43",
   secondary: "#2e3547",
 };
 
-const PLAYER_NAME_POOL = ["D. Carter", "M. Brooks", "R. Hayes", "T. Daniels", "J. Parker"];
+const SOCCER_HOME_TEAM = {
+  name: "United States",
+  primary: "#1f3c88",
+  secondary: "#bf0a30",
+};
 
-const storageKey = "gridiron-dash-best";
-const seasonStorageKey = "gridiron-dash-season-progress";
-const franchiseStorageKey = "gridiron-dash-franchise";
-const franchiseSlotsStorageKey = "gridiron-dash-franchise-slots";
+const BASKETBALL_HOME_TEAM = {
+  name: "Metro City Flight",
+  primary: "#e36f1e",
+  secondary: "#173049",
+};
+
+const TEAM_NAME_ALIASES = {
+  "49ers": ["Niners", "San Francisco", "San Francisco 49ers", "SF"],
+  Chiefs: ["Kansas City", "Kansas City Chiefs", "KC"],
+  Eagles: ["Philadelphia", "Philadelphia Eagles", "Philly"],
+  Cowboys: ["Dallas", "Dallas Cowboys"],
+  Packers: ["Green Bay", "Green Bay Packers"],
+  Bills: ["Buffalo", "Buffalo Bills"],
+  Ravens: ["Baltimore", "Baltimore Ravens"],
+  Dolphins: ["Miami", "Miami Dolphins", "Fins"],
+  Vikings: ["Minnesota", "Minnesota Vikings", "Vikes"],
+  Bengals: ["Cincinnati", "Cincinnati Bengals", "Cincy"],
+  Lions: ["Detroit", "Detroit Lions"],
+  Jets: ["New York Jets", "NY Jets", "NYJ"],
+  Brazil: ["Brasil", "Selecao", "Canarinho"],
+  Argentina: ["Albiceleste", "La Albiceleste"],
+  France: ["Les Bleus", "Bleus"],
+  England: ["Three Lions"],
+  Spain: ["La Roja"],
+  Germany: ["Die Mannschaft"],
+  Italy: ["Azzurri", "Gli Azzurri"],
+  Netherlands: ["Holland", "Oranje", "Dutch"],
+  Portugal: ["Navegadores", "Selecao Portuguesa"],
+  Japan: ["Samurai Blue"],
+  Mexico: ["El Tri", "Tricolor"],
+  Morocco: ["Atlas Lions", "Lions of Atlas"],
+  Lakers: ["Los Angeles Lakers", "LA Lakers", "Lake Show"],
+  Celtics: ["Boston", "Boston Celtics", "Cs"],
+  Warriors: ["Golden State", "Golden State Warriors", "Dubs"],
+  Bulls: ["Chicago", "Chicago Bulls"],
+  Knicks: ["New York Knicks", "NY Knicks", "New York"],
+  Heat: ["Miami Heat", "Miami"],
+  Suns: ["Phoenix", "Phoenix Suns"],
+  Mavericks: ["Dallas Mavericks", "Dallas", "Mavs"],
+  Nuggets: ["Denver", "Denver Nuggets"],
+  Bucks: ["Milwaukee", "Milwaukee Bucks"],
+  Spurs: ["San Antonio", "San Antonio Spurs"],
+  Raptors: ["Toronto", "Toronto Raptors", "Raps"],
+};
+
+const GAME_MODES = {
+  gridiron: {
+    id: "gridiron",
+    kind: "football",
+    title: "Gridiron Dash",
+    teams: FOOTBALL_TEAMS,
+    homeTeam: HOME_TEAM,
+    slotsKey: "gridiron-dash-franchise-slots",
+    distanceLabel: "Yards",
+    chancesLabel: "Downs Left",
+    distanceAbbr: "YDS",
+    chanceAbbr: "DOWN",
+  },
+  soccer: {
+    id: "soccer",
+    kind: "soccer",
+    title: "Goal Rush",
+    teams: SOCCER_TEAMS,
+    homeTeam: SOCCER_HOME_TEAM,
+    slotsKey: "pitch-dash-franchise-slots",
+    distanceLabel: "Meters",
+    chancesLabel: "Possessions Left",
+    distanceAbbr: "MTR",
+    chanceAbbr: "POSS",
+  },
+  basketball: {
+    id: "basketball",
+    kind: "basketball",
+    title: "Hoop Hustle",
+    teams: BASKETBALL_TEAMS,
+    homeTeam: BASKETBALL_HOME_TEAM,
+    slotsKey: "hoop-hustle-franchise-slots",
+    distanceLabel: "Feet",
+    chancesLabel: "Possessions Left",
+    distanceAbbr: "FT",
+    chanceAbbr: "POSS",
+  },
+};
+
+const PLAYER_NAME_POOL = ["D. Carter", "M. Brooks", "R. Hayes", "T. Daniels", "J. Parker"];
+const DEFAULT_PLAYER_APPEARANCE = {
+  skin: "#efc79d",
+  hair: "#302218",
+  number: 7,
+};
+
+const legacyStorageKey = "gridiron-dash-best";
+const legacySeasonStorageKey = "gridiron-dash-season-progress";
+const legacyFranchiseStorageKey = "gridiron-dash-franchise";
 const MAX_FRANCHISE_SLOTS = 5;
+const CREATOR_USERNAME = "creator";
+const CREATOR_PASSWORD = "creation";
+const CREATOR_MAX_ATTEMPTS = 3;
+const FIELD_GOAL_DURATION_MS = 30000;
+const FIELD_GOAL_AIM_LIMIT = 35;
+const FIELD_GOAL_POWER_MIN = 55;
+const FIELD_GOAL_STATIC_POWER_MAX = 90;
+const FIELD_GOAL_POWER_SWEEP_MS = 1600;
+const FIELD_GOAL_AIM_SWEEP_MS = 2200;
+const FIELD_GOAL_FLIGHT_MS = 900;
+const FIELD_GOAL_RESULT_MS = 650;
 const GAMES_PER_SEASON = 18;
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
@@ -231,10 +446,13 @@ const DEFAULT_FRANCHISE = {
   team: null,
   player: null,
   pendingUpgradeChoices: [],
+  creatorStaticKicking: false,
+  tutorialComplete: false,
   seasonCheckpointLevel: 0,
   savedAt: 0,
 };
-let franchiseSlots = loadFranchiseSlots();
+let activeGameId = null;
+let franchiseSlots = emptySlots();
 let activeSlotIndex = null;
 let slotSelectOpen = true;
 let franchise = createDefaultFranchise();
@@ -254,7 +472,58 @@ let pendingMove = { x: 0, y: 0 };
 let currentLevel = 0;
 let pendingUpgrade = false;
 let swipeStart = null;
+let creatorAttemptsRemaining = CREATOR_MAX_ATTEMPTS;
+let creatorReturnGameState = null;
+let gameLibraryOpen = true;
+let fieldGoalDeadline = 0;
+let fieldGoalPhase = "idle";
+let fieldGoalPhaseStarted = 0;
+let fieldGoalPower = 25;
+let fieldGoalAim = 0;
+let fieldGoalKickMade = false;
+let fieldGoalMode = "timing";
+let fieldGoalStaticAimChosen = false;
+let fieldGoalStaticPowerChosen = false;
+let tutorialIndex = 0;
 const SWIPE_THRESHOLD = 28;
+
+function currentGameMode() {
+  return GAME_MODES[activeGameId] || GAME_MODES.gridiron;
+}
+
+function currentTeams() {
+  return currentGameMode().teams;
+}
+
+function comparableTeamName(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function currentOpponentTeams() {
+  const teams = currentTeams();
+  const homeName = comparableTeamName(currentHomeTeam().name);
+  const opponents = teams.filter((team) => {
+    const acceptedNames = [team.name, ...(TEAM_NAME_ALIASES[team.name] || [])];
+    return !acceptedNames.some((name) => comparableTeamName(name) === homeName);
+  });
+  return opponents.length > 0 ? opponents : teams;
+}
+
+function isSoccerMode() {
+  return currentGameMode().kind === "soccer";
+}
+
+function isBasketballMode() {
+  return currentGameMode().kind === "basketball";
+}
+
+function usesRoundBall() {
+  return isSoccerMode() || isBasketballMode();
+}
 
 const UPGRADE_POOL = [
   {
@@ -371,10 +640,11 @@ function restartSeason() {
   const seasonStart = currentSeasonStartLevel();
   seasonCheckpointLevel = seasonStart;
   currentLevel = seasonStart;
-  franchise.player = resetPlayerToBaseline(franchise.player || createFranchisePlayer());
   franchise.wins = 0;
   franchise.losses = 0;
-  franchise.lastResult = `Season ${franchise.year} has been reset. Fans want a cleaner run this time.`;
+  franchise.lastResult = isSoccerMode()
+    ? `Season ${franchise.year} has been reset. Supporters want a stronger campaign this time.`
+    : `Season ${franchise.year} has been reset. Fans want a cleaner run this time.`;
   franchise.history = franchise.history.filter((entry) => entry.season !== franchise.year);
   for (const key of Object.keys(franchise.attemptsByGame)) {
     if (key.startsWith(`${franchise.year}-`)) {
@@ -392,18 +662,23 @@ function restartSeason() {
 }
 
 function createFranchiseFromForm() {
-  const teamName = teamNameInputEl.value.trim() || HOME_TEAM.name;
+  const defaultTeam = currentGameMode().homeTeam;
+  const teamName = teamNameInputEl.value.trim() || defaultTeam.name;
   const runnerName = runnerNameInputEl.value.trim() || PLAYER_NAME_POOL[0];
-  const primary = teamPrimaryInputEl.value || HOME_TEAM.primary;
-  const secondary = teamSecondaryInputEl.value || HOME_TEAM.secondary;
+  const primary = teamPrimaryInputEl.value || defaultTeam.primary;
+  const secondary = teamSecondaryInputEl.value || defaultTeam.secondary;
+  const appearance = readCharacterAppearanceInputs();
 
   franchise.setupComplete = true;
   franchise.team = { name: teamName, primary, secondary };
   franchise.player = {
     ...resetPlayerToBaseline(franchise.player || createFranchisePlayer(runnerName)),
     name: runnerName,
+    appearance,
   };
-  franchise.lastResult = "Franchise created. Time to start your career.";
+  franchise.lastResult = isSoccerMode()
+    ? "National team created. Time to start your campaign."
+    : "Franchise created. Time to start your career.";
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   saveFranchise();
@@ -441,6 +716,9 @@ function startLevel() {
   pendingUpgrade = false;
   hitStopUntil = 0;
   hitEffect = null;
+  fieldGoalPanelEl.hidden = true;
+  fieldGoalDeadline = 0;
+  fieldGoalPhase = "idle";
 
   gameState = "playing";
   hideOverlay();
@@ -448,12 +726,13 @@ function startLevel() {
 }
 
 function createDefaultFranchise(forcedName = null) {
+  const defaultTeam = currentGameMode().homeTeam;
   return {
     ...DEFAULT_FRANCHISE,
     history: [],
     attemptsByGame: {},
     seasonBests: {},
-    team: { ...HOME_TEAM },
+    team: { ...defaultTeam },
     player: createFranchisePlayer(forcedName),
     pendingUpgradeChoices: [],
     seasonCheckpointLevel: 0,
@@ -463,7 +742,8 @@ function createDefaultFranchise(forcedName = null) {
 
 function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
   const parsed = rawFranchise && typeof rawFranchise === "object" ? rawFranchise : {};
-  return {
+  const defaultTeam = currentGameMode().homeTeam;
+  const normalized = {
     ...DEFAULT_FRANCHISE,
     ...parsed,
     history: Array.isArray(parsed.history) ? parsed.history.slice(-24) : [],
@@ -474,12 +754,37 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
       ? parsed.seasonBests
       : {},
     setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
-    team: parsed.team || { ...HOME_TEAM },
-    player: parsed.player || createFranchisePlayer(),
+    team: parsed.team || { ...defaultTeam },
+    player: normalizeFranchisePlayer(parsed.player),
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
+    creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
+    tutorialComplete: Boolean(parsed.tutorialComplete),
     seasonCheckpointLevel: Number(parsed.seasonCheckpointLevel || 0),
     savedAt: Number(parsed.savedAt || Date.now()),
   };
+
+  if (isSoccerMode()) {
+    normalized.history = normalized.history.map((entry) => ({
+      ...entry,
+      opponent: LEGACY_SOCCER_OPPONENTS[entry.opponent] || entry.opponent,
+    }));
+    normalized.attemptsByGame = Object.entries(normalized.attemptsByGame).reduce((attempts, [key, value]) => {
+      const migratedKey = replaceLegacySoccerNames(key);
+      attempts[migratedKey] = (attempts[migratedKey] || 0) + (Number(value) || 0);
+      return attempts;
+    }, {});
+    normalized.lastResult = replaceLegacySoccerNames(normalized.lastResult);
+  }
+
+  return normalized;
+}
+
+function replaceLegacySoccerNames(value) {
+  let text = typeof value === "string" ? value : "";
+  Object.entries(LEGACY_SOCCER_OPPONENTS).forEach(([oldName, country]) => {
+    text = text.replaceAll(oldName, country);
+  });
+  return text;
 }
 
 function normalizeSlot(rawSlot) {
@@ -505,7 +810,7 @@ function emptySlots() {
 }
 
 function loadFranchiseSlots() {
-  const rawSlots = localStorage.getItem(franchiseSlotsStorageKey);
+  const rawSlots = localStorage.getItem(currentGameMode().slotsKey);
   if (rawSlots) {
     try {
       const parsedSlots = JSON.parse(rawSlots);
@@ -521,15 +826,19 @@ function loadFranchiseSlots() {
     }
   }
 
-  const legacyRaw = localStorage.getItem(franchiseStorageKey);
+  if (activeGameId !== "gridiron") {
+    return emptySlots();
+  }
+
+  const legacyRaw = localStorage.getItem(legacyFranchiseStorageKey);
   if (!legacyRaw) {
     return emptySlots();
   }
 
   try {
     const legacyFranchise = normalizeFranchise(JSON.parse(legacyRaw), true);
-    const legacyCheckpoint = Number(localStorage.getItem(seasonStorageKey) || legacyFranchise.seasonCheckpointLevel || 0);
-    const legacyBest = Number(localStorage.getItem(storageKey) || 0);
+    const legacyCheckpoint = Number(localStorage.getItem(legacySeasonStorageKey) || legacyFranchise.seasonCheckpointLevel || 0);
+    const legacyBest = Number(localStorage.getItem(legacyStorageKey) || 0);
     legacyFranchise.seasonCheckpointLevel = legacyCheckpoint;
     if (Object.keys(legacyFranchise.seasonBests).length === 0 && legacyBest > 0) {
       legacyFranchise.seasonBests.legacy = legacyBest;
@@ -541,7 +850,7 @@ function loadFranchiseSlots() {
       seasonCheckpointLevel: legacyCheckpoint,
       savedAt: Date.now(),
     };
-    localStorage.setItem(franchiseSlotsStorageKey, JSON.stringify(slots));
+    localStorage.setItem(currentGameMode().slotsKey, JSON.stringify(slots));
     return slots;
   } catch {
     return emptySlots();
@@ -549,7 +858,10 @@ function loadFranchiseSlots() {
 }
 
 function saveFranchiseSlots() {
-  localStorage.setItem(franchiseSlotsStorageKey, JSON.stringify(franchiseSlots));
+  if (!activeGameId) {
+    return;
+  }
+  localStorage.setItem(currentGameMode().slotsKey, JSON.stringify(franchiseSlots));
 }
 
 function saveFranchise() {
@@ -628,6 +940,88 @@ function eraseActiveSave() {
   updateHud();
 }
 
+function openCreatorTools() {
+  if (gameLibraryOpen) {
+    return;
+  }
+
+  if (activeSlotIndex === null || !franchise.setupComplete) {
+    window.alert("Choose or create a franchise before editing player levels.");
+    return;
+  }
+
+  creatorReturnGameState = gameState;
+  if (gameState === "playing") {
+    gameState = "creatorTools";
+  }
+  creatorAttemptsRemaining = CREATOR_MAX_ATTEMPTS;
+  creatorLoginFormEl.hidden = false;
+  creatorLevelsFormEl.hidden = true;
+  creatorUsernameInputEl.value = "";
+  creatorPasswordInputEl.value = "";
+  creatorMessageEl.textContent = "Enter creator access to edit player levels.";
+  updateCreatorAttemptsText();
+  creatorModalEl.hidden = false;
+  creatorUsernameInputEl.focus();
+}
+
+function closeCreatorTools() {
+  creatorModalEl.hidden = true;
+  if (gameState === "creatorTools") {
+    gameState = creatorReturnGameState || "menu";
+  }
+  creatorReturnGameState = null;
+}
+
+function updateCreatorAttemptsText() {
+  creatorAttemptsTextEl.textContent = `${creatorAttemptsRemaining} ${creatorAttemptsRemaining === 1 ? "Try" : "Tries"}`;
+}
+
+function unlockCreatorTools(event) {
+  event.preventDefault();
+  const username = creatorUsernameInputEl.value.trim();
+  const password = creatorPasswordInputEl.value;
+
+  if (username === CREATOR_USERNAME && password === CREATOR_PASSWORD) {
+    const runner = currentRunner();
+    franchise.creatorStaticKicking = true;
+    saveFranchise();
+    creatorSpeedInputEl.value = runner.speed;
+    creatorPowerInputEl.value = runner.power;
+    creatorCutInputEl.value = runner.cut;
+    creatorLoginFormEl.hidden = true;
+    creatorLevelsFormEl.hidden = false;
+    creatorAttemptsTextEl.textContent = "Unlocked";
+    creatorSpeedInputEl.focus();
+    return;
+  }
+
+  creatorAttemptsRemaining -= 1;
+  updateCreatorAttemptsText();
+  if (creatorAttemptsRemaining <= 0) {
+    closeCreatorTools();
+    return;
+  }
+
+  creatorMessageEl.textContent = `Access denied. ${creatorAttemptsRemaining} ${creatorAttemptsRemaining === 1 ? "try" : "tries"} left.`;
+  creatorPasswordInputEl.value = "";
+  creatorPasswordInputEl.focus();
+}
+
+function saveCreatorLevels(event) {
+  event.preventDefault();
+  const runner = currentRunner();
+  runner.speed = clamp(Math.round(Number(creatorSpeedInputEl.value) || runner.speed), 1, 100);
+  runner.power = clamp(Math.round(Number(creatorPowerInputEl.value) || runner.power), 1, 100);
+  runner.cut = clamp(Math.round(Number(creatorCutInputEl.value) || runner.cut), 1, 100);
+  franchise.lastResult = `Creator tools updated ${runner.name}'s levels.`;
+  saveFranchise();
+  renderRunnerCards();
+  renderFranchiseDashboard();
+  updateHud();
+  closeCreatorTools();
+}
+
 function renderFranchiseSlots() {
   franchiseSlotGridEl.innerHTML = "";
   franchiseSlots.forEach((slot, index) => {
@@ -637,6 +1031,8 @@ function renderFranchiseSlots() {
 
     if (slot) {
       const slotFranchise = normalizeFranchise(slot.franchise, true);
+      item.style.setProperty("--slot-team-primary", slotFranchise.team.primary);
+      item.style.setProperty("--slot-team-secondary", slotFranchise.team.secondary);
       const checkpoint = Number(slot.seasonCheckpointLevel ?? slotFranchise.seasonCheckpointLevel ?? 0);
       const week = (checkpoint % GAMES_PER_SEASON) + 1;
       const status = slotFranchise.setupComplete
@@ -644,7 +1040,7 @@ function renderFranchiseSlots() {
         : "Setup needed";
       item.innerHTML = `
         <div>
-          <strong>Slot ${index + 1}: ${slotFranchise.team.name}</strong>
+          <strong class="slot-team-name">Slot ${index + 1}: ${slotFranchise.team.name}</strong>
           <span>${status}</span>
         </div>
       `;
@@ -671,12 +1067,59 @@ function createFranchisePlayer(forcedName = null) {
   const name = forcedName || PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
   return {
     name,
-    archetype: "Franchise Back",
+    archetype: isSoccerMode()
+      ? "Featured Forward"
+      : isBasketballMode()
+        ? "Featured Guard"
+        : "Franchise Back",
     speed: 50,
     power: 50,
     cut: 50,
     speedBonus: 0,
     upgrades: 0,
+    appearance: { ...DEFAULT_PLAYER_APPEARANCE },
+  };
+}
+
+function normalizePlayerAppearance(rawAppearance) {
+  const appearance = rawAppearance && typeof rawAppearance === "object" ? rawAppearance : {};
+  const number = Number(appearance.number);
+  return {
+    skin: appearance.skin || DEFAULT_PLAYER_APPEARANCE.skin,
+    hair: appearance.hair || DEFAULT_PLAYER_APPEARANCE.hair,
+    number: clamp(
+      Math.round(Number.isFinite(number) ? number : DEFAULT_PLAYER_APPEARANCE.number),
+      0,
+      99
+    ),
+  };
+}
+
+function readCharacterAppearanceInputs() {
+  return normalizePlayerAppearance({
+    skin: playerSkinInputEl.value,
+    hair: playerHairInputEl.value,
+    number: playerNumberInputEl.value,
+  });
+}
+
+function updateCharacterPreview() {
+  const appearance = readCharacterAppearanceInputs();
+  const defaultTeam = currentGameMode().homeTeam;
+  characterPreviewEl.style.setProperty("--preview-primary", teamPrimaryInputEl.value || defaultTeam.primary);
+  characterPreviewEl.style.setProperty("--preview-secondary", teamSecondaryInputEl.value || defaultTeam.secondary);
+  characterPreviewEl.style.setProperty("--preview-skin", appearance.skin);
+  characterPreviewEl.style.setProperty("--preview-hair", appearance.hair);
+  characterNumberPreviewEl.textContent = String(appearance.number);
+}
+
+function normalizeFranchisePlayer(rawPlayer) {
+  const playerProfile = rawPlayer && typeof rawPlayer === "object" ? rawPlayer : {};
+  const baselinePlayer = createFranchisePlayer(playerProfile.name);
+  return {
+    ...baselinePlayer,
+    ...playerProfile,
+    appearance: normalizePlayerAppearance(playerProfile.appearance),
   };
 }
 
@@ -685,6 +1128,7 @@ function resetPlayerToBaseline(playerProfile) {
   return {
     ...baselinePlayer,
     name: playerProfile?.name || baselinePlayer.name,
+    appearance: normalizePlayerAppearance(playerProfile?.appearance),
   };
 }
 
@@ -693,7 +1137,7 @@ function currentRunner() {
 }
 
 function currentHomeTeam() {
-  return franchise.team || HOME_TEAM;
+  return franchise.team || currentGameMode().homeTeam;
 }
 
 function currentSeasonWeek() {
@@ -705,12 +1149,14 @@ function currentSeasonStartLevel() {
 }
 
 function currentGameKey() {
-  return `${franchise.year}-${currentSeasonWeek()}-${TEAMS[seasonCheckpointLevel % TEAMS.length].name}`;
+  const teams = currentOpponentTeams();
+  return `${franchise.year}-${currentSeasonWeek()}-${teams[seasonCheckpointLevel % teams.length].name}`;
 }
 
 function currentSeasonOpponents() {
   const start = currentSeasonStartLevel();
-  return Array.from({ length: GAMES_PER_SEASON }, (_, index) => TEAMS[(start + index) % TEAMS.length]);
+  const teams = currentOpponentTeams();
+  return Array.from({ length: GAMES_PER_SEASON }, (_, index) => teams[(start + index) % teams.length]);
 }
 
 function currentSeasonProgress() {
@@ -718,7 +1164,8 @@ function currentSeasonProgress() {
 }
 
 function currentFirstDownDistance() {
-  return CONFIG.downResetMilestone;
+  const reductions = Math.floor((currentSeasonWeek() - 1) / 4);
+  return Math.max(6, CONFIG.downResetMilestone - reductions);
 }
 
 function firstDownTargetDistance() {
@@ -862,7 +1309,8 @@ function currentStage() {
 }
 
 function currentTeam() {
-  return TEAMS[currentStage() % TEAMS.length];
+  const teams = currentOpponentTeams();
+  return teams[currentStage() % teams.length];
 }
 
 function columnWidth() {
@@ -927,6 +1375,8 @@ function update(time) {
       checkCollisions(time);
     }
     updateHud();
+  } else if (gameState === "fieldGoal") {
+    updateFieldGoalChallenge(time);
   }
 
   render(time);
@@ -1007,8 +1457,522 @@ function updateDistance() {
   }
 
   if (player.distance >= CONFIG.progressMilestone) {
-    completeLevel();
+    startFieldGoal();
   }
+}
+
+function kickChallengeCopy() {
+  if (isBasketballMode()) {
+    return {
+      staticInstructions: "Set both sliders inside the green zones, then shoot before the shot clock expires.",
+      staticButton: "Shoot Jumper",
+      timingInstructions: "Tap once to lock power, then tap again to lock aim and shoot.",
+      aimStatus: "Stop the aim needle inside the rim.",
+      launchStatus: "Shot is up!",
+      launchingButton: "Shooting...",
+      madeStatus: "Swish!",
+      missedStatus: "No Basket!",
+    };
+  }
+  if (isSoccerMode()) {
+    return {
+      staticInstructions: "Set both sliders inside the green zones, then shoot before time expires.",
+      staticButton: "Shoot",
+      timingInstructions: "Tap once to lock power, then tap again to lock aim and shoot.",
+      aimStatus: "Stop the aim needle inside the goal.",
+      launchStatus: "Shot is away!",
+      launchingButton: "Shooting...",
+      madeStatus: "Goal!",
+      missedStatus: "Missed!",
+    };
+  }
+  return {
+    staticInstructions: "Set both sliders inside the green zones, then kick before time expires.",
+    staticButton: "Kick Field Goal",
+    timingInstructions: "Tap once to lock power, then tap again to lock aim and launch the kick.",
+    aimStatus: "Stop the aim needle between the uprights.",
+    launchStatus: "Kick is away!",
+    launchingButton: "Kicking...",
+    madeStatus: "Good!",
+    missedStatus: "No Good!",
+  };
+}
+
+function startFieldGoal() {
+  const copy = kickChallengeCopy();
+  gameState = "fieldGoal";
+  fieldGoalPhaseStarted = performance.now();
+  fieldGoalDeadline = fieldGoalPhaseStarted + FIELD_GOAL_DURATION_MS;
+  fieldGoalMode = franchise.creatorStaticKicking ? "static" : "timing";
+  fieldGoalPhase = fieldGoalMode === "static" ? "static" : "power";
+  fieldGoalPower = 25;
+  fieldGoalAim = 0;
+  fieldGoalKickMade = false;
+  fieldGoalStatusEl.classList.remove("made", "missed");
+  fieldGoalPowerMeterEl.hidden = fieldGoalMode === "static";
+  fieldGoalAimMeterEl.hidden = fieldGoalMode === "static";
+  fieldGoalStaticControlsEl.hidden = fieldGoalMode !== "static";
+  fieldGoalPowerMeterEl.classList.toggle("active", fieldGoalMode === "timing");
+  fieldGoalPowerMeterEl.classList.remove("locked");
+  fieldGoalAimMeterEl.classList.remove("active", "locked");
+  fieldGoalAimMarkerEl.hidden = false;
+  kickChallengeKickerEl.textContent = isBasketballMode()
+    ? "Clutch Shot Challenge"
+    : isSoccerMode()
+      ? "Goal Challenge"
+      : "Field Goal Challenge";
+  kickChallengeTitleEl.textContent = isBasketballMode()
+    ? "Shot for the Win"
+    : isSoccerMode()
+      ? "Shot on Goal"
+      : "Field Goal";
+
+  if (fieldGoalMode === "static") {
+    fieldGoalAim = -25;
+    fieldGoalPower = 60;
+    fieldGoalStaticAimChosen = false;
+    fieldGoalStaticPowerChosen = false;
+    fieldGoalStaticAimInputEl.value = "-25";
+    fieldGoalStaticPowerInputEl.value = "60";
+    fieldGoalInstructionsEl.textContent = copy.staticInstructions;
+    fieldGoalStatusEl.textContent = `Adjust aim and power to unlock the ${usesRoundBall() ? "shot" : "kick"}.`;
+    fieldGoalActionButtonEl.textContent = copy.staticButton;
+    fieldGoalActionButtonEl.disabled = true;
+  } else {
+    fieldGoalInstructionsEl.textContent = copy.timingInstructions;
+    fieldGoalStatusEl.textContent = "Stop the power needle in the green.";
+    fieldGoalActionButtonEl.textContent = "Set Power";
+    fieldGoalActionButtonEl.disabled = false;
+  }
+  fieldGoalTimerEl.textContent = "30";
+  fieldGoalTimerEl.parentElement.classList.remove("urgent");
+  fieldGoalPanelEl.hidden = false;
+  resetFieldGoalBall();
+  updateFieldGoalReadout();
+}
+
+function updateFieldGoalChallenge(time) {
+  if (fieldGoalPhase === "flight" || fieldGoalPhase === "result") {
+    updateFieldGoalFlight(time);
+    return;
+  }
+
+  const remaining = Math.max(0, fieldGoalDeadline - time);
+  const seconds = Math.ceil(remaining / 1000);
+  fieldGoalTimerEl.textContent = String(seconds);
+  fieldGoalTimerEl.parentElement.classList.toggle("urgent", seconds <= 10);
+
+  if (remaining <= 0) {
+    missFieldGoal(usesRoundBall()
+      ? "The 30-second shot clock expired, so the attempt was an automatic miss."
+      : "The 30-second play clock expired, so the kick was an automatic miss.");
+    return;
+  }
+
+  if (fieldGoalPhase === "power") {
+    fieldGoalPower = 25 + triangleWave(time, fieldGoalPhaseStarted, FIELD_GOAL_POWER_SWEEP_MS) * 75;
+  } else if (fieldGoalPhase === "aim") {
+    fieldGoalAim = -65 + triangleWave(time, fieldGoalPhaseStarted, FIELD_GOAL_AIM_SWEEP_MS) * 130;
+  }
+  updateFieldGoalReadout();
+}
+
+function triangleWave(time, startedAt, duration) {
+  const phase = ((time - startedAt) % duration) / duration;
+  return phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+}
+
+function formatFieldGoalAim(value) {
+  if (value === 0) {
+    return "Center";
+  }
+  return `${Math.abs(value)} ${value < 0 ? "Left" : "Right"}`;
+}
+
+function updateFieldGoalReadout() {
+  const roundedPower = Math.round(fieldGoalPower);
+  const roundedAim = Math.round(fieldGoalAim);
+  const aimTrackPosition = ((fieldGoalAim + 65) / 130) * 100;
+  const sceneAimPosition = ((fieldGoalAim + 100) / 200) * 100;
+  fieldGoalPowerValueEl.textContent = `${roundedPower}%`;
+  fieldGoalAimValueEl.textContent = formatFieldGoalAim(roundedAim);
+  fieldGoalPowerNeedleEl.style.left = `${fieldGoalPower}%`;
+  fieldGoalAimNeedleEl.style.left = `${aimTrackPosition}%`;
+  fieldGoalSceneEl.style.setProperty("--aim-position", `${sceneAimPosition}%`);
+
+  if (fieldGoalMode === "static") {
+    fieldGoalStaticPowerValueEl.textContent = `${roundedPower}%`;
+    fieldGoalStaticAimValueEl.textContent = formatFieldGoalAim(roundedAim);
+    fieldGoalActionButtonEl.disabled = !(fieldGoalStaticAimChosen && fieldGoalStaticPowerChosen);
+  }
+}
+
+function handleFieldGoalAction() {
+  if (gameState !== "fieldGoal" || !["power", "aim", "static"].includes(fieldGoalPhase)) {
+    return;
+  }
+
+  if (fieldGoalPhase === "static") {
+    if (!fieldGoalStaticAimChosen || !fieldGoalStaticPowerChosen) {
+      return;
+    }
+    launchFieldGoal();
+    return;
+  }
+
+  if (fieldGoalPhase === "power") {
+    const copy = kickChallengeCopy();
+    fieldGoalPhase = "aim";
+    fieldGoalPhaseStarted = performance.now();
+    fieldGoalPowerMeterEl.classList.remove("active");
+    fieldGoalPowerMeterEl.classList.add("locked");
+    fieldGoalAimMeterEl.classList.add("active");
+    fieldGoalStatusEl.textContent = copy.aimStatus;
+    fieldGoalActionButtonEl.textContent = usesRoundBall() ? "Shoot" : "Kick";
+    return;
+  }
+
+  launchFieldGoal();
+}
+
+function launchFieldGoal() {
+  const copy = kickChallengeCopy();
+  fieldGoalPhase = "flight";
+  fieldGoalPhaseStarted = performance.now();
+  fieldGoalAimMeterEl.classList.remove("active");
+  fieldGoalAimMeterEl.classList.add("locked");
+  fieldGoalKickMade =
+    Math.abs(fieldGoalAim) <= FIELD_GOAL_AIM_LIMIT &&
+    fieldGoalPower >= FIELD_GOAL_POWER_MIN &&
+    (fieldGoalMode !== "static" || fieldGoalPower <= FIELD_GOAL_STATIC_POWER_MAX);
+  fieldGoalAimMarkerEl.hidden = true;
+  fieldGoalStatusEl.textContent = copy.launchStatus;
+  fieldGoalActionButtonEl.textContent = copy.launchingButton;
+  fieldGoalActionButtonEl.disabled = true;
+  fieldGoalBallEl.classList.add("in-flight");
+  startSoccerKeeperDive();
+}
+
+function startSoccerKeeperDive() {
+  if (!isSoccerMode()) {
+    return;
+  }
+
+  const aimDeadZone = 6;
+  const diveRight = fieldGoalAim < -aimDeadZone ||
+    (Math.abs(fieldGoalAim) <= aimDeadZone && Math.round(fieldGoalPower) % 2 === 0);
+  soccerKeeperEl.style.setProperty("--keeper-dive-x", diveRight ? "82px" : "-82px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-mid-x", diveRight ? "20px" : "-20px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-y", fieldGoalPower >= 70 ? "-18px" : "-8px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-rotate", diveRight ? "72deg" : "-72deg");
+  soccerKeeperEl.style.setProperty("--keeper-dive-mid-rotate", diveRight ? "22deg" : "-22deg");
+  soccerKeeperEl.classList.add("diving");
+}
+
+function updateFieldGoalFlight(time) {
+  if (fieldGoalPhase === "result") {
+    if (time - fieldGoalPhaseStarted >= FIELD_GOAL_RESULT_MS) {
+      fieldGoalPanelEl.hidden = true;
+      if (fieldGoalKickMade) {
+        completeLevel();
+      } else {
+        const attemptName = usesRoundBall() ? "shot" : "kick";
+        const missReason = Math.abs(fieldGoalAim) > FIELD_GOAL_AIM_LIMIT
+          ? `The ${attemptName} went wide ${fieldGoalAim < 0 ? "left" : "right"}.`
+          : fieldGoalPower < FIELD_GOAL_POWER_MIN
+            ? `The ${attemptName} came up short.`
+            : `The ${attemptName} had too much power.`;
+        missFieldGoal(missReason);
+      }
+    }
+    return;
+  }
+
+  const progress = clamp((time - fieldGoalPhaseStarted) / FIELD_GOAL_FLIGHT_MS, 0, 1);
+  const eased = 1 - (1 - progress) ** 2;
+  const targetLeft = 50 + fieldGoalAim * (isBasketballMode() ? 0.32 : isSoccerMode() ? 0.45 : 0.5);
+  const heightGain = fieldGoalPower >= FIELD_GOAL_POWER_MIN
+    ? (isBasketballMode() ? 35 : isSoccerMode() ? 44 : 74)
+    : Math.min(usesRoundBall() ? 24 : 27, fieldGoalPower * 0.45);
+  const launchShapeProgress = clamp(progress / 0.14, 0, 1);
+  const distanceScale = 1 - progress * 0.32;
+  const ballScaleX = (0.72 + launchShapeProgress * 0.28) * distanceScale;
+  const ballScaleY = (1.18 - launchShapeProgress * 0.18) * distanceScale;
+  fieldGoalBallEl.style.left = `${50 + (targetLeft - 50) * eased}%`;
+  fieldGoalBallEl.style.bottom = `${-18 + Math.sin(progress * Math.PI * 0.5) * (heightGain + 26)}%`;
+  fieldGoalBallEl.style.scale = isBasketballMode()
+    ? `${(0.72 + launchShapeProgress * 0.28) * distanceScale}`
+    : `${ballScaleX} ${ballScaleY}`;
+  const initialRotation = usesRoundBall() ? 0 : -15;
+  const flightRotation = isBasketballMode() ? 300 : isSoccerMode() ? 180 : 260;
+  fieldGoalBallEl.style.rotate = `${initialRotation + progress * flightRotation}deg`;
+
+  if (progress >= 1) {
+    fieldGoalPhase = "result";
+    fieldGoalPhaseStarted = time;
+    const copy = kickChallengeCopy();
+    fieldGoalStatusEl.textContent = fieldGoalKickMade ? copy.madeStatus : copy.missedStatus;
+    fieldGoalStatusEl.classList.add(fieldGoalKickMade ? "made" : "missed");
+  }
+}
+
+function resetFieldGoalBall() {
+  fieldGoalBallEl.classList.remove("in-flight");
+  fieldGoalBallEl.style.left = "50%";
+  fieldGoalBallEl.style.bottom = "-18%";
+  fieldGoalBallEl.style.scale = isBasketballMode() ? "0.72" : "0.72 1.18";
+  fieldGoalBallEl.style.rotate = usesRoundBall() ? "0deg" : "-15deg";
+  soccerKeeperEl.classList.remove("diving");
+  soccerKeeperEl.style.setProperty("--keeper-dive-x", "0px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-mid-x", "0px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-y", "0px");
+  soccerKeeperEl.style.setProperty("--keeper-dive-rotate", "0deg");
+  soccerKeeperEl.style.setProperty("--keeper-dive-mid-rotate", "0deg");
+}
+
+function shouldShowTutorial() {
+  return !franchise.tutorialComplete && seasonCheckpointLevel === 0;
+}
+
+function tutorialSlides() {
+  const soccer = isSoccerMode();
+  const basketball = isBasketballMode();
+  const teams = currentOpponentTeams();
+  const movementText = usesTouchControls()
+    ? "Swipe up, down, left, or right anywhere on the play screen to move one row at a time."
+    : "Use WASD or the arrow keys to move one row at a time in any direction.";
+  const fieldGoalText = franchise.creatorStaticKicking
+    ? (usesRoundBall()
+      ? "This save uses static shooting: adjust both sliders into the green zones, then press Shoot."
+      : "This save uses static kicking: adjust both sliders into the green zones, then press Kick Field Goal.")
+    : (usesRoundBall()
+      ? "This save uses arcade shooting: stop the power meter, then stop the aim needle to shoot."
+      : "This save uses arcade kicking: stop the power meter, then stop the aim needle to launch the ball.");
+  const athlete = soccer ? "forward" : basketball ? "guard" : "runner";
+  const firstSlide = basketball
+    ? {
+      badge: "Drive",
+      title: "Attack the Court",
+      items: [
+        "Advance 50 feet to reach the paint and unlock a shot for the win.",
+        "Dodge on-ball defenders and the striped out-of-bounds hazard tiles.",
+        "The camera scrolls forward as your guard reaches new rows.",
+      ],
+    }
+    : soccer
+      ? {
+        badge: "Dribble",
+        title: "Attack the Pitch",
+        items: [
+          "Advance 50 meters to reach the penalty area and unlock a shot on goal.",
+          "Dodge pressing defenders and the striped out-of-play hazard tiles.",
+          "The camera scrolls forward as your attacker reaches new rows.",
+        ],
+      }
+      : {
+        badge: "Run",
+        title: "Run the Field",
+        items: [
+          "Advance 50 yards to reach the end zone and unlock the field-goal attempt.",
+          "Dodge moving defenders and the striped out-of-bounds hazard tiles.",
+          "The camera scrolls forward as your runner reaches new rows.",
+        ],
+      };
+  const possessionSlide = basketball
+    ? {
+      badge: "Possession",
+      title: "Protect Four Possessions",
+      text: "You have four possessions to reach the paint.",
+      items: [
+        "A steal costs one possession and returns you to the nearest row that never contains defenders.",
+        "The blue line marks the checkpoint start; your next target is tracked in the sidebar.",
+        "Crossing the target before a steal refreshes all four possessions.",
+        "The opening checkpoint is 10 feet and becomes slightly shorter every four games.",
+      ],
+    }
+    : soccer
+      ? {
+        badge: "Possession",
+        title: "Protect Four Possessions",
+        text: "You have four possessions to reach the penalty area.",
+        items: [
+          "A tackle costs one possession and returns you to the nearest row that never contains defenders.",
+          "The blue line marks the checkpoint start; your next target is tracked in the sidebar.",
+          "Crossing the target before a tackle refreshes all four possessions.",
+          "The opening checkpoint is 10 meters and becomes slightly shorter every four games.",
+        ],
+      }
+      : {
+        badge: "Downs",
+        title: "Protect Four Downs",
+        text: "You have four downs to survive each drive.",
+        items: [
+          "A tackle costs one down and returns you to the nearest row that never contains defenders.",
+          "The blue line marks the series start; the yellow line is the first-down target.",
+          "A first down is awarded only when you are tackled beyond the yellow line.",
+          "The opening target is 10 yards and becomes slightly shorter every four games.",
+        ],
+      };
+
+  return [
+    {
+      badge: firstSlide.badge,
+      title: firstSlide.title,
+      text: movementText,
+      items: firstSlide.items,
+    },
+    possessionSlide,
+    {
+      badge: "Power",
+      title: `Build Your ${athlete[0].toUpperCase()}${athlete.slice(1)}`,
+      text: `Your featured ${athlete} has Speed, Power, and Cut ratings.`,
+      items: [
+        `Speed and Cut upgrades can add bonus movement burst to your ${athlete}.`,
+        basketball
+          ? "Power controls strong finishes: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
+          : soccer
+            ? "Power controls broken challenges: 50 Power gives a 10% chance and 100 Power gives an 80% chance."
+            : "Power controls stiff-arms: 50 Power gives a 10% chance and 100 Power gives an 80% chance.",
+        `Winning a game earns one postgame upgrade choice for your ${athlete}.`,
+      ],
+    },
+    {
+      badge: usesRoundBall() ? "Shoot" : "Kick",
+      title: basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : "Finish the Game",
+      text: fieldGoalText,
+      items: [
+        "You have 30 seconds to choose power and aim before an automatic miss.",
+        basketball
+          ? "Making the basket completes the game and unlocks the next NBA opponent."
+          : soccer
+            ? "Scoring the goal completes the match and unlocks the next opponent."
+            : "A made field goal completes the matchup and unlocks the next opponent.",
+        `A miss restarts the same ${soccer ? "match" : "game"} from the beginning and adds another attempt.`,
+      ],
+    },
+    {
+      badge: "Season",
+      title: "Chase the Title",
+      text: `Your ${currentHomeTeam().name} play an 18-game season, beginning against ${teams[0].name}.`,
+      items: [
+        "Finishing in 10 attempts or fewer records a win; taking more than 10 records a loss.",
+        "The schedule shows the previous two, current, and next two matchups.",
+        `Progress is saved to the active ${soccer ? "national-team" : "franchise"} slot after every game.`,
+        "Restart Season resets that season's record and progress but keeps player upgrades.",
+      ],
+    },
+  ];
+}
+
+function openTutorial() {
+  gameState = "tutorial";
+  tutorialIndex = 0;
+  tutorialPanelEl.hidden = false;
+  renderTutorial();
+}
+
+function renderTutorial() {
+  const slides = tutorialSlides();
+  const slide = slides[tutorialIndex];
+  tutorialStepEl.textContent = `Lesson ${tutorialIndex + 1} / ${slides.length}`;
+  tutorialBadgeEl.textContent = slide.badge;
+  tutorialTitleEl.textContent = slide.title;
+  tutorialTextEl.textContent = slide.text;
+  tutorialListEl.innerHTML = "";
+  slide.items.forEach((itemText) => {
+    const item = document.createElement("li");
+    item.textContent = itemText;
+    tutorialListEl.appendChild(item);
+  });
+
+  tutorialDotsEl.innerHTML = "";
+  slides.forEach((_, index) => {
+    const dot = document.createElement("span");
+    dot.className = `tutorial-dot${index === tutorialIndex ? " active" : ""}`;
+    dot.setAttribute("aria-hidden", "true");
+    tutorialDotsEl.appendChild(dot);
+  });
+
+  tutorialBackButtonEl.disabled = tutorialIndex === 0;
+  tutorialNextButtonEl.textContent = tutorialIndex === slides.length - 1 ? "Play Week 1" : "Next";
+}
+
+function showPreviousTutorialSlide() {
+  if (tutorialIndex <= 0) {
+    return;
+  }
+  tutorialIndex -= 1;
+  renderTutorial();
+}
+
+function showNextTutorialSlide() {
+  const slides = tutorialSlides();
+  if (tutorialIndex < slides.length - 1) {
+    tutorialIndex += 1;
+    renderTutorial();
+    return;
+  }
+
+  franchise.tutorialComplete = true;
+  saveFranchise();
+  tutorialPanelEl.hidden = true;
+  resetGame();
+}
+
+function chooseStaticFieldGoalAim() {
+  if (gameState !== "fieldGoal" || fieldGoalMode !== "static") {
+    return;
+  }
+  fieldGoalAim = Number(fieldGoalStaticAimInputEl.value);
+  fieldGoalStaticAimChosen = true;
+  updateFieldGoalReadout();
+  updateStaticFieldGoalStatus();
+}
+
+function chooseStaticFieldGoalPower() {
+  if (gameState !== "fieldGoal" || fieldGoalMode !== "static") {
+    return;
+  }
+  fieldGoalPower = Number(fieldGoalStaticPowerInputEl.value);
+  fieldGoalStaticPowerChosen = true;
+  updateFieldGoalReadout();
+  updateStaticFieldGoalStatus();
+}
+
+function updateStaticFieldGoalStatus() {
+  if (fieldGoalStaticAimChosen && fieldGoalStaticPowerChosen) {
+    fieldGoalStatusEl.textContent = `Aim and power are set. ${usesRoundBall() ? "Shoot" : "Kick"} when ready.`;
+  } else if (fieldGoalStaticAimChosen) {
+    fieldGoalStatusEl.textContent = "Aim set. Choose your power.";
+  } else if (fieldGoalStaticPowerChosen) {
+    fieldGoalStatusEl.textContent = "Power set. Choose your aim.";
+  }
+}
+
+function missFieldGoal(reason) {
+  if (gameState !== "fieldGoal") {
+    return;
+  }
+  gameState = "gameover";
+  fieldGoalPanelEl.hidden = true;
+  fieldGoalDeadline = 0;
+  franchise.fans = clamp(franchise.fans - 4, 15, 99);
+  franchise.lastResult = isBasketballMode()
+    ? `Missed the deciding basket against the ${currentTeam().name}.`
+    : isSoccerMode()
+      ? `Missed the deciding shot against ${currentTeam().name}.`
+      : `Missed field goal against the ${currentTeam().name}.`;
+  saveFranchise();
+  overlayTitleEl.textContent = isBasketballMode()
+    ? "Shot Missed"
+    : isSoccerMode()
+      ? "Shot Missed"
+      : "Field Goal Missed";
+  overlayTextEl.textContent = `${reason} Restart week ${currentSeasonWeek()} from the beginning and try again.`;
+  startButton.textContent = "Try Again";
+  homepagePanelEl.hidden = false;
+  renderFranchiseDashboard();
+  showOverlay();
 }
 
 function checkCollisions(time) {
@@ -1019,7 +1983,7 @@ function checkCollisions(time) {
   }
 
   if (lane.type === "sideline" && lane.unsafeColumns.includes(currentPlayerColumn())) {
-    registerHit(time, "Out of bounds");
+    registerHit(time, isSoccerMode() ? "Ball out of play" : "Out of bounds");
     return;
   }
 
@@ -1051,7 +2015,7 @@ function checkCollisions(time) {
         hitEffect = null;
         return;
       }
-      registerHit(time, "Big hit", {
+      registerHit(time, isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : "Big hit", {
         impactX: player.worldX,
         impactY: screenYFromWorldRow(player.worldRow),
         defenderX: x + 5,
@@ -1136,10 +2100,16 @@ function rowIsSafeForReset(row) {
 function gameOver(reason) {
   gameState = "gameover";
   franchise.fans = clamp(franchise.fans - 4, 15, 99);
-  franchise.lastResult = `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
+  franchise.lastResult = isSoccerMode()
+    ? `${reason} against ${currentTeam().name}. Supporters want a better response.`
+    : `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
   saveFranchise();
-  overlayTitleEl.textContent = "Turnover on Downs";
-  overlayTextEl.textContent = `${reason}. You reached ${player.distance} yards in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`;
+  overlayTitleEl.textContent = usesRoundBall() ? "Possession Lost" : "Turnover on Downs";
+  overlayTextEl.textContent = isBasketballMode()
+    ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
+    : isSoccerMode()
+      ? `${reason}. You reached ${player.distance} meters in week ${currentSeasonWeek()}. Reset and try ${currentTeam().name} again.`
+      : `${reason}. You reached ${player.distance} yards in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`;
   startButton.textContent = "Try Again";
   showOverlay();
 }
@@ -1183,15 +2153,28 @@ function completeLevel() {
     franchise.fans = clamp(franchise.fans + 8, 15, 99);
   } else {
     franchise.lastResult = result === "W"
-      ? `Huge touchdown win over the ${beatenTeam.name}. Fans are roaring.`
-      : `You escaped the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
+      ? (isBasketballMode()
+        ? `Huge clutch-shot win over the ${beatenTeam.name}. Fans are roaring.`
+        : isSoccerMode()
+          ? `Huge goal-scoring win over ${beatenTeam.name}. Supporters are roaring.`
+          : `Huge field-goal win over the ${beatenTeam.name}. Fans are roaring.`)
+      : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
   }
   saveFranchise();
-  const nextTeam = TEAMS[seasonCheckpointLevel % TEAMS.length];
-  overlayTitleEl.textContent = "Touchdown";
+  const teams = currentOpponentTeams();
+  const nextTeam = teams[seasonCheckpointLevel % teams.length];
+  overlayTitleEl.textContent = isBasketballMode() ? "Swish!" : isSoccerMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
-    ? `You beat the ${beatenTeam.name} and closed out the season. Season ${franchise.year} is ready to begin.`
-    : `You hit the end zone and beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`;
+    ? (isBasketballMode()
+      ? `You hit the winner, beat the ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`
+      : isSoccerMode()
+        ? `You scored, beat ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`
+        : `You made the kick, beat the ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`)
+    : (isBasketballMode()
+      ? `The jumper drops and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
+      : isSoccerMode()
+        ? `The shot is in and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
+        : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
   pendingUpgrade = result === "W";
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
   saveFranchise();
@@ -1209,8 +2192,113 @@ function advanceLevel() {
 }
 
 function syncFranchiseSetupState() {
+  document.body.classList.toggle("game-library-open", gameLibraryOpen);
   document.body.classList.toggle("franchise-slot-selecting", slotSelectOpen);
   document.body.classList.toggle("franchise-setup-pending", !slotSelectOpen && !franchise.setupComplete);
+  gameLibraryScreenEl.hidden = !gameLibraryOpen;
+  creatorTriggerEl.disabled = gameLibraryOpen;
+  creatorTriggerEl.setAttribute("aria-hidden", String(gameLibraryOpen));
+}
+
+function applyGameModeUi() {
+  const mode = currentGameMode();
+  const soccer = isSoccerMode();
+  const basketball = isBasketballMode();
+  document.body.dataset.game = mode.kind;
+  canvas.setAttribute("aria-label", `${mode.title} game`);
+  distanceLabelEl.textContent = mode.distanceLabel;
+  downsLabelEl.textContent = mode.chancesLabel;
+  keyboardInstructionsEl.textContent = basketball
+    ? "Use WASD or the arrow keys to dribble up the court and dodge on-ball defenders."
+    : soccer
+      ? "Use WASD or the arrow keys to dribble up the pitch and dodge pressing defenders."
+      : "Use WASD or the arrow keys to move the ball carrier up the field and dodge defenders.";
+  touchInstructionsEl.textContent = basketball
+    ? "Swipe anywhere on the screen to dribble up the court and dodge on-ball defenders."
+    : soccer
+      ? "Swipe anywhere on the screen to dribble up the pitch and dodge pressing defenders."
+      : "Swipe anywhere on the screen to move the ball carrier up the field and dodge defenders.";
+  progressInstructionsEl.textContent = basketball
+    ? "Advance 50 feet to reach the paint, then hit a clutch basket to win. Steals cost one possession."
+    : soccer
+      ? "Advance 50 meters to reach the penalty area, then score a goal to win the match. Tackles cost one possession."
+      : "Reach the end zone at 50 yards to move to the next NFL matchup. Earn first downs after tackles beyond the marker.";
+  kickChallengeKickerEl.textContent = basketball ? "Clutch Shot Challenge" : soccer ? "Goal Challenge" : "Field Goal Challenge";
+  kickChallengeTitleEl.textContent = basketball ? "Shot for the Win" : soccer ? "Shot on Goal" : "Field Goal";
+  creatorKickModeTextEl.textContent = basketball
+    ? "Set levels from 1 to 100. Static jump-shot sliders are enabled for this save."
+    : soccer
+      ? "Set levels from 1 to 100. Static shot sliders are enabled for this save."
+      : "Set levels from 1 to 100. Static field-goal sliders are enabled for this save.";
+  loadCareerTitleEl.textContent = soccer ? "Load National Team" : "Load Franchise";
+  careerHubLabelEl.textContent = soccer ? "National Team Hub" : "Franchise Hub";
+  createCareerTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
+  createFranchiseButton.textContent = soccer ? "Create National Team" : "Create Franchise";
+  playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : "Runner Name";
+}
+
+function updateGameLibrarySelection() {
+  const gameButtons = {
+    gridiron: gridironDashButtonEl,
+    soccer: pitchDashButtonEl,
+    basketball: hoopHustleButtonEl,
+  };
+
+  Object.entries(gameButtons).forEach(([gameId, button]) => {
+    const selected = activeGameId === gameId;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+}
+
+function selectArcadeGame(gameId) {
+  if (activeSlotIndex !== null) {
+    saveFranchise();
+  }
+
+  activeGameId = gameId;
+  franchiseSlots = loadFranchiseSlots();
+  activeSlotIndex = null;
+  slotSelectOpen = true;
+  franchise = createDefaultFranchise();
+  bestDistance = 0;
+  seasonCheckpointLevel = 0;
+  currentLevel = 0;
+  pendingUpgrade = false;
+  gameState = "menu";
+  fieldGoalPanelEl.hidden = true;
+  tutorialPanelEl.hidden = true;
+  gameLibraryOpen = false;
+  updateGameLibrarySelection();
+  applyGameModeUi();
+  syncFranchiseSetupState();
+  showOverlay();
+  updateStartOverlay();
+  updateHud();
+}
+
+function openGridironDash() {
+  selectArcadeGame("gridiron");
+}
+
+function openPitchDash() {
+  selectArcadeGame("soccer");
+}
+
+function openHoopHustle() {
+  selectArcadeGame("basketball");
+}
+
+function openGameLibrary() {
+  if (activeSlotIndex !== null) {
+    saveFranchise();
+  }
+  gameLibraryOpen = true;
+  gameState = "menu";
+  fieldGoalPanelEl.hidden = true;
+  tutorialPanelEl.hidden = true;
+  updateGameLibrarySelection();
+  syncFranchiseSetupState();
 }
 
 function updateStartOverlay() {
@@ -1227,6 +2315,10 @@ function updateStartOverlay() {
   }
 
   const homeTeam = currentHomeTeam();
+  applyHomeTeamPalette(homeTeam);
+  const teams = currentOpponentTeams();
+  const soccer = isSoccerMode();
+  const basketball = isBasketballMode();
   const setupReady = franchise.setupComplete;
   loadSavePanelEl.hidden = true;
   homepageHeroEl.hidden = !setupReady;
@@ -1234,27 +2326,41 @@ function updateStartOverlay() {
   franchiseMainContentEl.hidden = !setupReady;
   startButton.hidden = !setupReady;
   homeTeamNameEl.textContent = homeTeam.name;
-  nextOpponentNameEl.textContent = TEAMS[seasonCheckpointLevel % TEAMS.length].name;
+  nextOpponentNameEl.textContent = teams[seasonCheckpointLevel % teams.length].name;
   teamNameInputEl.value = homeTeam.name;
-  runnerNameInputEl.value = currentRunner().name;
+  const runner = currentRunner();
+  const appearance = normalizePlayerAppearance(runner.appearance);
+  runnerNameInputEl.value = runner.name;
   teamPrimaryInputEl.value = homeTeam.primary;
   teamSecondaryInputEl.value = homeTeam.secondary;
+  playerSkinInputEl.value = appearance.skin;
+  playerHairInputEl.value = appearance.hair;
+  playerNumberInputEl.value = String(appearance.number);
+  updateCharacterPreview();
   renderRunnerCards();
   renderUpgradeOptions();
   renderFranchiseDashboard();
 
   if (!franchise.setupComplete) {
-    overlayTitleEl.textContent = "Create Franchise";
-    overlayTextEl.textContent = "Name your team, build your runner, and set your colors before kickoff.";
+    overlayTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
+    overlayTextEl.textContent = basketball
+      ? "Name your franchise, design your guard, and set your uniform colors before tipoff."
+      : soccer
+        ? "Name your national team, design your forward, and set your kit colors before the opening match."
+        : "Name your team, design your runner, and set your colors before kickoff.";
     startButton.textContent = "Start Career";
   } else if (seasonCheckpointLevel > 0) {
     overlayTitleEl.textContent = "Resume Season";
-    overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against the ${TEAMS[seasonCheckpointLevel % TEAMS.length].name}.`;
-    startButton.textContent = "Resume Run";
+    overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${teams[seasonCheckpointLevel % teams.length].name}.`;
+    startButton.textContent = basketball ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
-    overlayTitleEl.textContent = "Kickoff";
-    overlayTextEl.textContent = "Set your runners, build fan support, and start your first season.";
-    startButton.textContent = "Start Run";
+    overlayTitleEl.textContent = basketball ? "Tipoff" : soccer ? "Opening Match" : "Kickoff";
+    overlayTextEl.textContent = basketball
+      ? "Set your guard, build fan support, and begin your first season."
+      : soccer
+        ? "Set your forward, build supporter energy, and begin your first season."
+        : "Set your runner, build fan support, and start your first season.";
+    startButton.textContent = basketball ? "Start Game" : soccer ? "Start Match" : "Start Run";
   }
 }
 
@@ -1272,12 +2378,18 @@ function updateHud() {
   downsEl.textContent = player.downsLeft;
   attemptsEl.textContent = attempts;
   stageEl.textContent = `S${franchise.year} W${currentSeasonWeek()} - ${runner.name}`;
-  milestoneEl.textContent = `${currentSeriesYards()}/${currentFirstDownDistance()} 1ST`;
+  milestoneEl.textContent = usesRoundBall()
+    ? `${currentSeriesYards()}/${currentFirstDownDistance()} CHECK`
+    : `${currentSeriesYards()}/${currentFirstDownDistance()} 1ST`;
 
   document.documentElement.style.setProperty("--team-primary", team.primary);
   document.documentElement.style.setProperty("--team-secondary", team.secondary);
   document.documentElement.style.setProperty("--team-accent", team.accent);
   document.documentElement.style.setProperty("--team-text", team.uiText);
+  applyHomeTeamPalette(homeTeam);
+}
+
+function applyHomeTeamPalette(homeTeam = currentHomeTeam()) {
   document.documentElement.style.setProperty("--home-team-primary", homeTeam.primary);
   document.documentElement.style.setProperty("--home-team-secondary", homeTeam.secondary);
 }
@@ -1331,7 +2443,8 @@ function renderFranchiseDashboard() {
 }
 
 function runnerFeatureSummary(runner) {
-  return `${runner.name} is your lone featured back. SPD ${runner.speed}, PWR ${runner.power}, CUT ${runner.cut}, upgrades ${runner.upgrades}.`;
+  const role = isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : "back";
+  return `${runner.name} is your lone featured ${role}. SPD ${runner.speed}, PWR ${runner.power}, CUT ${runner.cut}, upgrades ${runner.upgrades}.`;
 }
 
 function renderUpgradeOptions() {
@@ -1412,6 +2525,11 @@ function drawHitEffect(time) {
 }
 
 function drawStadiumBackdrop() {
+  if (isBasketballMode()) {
+    drawBasketballArenaBackdrop();
+    return;
+  }
+
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
 
@@ -1453,6 +2571,48 @@ function drawStadiumBackdrop() {
   ctx.fillStyle = PALETTE.outline;
   ctx.fillRect(34, 0, 4, CONFIG.height);
   ctx.fillRect(CONFIG.width - 38, 0, 4, CONFIG.height);
+}
+
+function drawBasketballArenaBackdrop() {
+  const courtLeft = 38;
+  const courtRight = CONFIG.width - 38;
+
+  ctx.fillStyle = "#111a28";
+  ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+  ctx.fillStyle = "#263951";
+  ctx.fillRect(0, 0, CONFIG.width, 70);
+  ctx.fillStyle = "#f5e4aa";
+  for (let x = 18; x < CONFIG.width; x += 58) {
+    ctx.fillRect(x, 14, 34, 7);
+    ctx.fillRect(x + 8, 27, 18, 3);
+  }
+
+  drawGrandstandBand(70, 22, "#40526a", PALETTE.crowdMid, 15);
+  drawGrandstandBand(92, 24, "#28384d", PALETTE.crowdDark, 17);
+  ctx.fillStyle = "#0b111b";
+  ctx.fillRect(0, 116, CONFIG.width, 10);
+
+  ctx.fillStyle = "#202d3b";
+  ctx.fillRect(0, 126, courtLeft, CONFIG.height - 126);
+  ctx.fillRect(courtRight, 126, CONFIG.width - courtRight, CONFIG.height - 126);
+  ctx.fillStyle = "#ba7f3e";
+  ctx.fillRect(courtLeft, 116, courtRight - courtLeft, 10);
+  ctx.fillRect(courtLeft, CONFIG.height - 56, courtRight - courtLeft, 10);
+
+  for (let side = 0; side < 2; side += 1) {
+    const x = side === 0 ? 3 : CONFIG.width - 35;
+    for (let y = 134; y < CONFIG.height - 58; y += 20) {
+      const colorIndex = Math.floor(y / 20) % 3;
+      ctx.fillStyle = colorIndex === 0 ? "#d9a33e" : colorIndex === 1 ? "#b53b45" : "#6d8aab";
+      ctx.fillRect(x + 4, y, 28, 9);
+      ctx.fillStyle = "#101822";
+      ctx.fillRect(x + 2, y + 10, 32, 4);
+    }
+  }
+
+  ctx.fillStyle = PALETTE.outline;
+  ctx.fillRect(courtLeft - 4, 0, 4, CONFIG.height);
+  ctx.fillRect(courtRight, 0, 4, CONFIG.height);
 }
 
 function drawGrandstandBand(y, height, seatColor, crowdColor, step) {
@@ -1553,7 +2713,9 @@ function drawField(time) {
 
 function drawChainMarkers() {
   drawChainLine(player.firstDownLineRow, "#2f8fff");
-  drawChainLine(player.firstDownTargetRow, "#f1d24b");
+  if (!usesRoundBall()) {
+    drawChainLine(player.firstDownTargetRow, "#f1d24b");
+  }
 }
 
 function drawChainLine(worldRow, color) {
@@ -1571,6 +2733,16 @@ function drawChainLine(worldRow, color) {
 }
 
 function drawLaneBase(y, row, team, lane) {
+  if (isBasketballMode()) {
+    drawBasketballLaneBase(y, row, team, lane);
+    return;
+  }
+
+  if (isSoccerMode()) {
+    drawSoccerLaneBase(y, row, team, lane);
+    return;
+  }
+
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
   const fieldWidth = fieldRight - fieldLeft;
@@ -1622,6 +2794,112 @@ function drawLaneBase(y, row, team, lane) {
   for (let x = fieldLeft + 14; x < fieldRight - 14; x += 30) {
     ctx.fillStyle = PALETTE.turfShadow;
     ctx.fillRect(x, y + CONFIG.laneHeight - 7, 10, 3);
+  }
+}
+
+function drawBasketballLaneBase(y, row, team, lane) {
+  const courtLeft = 38;
+  const courtRight = CONFIG.width - 38;
+  const courtWidth = courtRight - courtLeft;
+  const isPaint = lane && lane.type === "endzone";
+  const wood = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
+
+  ctx.fillStyle = "#5d3825";
+  ctx.fillRect(courtLeft, y, 8, CONFIG.laneHeight);
+  ctx.fillRect(courtRight - 8, y, 8, CONFIG.laneHeight);
+  ctx.fillStyle = wood;
+  ctx.fillRect(courtLeft + 8, y, courtWidth - 16, CONFIG.laneHeight);
+
+  ctx.fillStyle = "rgba(78, 43, 24, 0.2)";
+  for (let x = courtLeft + 18 + (row % 2) * 18; x < courtRight - 18; x += 38) {
+    ctx.fillRect(x, y, 2, CONFIG.laneHeight);
+  }
+  ctx.fillStyle = "rgba(255, 235, 191, 0.12)";
+  ctx.fillRect(courtLeft + 10, y + 5, courtWidth - 20, 3);
+
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(courtLeft + 10, y, 4, CONFIG.laneHeight);
+  ctx.fillRect(courtRight - 14, y, 4, CONFIG.laneHeight);
+
+  if (row % 10 === 0) {
+    ctx.fillRect(courtLeft + 14, y + 1, courtWidth - 28, 3);
+  }
+
+  if (row === 27) {
+    ctx.fillRect(courtLeft + 14, y + Math.round(CONFIG.laneHeight / 2) - 2, courtWidth - 28, 4);
+    ctx.strokeStyle = PALETTE.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(CONFIG.width / 2, y + CONFIG.laneHeight / 2, 48, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (isPaint) {
+    ctx.fillStyle = team.primary;
+    ctx.fillRect(courtLeft + 120, y, courtWidth - 240, CONFIG.laneHeight);
+    ctx.strokeStyle = team.accent;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(courtLeft + 120, y - 1, courtWidth - 240, CONFIG.laneHeight + 2);
+    if (row === endzoneStartRow() + 1) {
+      drawLabel("THE PAINT", courtLeft + 173, y + 38, team.uiText, 16);
+    }
+  }
+}
+
+function drawSoccerLaneBase(y, row, team, lane) {
+  const fieldLeft = 38;
+  const fieldRight = CONFIG.width - 38;
+  const fieldWidth = fieldRight - fieldLeft;
+  const isPenaltyArea = lane && lane.type === "endzone";
+  const stripeColor = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
+
+  ctx.fillStyle = "#244f34";
+  ctx.fillRect(fieldLeft, y, 8, CONFIG.laneHeight);
+  ctx.fillRect(fieldRight - 8, y, 8, CONFIG.laneHeight);
+  ctx.fillStyle = stripeColor;
+  ctx.fillRect(fieldLeft + 8, y, fieldWidth - 16, CONFIG.laneHeight);
+
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(fieldLeft + 10, y, 4, CONFIG.laneHeight);
+  ctx.fillRect(fieldRight - 14, y, 4, CONFIG.laneHeight);
+
+  if (row % 5 === 0) {
+    ctx.fillStyle = "rgba(245,239,199,0.72)";
+    ctx.fillRect(fieldLeft + 14, y + 1, fieldWidth - 28, 3);
+  }
+
+  if (row === 27) {
+    ctx.fillStyle = PALETTE.line;
+    ctx.fillRect(fieldLeft + 14, y + Math.round(CONFIG.laneHeight / 2) - 2, fieldWidth - 28, 4);
+    ctx.strokeStyle = PALETTE.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(CONFIG.width / 2, y + CONFIG.laneHeight / 2, 52, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = PALETTE.line;
+    ctx.fillRect(CONFIG.width / 2 - 3, y + CONFIG.laneHeight / 2 - 3, 6, 6);
+  }
+
+  if (isPenaltyArea) {
+    ctx.strokeStyle = PALETTE.line;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(fieldLeft + 86, y - 1, fieldWidth - 172, CONFIG.laneHeight + 2);
+
+    if (row === endzoneStartRow()) {
+      ctx.fillStyle = PALETTE.line;
+      ctx.fillRect(fieldLeft + 14, y, fieldWidth - 28, 5);
+    }
+
+    if (row === endzoneStartRow() + 1) {
+      drawLabel("PENALTY AREA", fieldLeft + 126, y + 38, PALETTE.line, 16);
+      ctx.fillStyle = PALETTE.line;
+      ctx.fillRect(CONFIG.width / 2 - 4, y + 47, 8, 8);
+    }
+  }
+
+  for (let x = fieldLeft + 16; x < fieldRight - 18; x += 34) {
+    ctx.fillStyle = "rgba(22, 74, 38, 0.22)";
+    ctx.fillRect(x, y + CONFIG.laneHeight - 7, 12, 3);
   }
 }
 
@@ -1682,6 +2960,16 @@ function drawDefenderLane(y, lane, team, time) {
 }
 
 function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
+  if (isBasketballMode()) {
+    drawBasketballDefenderSprite(x, y, team, time, facing, variant, tackleLean);
+    return;
+  }
+
+  if (isSoccerMode()) {
+    drawSoccerDefenderSprite(x, y, team, time, facing, variant, tackleLean);
+    return;
+  }
+
   const s = CONFIG.spriteScale;
   const flash = performance.now() < player.flashUntil && Math.floor(performance.now() / 90) % 2 === 0;
   const primary = flash ? team.accent : team.primary;
@@ -1715,6 +3003,65 @@ function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
   pixelRect(x + trailLegX * s + tackleShift, y + (12 + bob + legHeight) * s + tackleDrop, 3, 1, PALETTE.outline, s);
 }
 
+function drawSoccerDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
+  const s = CONFIG.spriteScale;
+  const frame = Math.floor(time / 120 + x / 28) % 2;
+  const bob = frame === 0 ? 0 : 1;
+  const leanDirection = facing === "right" ? 1 : -1;
+  const tackleShift = (tackleLean - 1) * 6 * leanDirection;
+  const tackleDrop = (tackleLean - 1) * 6;
+  const skin = variant === 1 ? PALETTE.skinDark : PALETTE.skinLight;
+  const hair = variant === 2 ? "#d2a24a" : variant === 3 ? "#5a321d" : PALETTE.outline;
+  const shorts = variant % 2 === 0 ? team.secondary : team.accent;
+  const leadLegX = frame === 0 ? 3 : 7;
+  const trailLegX = frame === 0 ? 7 : 3;
+  const stripeX = variant === 0 ? 4 : variant === 1 ? 2 : variant === 2 ? 7 : 5;
+
+  pixelRect(x + 3 * s + tackleShift, y + bob * s + tackleDrop, 6, 2, hair, s);
+  pixelRect(x + 2 * s + tackleShift, y + (2 + bob) * s + tackleDrop, 8, 3, skin, s);
+  pixelRect(x + (variant === 3 ? 1 : 2) * s + tackleShift, y + (5 + bob) * s + tackleDrop, variant === 3 ? 10 : 8, 5, team.primary, s);
+  pixelRect(x + stripeX * s + tackleShift, y + (5 + bob) * s + tackleDrop, 2, 5, team.accent, s);
+  pixelRect(x + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 3, 5, skin, s);
+  pixelRect(x + 9 * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 3, 5, skin, s);
+  pixelRect(x + 2 * s + tackleShift, y + (10 + bob) * s + tackleDrop, 8, 3, shorts, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (13 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (13 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (16 + bob) * s + tackleDrop, 2, 2, team.accent, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (16 + bob) * s + tackleDrop, 2, 2, team.accent, s);
+  pixelRect(x + leadLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+}
+
+function drawBasketballDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
+  const s = CONFIG.spriteScale;
+  const frame = Math.floor(time / 120 + x / 28) % 2;
+  const bob = frame === 0 ? 0 : 1;
+  const leanDirection = facing === "right" ? 1 : -1;
+  const tackleShift = (tackleLean - 1) * 7 * leanDirection;
+  const tackleDrop = (tackleLean - 1) * 5;
+  const skinTones = [PALETTE.skinLight, PALETTE.skinDark, "#b8764e", "#6f442f"];
+  const hairColors = [PALETTE.outline, "#5a321d", "#d2a24a", "#302218"];
+  const skin = skinTones[variant % skinTones.length];
+  const hair = hairColors[variant % hairColors.length];
+  const shorts = variant % 2 === 0 ? team.secondary : team.primary;
+  const leadLegX = frame === 0 ? 3 : 7;
+  const trailLegX = frame === 0 ? 7 : 3;
+  const jerseyInset = variant === 3 ? 1 : 2;
+  const jerseyWidth = variant === 3 ? 10 : 8;
+
+  pixelRect(x + 3 * s + tackleShift, y + bob * s + tackleDrop, 6, 2, hair, s);
+  pixelRect(x + 2 * s + tackleShift, y + (2 + bob) * s + tackleDrop, 8, 3, skin, s);
+  pixelRect(x + jerseyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, jerseyWidth, 6, team.primary, s);
+  pixelRect(x + (variant === 0 ? 5 : variant === 1 ? 3 : 7) * s + tackleShift, y + (6 + bob) * s + tackleDrop, 2, 4, team.accent, s);
+  pixelRect(x - s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 4, 3, skin, s);
+  pixelRect(x + 9 * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 4, 3, skin, s);
+  pixelRect(x + 2 * s + tackleShift, y + (11 + bob) * s + tackleDrop, 8, 3, shorts, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + leadLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+}
+
 function drawPlayer(time) {
   const moving =
     Math.abs(player.worldX - player.targetX) > 0.15 ||
@@ -1732,13 +3079,25 @@ function drawPlayer(time) {
 }
 
 function drawPlayerSprite(x, y, facing, flash, frame) {
+  if (isBasketballMode()) {
+    drawBasketballPlayerSprite(x, y, facing, flash, frame);
+    return;
+  }
+
+  if (isSoccerMode()) {
+    drawSoccerPlayerSprite(x, y, facing, flash, frame);
+    return;
+  }
+
   const s = CONFIG.spriteScale;
   const homeTeam = currentHomeTeam();
+  const appearance = normalizePlayerAppearance(currentRunner().appearance);
   const jersey = flash ? PALETTE.cream : homeTeam.primary;
   const helmet = flash ? "#fff0cf" : homeTeam.secondary;
   const outline = PALETTE.outline;
-  const skin = flash ? PALETTE.white : PALETTE.skinLight;
-  const pants = flash ? "#6f5022" : "#824116";
+  const skin = flash ? PALETTE.white : appearance.skin;
+  const visor = flash ? PALETTE.cream : appearance.hair;
+  const pants = flash ? PALETTE.cream : homeTeam.secondary;
   const leadLeg = frame === 0 ? 4 : 8;
   const trailLeg = frame === 0 ? 8 : 4;
   const armLeft = frame === 0 ? 2 : 3;
@@ -1750,7 +3109,7 @@ function drawPlayerSprite(x, y, facing, flash, frame) {
     pixelRect(x + 5 * s, y + 4 * s, 6, 2, skin, s);
     pixelRect(x + 3 * s, y + 6 * s, 10, 4, jersey, s);
     pixelRect(x + 2 * s, y + 8 * s, 12, 4, jersey, s);
-    pixelRect(x + 5 * s, y + 7 * s, 6, 1, "#2f2f2f", s);
+    pixelRect(x + 5 * s, y + 7 * s, 6, 1, visor, s);
     pixelRect(x + 5 * s, y + 11 * s, 6, 2, pants, s);
     pixelRect(x + armLeft * s, y + 10 * s, 4, 4, jersey, s);
     pixelRect(x + armRight * s, y + 10 * s, 4, 4, jersey, s);
@@ -1797,7 +3156,88 @@ function drawPlayerSprite(x, y, facing, flash, frame) {
     pixelRect(x + 9 * s, y + 15 * s, 3, 1, outline, s);
   }
 
+  if (facing === "up" || facing === "down") {
+    drawSpriteNumber(appearance.number, x + 8 * s, y + 10 * s, homeTeam.secondary);
+  }
+
   pixelRect(x + 9 * s, y + 7 * s, 4, 2, PALETTE.ball, s);
+}
+
+function drawSoccerPlayerSprite(x, y, facing, flash, frame) {
+  const s = CONFIG.spriteScale;
+  const homeTeam = currentHomeTeam();
+  const appearance = normalizePlayerAppearance(currentRunner().appearance);
+  const jersey = flash ? PALETTE.cream : homeTeam.primary;
+  const shorts = flash ? PALETTE.white : homeTeam.secondary;
+  const skin = flash ? PALETTE.white : appearance.skin;
+  const hair = flash ? PALETTE.cream : appearance.hair;
+  const leadLeg = frame === 0 ? 4 : 8;
+  const trailLeg = frame === 0 ? 8 : 4;
+  const sideShift = facing === "left" ? -1 : facing === "right" ? 1 : 0;
+  const ballX = facing === "left" ? 2 : facing === "right" ? 11 : frame === 0 ? 5 : 9;
+  const ballY = facing === "up" ? 17 : 18;
+
+  pixelRect(x + (5 + sideShift) * s, y, 6, 2, hair, s);
+  pixelRect(x + (4 + sideShift) * s, y + 2 * s, 8, 3, skin, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 6, jersey, s);
+  pixelRect(x + (facing === "left" ? 1 : 2) * s, y + 6 * s, 3, 5, skin, s);
+  pixelRect(x + (facing === "right" ? 12 : 11) * s, y + 6 * s, 3, 5, skin, s);
+  pixelRect(x + 4 * s, y + 11 * s, 8, 3, shorts, s);
+  pixelRect(x + leadLeg * s, y + 14 * s, 2, 4, skin, s);
+  pixelRect(x + trailLeg * s, y + 14 * s, 2, 4, skin, s);
+  pixelRect(x + leadLeg * s, y + 17 * s, 2, 2, PALETTE.white, s);
+  pixelRect(x + trailLeg * s, y + 17 * s, 2, 2, PALETTE.white, s);
+  pixelRect(x + leadLeg * s - s, y + 19 * s, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLeg * s - s, y + 19 * s, 3, 1, PALETTE.outline, s);
+
+  drawSpriteNumber(appearance.number, x + 8 * s, y + 10 * s, homeTeam.secondary);
+
+  pixelRect(x + ballX * s, y + ballY * s, 4, 4, PALETTE.white, s);
+  pixelRect(x + (ballX + 1) * s, y + (ballY + 1) * s, 2, 2, PALETTE.outline, s);
+}
+
+function drawBasketballPlayerSprite(x, y, facing, flash, frame) {
+  const s = CONFIG.spriteScale;
+  const homeTeam = currentHomeTeam();
+  const appearance = normalizePlayerAppearance(currentRunner().appearance);
+  const jersey = flash ? PALETTE.cream : homeTeam.primary;
+  const shorts = flash ? PALETTE.white : homeTeam.secondary;
+  const skin = flash ? PALETTE.white : appearance.skin;
+  const hair = flash ? PALETTE.cream : appearance.hair;
+  const leadLeg = frame === 0 ? 4 : 8;
+  const trailLeg = frame === 0 ? 8 : 4;
+  const sideShift = facing === "left" ? -1 : facing === "right" ? 1 : 0;
+  const ballX = facing === "left" ? 0 : facing === "right" ? 12 : frame === 0 ? 1 : 12;
+  const ballY = frame === 0 ? 11 : 15;
+
+  pixelRect(x + (5 + sideShift) * s, y, 6, 2, hair, s);
+  pixelRect(x + (4 + sideShift) * s, y + 2 * s, 8, 3, skin, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 6, jersey, s);
+  pixelRect(x + (facing === "left" ? 0 : 2) * s, y + 6 * s, 3, 5, skin, s);
+  pixelRect(x + (facing === "right" ? 13 : 11) * s, y + 6 * s, 3, 5, skin, s);
+  pixelRect(x + 4 * s, y + 11 * s, 8, 3, shorts, s);
+  pixelRect(x + leadLeg * s, y + 14 * s, 2, 4, skin, s);
+  pixelRect(x + trailLeg * s, y + 14 * s, 2, 4, skin, s);
+  pixelRect(x + leadLeg * s - s, y + 18 * s, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLeg * s - s, y + 18 * s, 3, 1, PALETTE.outline, s);
+  drawSpriteNumber(appearance.number, x + 8 * s, y + 10 * s, homeTeam.secondary);
+
+  pixelRect(x + ballX * s, y + ballY * s, 4, 4, "#d86b20", s);
+  pixelRect(x + (ballX + 1) * s, y + ballY * s, 1, 4, PALETTE.outline, s);
+  pixelRect(x + ballX * s, y + (ballY + 2) * s, 4, 1, PALETTE.outline, s);
+}
+
+function drawSpriteNumber(number, centerX, baselineY, color) {
+  const previousAlign = ctx.textAlign;
+  ctx.font = 'bold 8px "Arial Black", Impact, sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = PALETTE.outline;
+  ctx.strokeText(String(number), centerX, baselineY);
+  ctx.fillStyle = color;
+  ctx.fillText(String(number), centerX, baselineY);
+  ctx.textAlign = previousAlign || "start";
 }
 
 function drawPlayerShadow(centerX, baseY, radius) {
@@ -1806,25 +3246,48 @@ function drawPlayerShadow(centerX, baseY, radius) {
 }
 
 function drawScoreboardBar() {
-  const team = currentTeam();
-  const barY = 10;
-  const barH = 44;
+  const homeTeam = currentHomeTeam();
+  const opponent = currentTeam();
+  const mode = currentGameMode();
+  const barX = 38;
+  const barY = 8;
+  const barW = CONFIG.width - barX * 2;
+  const barH = 80;
 
   ctx.fillStyle = PALETTE.outline;
-  ctx.fillRect(42, barY, CONFIG.width - 84, barH);
+  ctx.fillRect(barX, barY, barW, barH);
   ctx.fillStyle = PALETTE.rail;
-  ctx.fillRect(46, barY + 4, CONFIG.width - 92, 6);
+  ctx.fillRect(barX + 4, barY + 4, barW - 8, 5);
 
+  drawTeamChip(44, barY + 13, 194, 31, homeTeam, "YOUR TEAM", true);
+  drawLabel("VS", 259, barY + 34, PALETTE.cream, 12);
+  drawTeamChip(302, barY + 13, 194, 31, opponent, "OPPONENT", false);
+
+  drawHudChip(44, barY + 50, 142, 24, `${mode.distanceAbbr} ${String(player.distance).padStart(3, "0")}`);
+  drawHudChip(195, barY + 50, 142, 24, `${mode.chanceAbbr} ${player.downsLeft}`);
+  drawHudChip(346, barY + 50, 150, 24, `BEST ${String(bestDistance).padStart(3, "0")}`);
+}
+
+function drawTeamChip(x, y, width, height, team, caption, isHomeTeam) {
+  const nameColor = isHomeTeam ? team.secondary : team.uiText;
+  const outlineColor = teamNameOutlineColor(nameColor);
+
+  ctx.fillStyle = PALETTE.outline;
+  ctx.fillRect(x, y, width, height);
   ctx.fillStyle = team.secondary;
-  ctx.fillRect(46, barY + 12, 132, barH - 16);
-
+  ctx.fillRect(x + 2, y + 2, width - 4, height - 4);
   ctx.fillStyle = team.primary;
-  ctx.fillRect(50, barY + 16, 124, barH - 24);
+  ctx.fillRect(x + 6, y + 5, width - 12, height - 10);
 
-  drawLabel(team.name.toUpperCase(), 60, 38, team.uiText, 15);
-  drawHudChip(188, barY + 14, 94, 22, `YDS ${String(player.distance).padStart(3, "0")}`);
-  drawHudChip(288, barY + 14, 94, 22, `DOWN ${player.downsLeft}`);
-  drawHudChip(388, barY + 14, 104, 22, `BEST ${String(bestDistance).padStart(3, "0")}`);
+  drawLabel(caption, x + 10, y + 11, outlineColor, 7);
+  drawOutlinedLabel(
+    team.name.toUpperCase().slice(0, 13),
+    x + 10,
+    y + 25,
+    nameColor,
+    outlineColor,
+    12
+  );
 }
 
 function drawHudChip(x, y, width, height, text) {
@@ -1841,6 +3304,29 @@ function drawLabel(text, x, y, color, size) {
   ctx.font = `bold ${size}px "Arial Black", Impact, sans-serif`;
   ctx.textBaseline = "alphabetic";
   ctx.fillText(text, x, y);
+}
+
+function drawOutlinedLabel(text, x, y, color, outline, size) {
+  ctx.font = `bold ${size}px "Arial Black", Impact, sans-serif`;
+  ctx.textBaseline = "alphabetic";
+  ctx.lineJoin = "miter";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = outline;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+}
+
+function teamNameOutlineColor(color) {
+  const normalized = String(color || "").replace("#", "");
+  const value = normalized.length === 3
+    ? normalized.split("").map((digit) => digit + digit).join("")
+    : normalized.padEnd(6, "0").slice(0, 6);
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+  return brightness > 150 ? PALETTE.outline : PALETTE.cream;
 }
 
 function pixelRect(x, y, w, h, color, scale) {
@@ -1912,7 +3398,7 @@ function renderRunnerCards() {
   card.innerHTML = `
     <div class="runner-top">
       <strong>${runner.name}</strong>
-      <span>${runner.archetype}</span>
+      <span>#${normalizePlayerAppearance(runner.appearance).number} ${runner.archetype}</span>
     </div>
     <div class="runner-meta">
       <span>SPD ${runner.speed}</span>
@@ -2012,6 +3498,8 @@ startButton.addEventListener("click", () => {
   }
   if (gameState === "levelComplete") {
     advanceLevel();
+  } else if (shouldShowTutorial()) {
+    openTutorial();
   } else {
     resetGame();
   }
@@ -2021,10 +3509,33 @@ restartSeasonButton.addEventListener("click", restartSeason);
 switchFranchiseButton.addEventListener("click", openFranchiseSlots);
 eraseSaveButton.addEventListener("click", eraseActiveSave);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
+creatorTriggerEl.addEventListener("click", openCreatorTools);
+arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
+[
+  teamPrimaryInputEl,
+  teamSecondaryInputEl,
+  playerSkinInputEl,
+  playerHairInputEl,
+  playerNumberInputEl,
+].forEach((input) => input.addEventListener("input", updateCharacterPreview));
+creatorLoginFormEl.addEventListener("submit", unlockCreatorTools);
+creatorLevelsFormEl.addEventListener("submit", saveCreatorLevels);
+creatorCancelButtonEl.addEventListener("click", closeCreatorTools);
+creatorCloseButtonEl.addEventListener("click", closeCreatorTools);
+gridironDashButtonEl.addEventListener("click", openGridironDash);
+pitchDashButtonEl.addEventListener("click", openPitchDash);
+hoopHustleButtonEl.addEventListener("click", openHoopHustle);
+gameLibraryButtonEl.addEventListener("click", openGameLibrary);
+fieldGoalActionButtonEl.addEventListener("click", handleFieldGoalAction);
+fieldGoalStaticAimInputEl.addEventListener("input", chooseStaticFieldGoalAim);
+fieldGoalStaticPowerInputEl.addEventListener("input", chooseStaticFieldGoalPower);
+tutorialBackButtonEl.addEventListener("click", showPreviousTutorialSlide);
+tutorialNextButtonEl.addEventListener("click", showNextTutorialSlide);
 window.addEventListener("resize", applyDeviceProfile);
 window.addEventListener("orientationchange", applyDeviceProfile);
 
 applyDeviceProfile();
+updateGameLibrarySelection();
 syncFranchiseSetupState();
 showOverlay();
 updateStartOverlay();

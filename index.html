@@ -6,12 +6,12 @@
     <title>Retro Run</title>
     <meta
       name="description"
-      content="Retro Run is a browser-based retro football arcade game with franchise saves, seasons, upgrades, and mobile swipe controls."
+      content="Retro Run is a browser-based retro sports arcade with football, soccer, and basketball games, franchise saves, seasons, upgrades, and mobile swipe controls."
     />
     <meta property="og:title" content="Retro Run" />
     <meta
       property="og:description"
-      content="Build a franchise, dodge defenders, earn first downs, and chase an 18-game retro football season."
+      content="Choose football, soccer, or basketball, build a franchise, dodge defenders, and chase an 18-game retro sports season."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://retrorun.win" />
@@ -24,7 +24,7 @@
     <meta name="twitter:title" content="Retro Run" />
     <meta
       name="twitter:description"
-      content="A retro football arcade runner with franchise saves, upgrades, seasons, and mobile swipe controls."
+      content="A retro sports arcade with football, soccer, and basketball games, franchise saves, upgrades, seasons, and mobile swipe controls."
     />
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
@@ -34,11 +34,90 @@
   <body>
     <main class="game-shell">
       <header class="top-title">
-        <h1>Retro Run</h1>
+        <h1>
+          <button id="arcadeHomeButton" class="title-home-button" type="button" aria-label="Return to the Retro Run game library">
+            Retro Run
+          </button>
+        </h1>
         <a class="support-link" href="mailto:updates@retrorun.win">
           For update requests or if you find any bugs, please contact updates@retrorun.win
         </a>
       </header>
+
+      <section class="game-library" id="gameLibraryScreen" aria-labelledby="gameLibraryTitle">
+        <div class="library-header">
+          <p class="library-kicker">Retro Run Arcade</p>
+          <h2 id="gameLibraryTitle">Choose Your Game</h2>
+          <p>Select a game to enter the arcade. More games can be added here in future updates.</p>
+        </div>
+
+        <div class="game-card-grid">
+          <button class="game-select-card" id="gridironDashButton" type="button">
+            <span class="game-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">4TH &amp; GO</span>
+              <span class="mini-field">
+                <span class="mini-yard-line line-one"></span>
+                <span class="mini-yard-line line-two"></span>
+              </span>
+              <span class="game-sport-badge football-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-football"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Football Arcade</span>
+              <strong>Gridiron Dash</strong>
+              <span>Dodge defenders, build a franchise, and run through 18-game seasons.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card soccer-game-card" id="pitchDashButton" type="button">
+            <span class="game-card-art soccer-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">90:00</span>
+              <span class="mini-field soccer-mini-field">
+                <span class="mini-center-line"></span>
+                <span class="mini-center-circle"></span>
+                <span class="mini-soccer-goal"></span>
+              </span>
+              <span class="game-sport-badge soccer-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-soccer-ball"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Soccer Arcade</span>
+              <strong>Goal Rush</strong>
+              <span>Face World Cup countries, build your national team, and finish every match with a shot on goal.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card basketball-game-card" id="hoopHustleButton" type="button">
+            <span class="game-card-art basketball-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">4TH QTR</span>
+              <span class="mini-field basketball-mini-court">
+                <span class="mini-court-line"></span>
+                <span class="mini-basketball-hoop"></span>
+              </span>
+              <span class="game-sport-badge basketball-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-basketball"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Basketball Arcade</span>
+              <strong>Hoop Hustle</strong>
+              <span>Cross the hardwood, beat NBA defenses, and finish every game with a clutch shot.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+          <p class="library-coming-soon">More games coming soon</p>
+        </div>
+      </section>
 
       <aside class="info-panel">
         <div class="scoreboard">
@@ -55,7 +134,7 @@
             <strong id="gameNumberValue">1</strong>
           </div>
           <div class="score-card">
-            <span class="label">Yards</span>
+            <span class="label" id="distanceLabel">Yards</span>
             <strong><span id="distanceValue">0</span> / <span id="milestoneValue">50 yds</span></strong>
           </div>
           <div class="score-card">
@@ -70,7 +149,7 @@
 
         <div class="status-row">
           <div class="status-pill">
-            <span class="label">Downs Left</span>
+            <span class="label" id="downsLabel">Downs Left</span>
             <strong id="downsValue">4</strong>
           </div>
           <div class="status-pill">
@@ -80,10 +159,10 @@
         </div>
 
         <div class="instructions">
-          <h2>How To Play</h2>
-          <p class="keyboard-instructions">Use `WASD` or the arrow keys to move the ball carrier up the field and dodge defenders.</p>
-          <p class="touch-instructions">Swipe anywhere on the screen to move the ball carrier up the field and dodge defenders.</p>
-          <p>Reach the end zone at 50 yards to move to the next NFL matchup. Downs reset every 25 yards.</p>
+          <h2><button id="creatorTrigger" class="creator-access-link" type="button">How</button> To Play</h2>
+          <p class="keyboard-instructions" id="keyboardInstructions">Use `WASD` or the arrow keys to move the ball carrier up the field and dodge defenders.</p>
+          <p class="touch-instructions" id="touchInstructions">Swipe anywhere on the screen to move the ball carrier up the field and dodge defenders.</p>
+          <p id="progressInstructions">Reach the end zone at 50 yards to move to the next NFL matchup. Earn first downs after tackles beyond the marker.</p>
         </div>
       </aside>
 
@@ -95,18 +174,114 @@
             height="720"
             aria-label="Retro Run game"
           ></canvas>
+          <div class="field-goal-panel" id="fieldGoalPanel" hidden>
+            <div class="field-goal-card">
+              <div class="field-goal-header">
+                <div>
+                  <p class="homepage-kicker" id="kickChallengeKicker">Field Goal Challenge</p>
+                  <h2 id="kickChallengeTitle">Field Goal</h2>
+                </div>
+                <div class="field-goal-clock" aria-label="Time remaining">
+                  <span>Time</span>
+                  <strong id="fieldGoalTimer">30</strong>
+                </div>
+              </div>
+
+              <div class="field-goal-scene" id="fieldGoalScene" aria-hidden="true">
+                <span class="goal-post goal-post-left"></span>
+                <span class="goal-post goal-post-right"></span>
+                <span class="goal-crossbar"></span>
+                <span class="soccer-keeper" id="soccerKeeper"></span>
+                <span class="basketball-backboard"></span>
+                <span class="basketball-rim"></span>
+                <span class="kick-aim-marker" id="fieldGoalAimMarker"></span>
+                <span class="kick-ball" id="fieldGoalBall"></span>
+              </div>
+
+              <p class="field-goal-instructions" id="fieldGoalInstructions">
+                Tap once to lock power, then tap again to lock aim and launch the kick.
+              </p>
+
+              <div class="kick-meter active" id="fieldGoalPowerMeter">
+                <span><strong>Power</strong><output id="fieldGoalPowerValue">25%</output></span>
+                <span class="timing-track power-timing-track">
+                  <span class="timing-needle" id="fieldGoalPowerNeedle"></span>
+                </span>
+                <span class="range-labels"><small>Low</small><small>Good</small><small>Max</small></span>
+              </div>
+
+              <div class="kick-meter" id="fieldGoalAimMeter">
+                <span><strong>Aim</strong><output id="fieldGoalAimValue">Center</output></span>
+                <span class="timing-track aim-timing-track">
+                  <span class="timing-needle" id="fieldGoalAimNeedle"></span>
+                </span>
+                <span class="range-labels"><small>Left</small><small>Center</small><small>Right</small></span>
+              </div>
+
+              <div class="static-kick-controls" id="fieldGoalStaticControls" hidden>
+                <label class="static-kick-control" for="fieldGoalStaticAimInput">
+                  <span><strong>Aim</strong><output id="fieldGoalStaticAimValue">25 Left</output></span>
+                  <input id="fieldGoalStaticAimInput" class="static-aim-range" type="range" min="-100" max="100" value="-25" step="1" />
+                  <span class="range-labels"><small>Left</small><small>Center</small><small>Right</small></span>
+                </label>
+
+                <label class="static-kick-control" for="fieldGoalStaticPowerInput">
+                  <span><strong>Power</strong><output id="fieldGoalStaticPowerValue">60%</output></span>
+                  <input id="fieldGoalStaticPowerInput" class="static-power-range" type="range" min="0" max="100" value="60" step="1" />
+                  <span class="range-labels"><small>Low</small><small>Good</small><small>High</small></span>
+                </label>
+              </div>
+
+              <p class="field-goal-status" id="fieldGoalStatus" aria-live="polite">
+                Stop the power needle in the green.
+              </p>
+              <button id="fieldGoalActionButton" type="button">Set Power</button>
+            </div>
+          </div>
+          <div class="tutorial-panel" id="tutorialPanel" hidden>
+            <div class="tutorial-card">
+              <div class="tutorial-header">
+                <div>
+                  <p class="homepage-kicker">Rookie Camp</p>
+                  <span id="tutorialStep">Lesson 1 / 5</span>
+                </div>
+                <strong id="tutorialBadge">Run</strong>
+              </div>
+
+              <div class="tutorial-playbook" aria-hidden="true">
+                <span class="tutorial-runner"></span>
+                <span class="tutorial-defender tutorial-defender-one"></span>
+                <span class="tutorial-defender tutorial-defender-two"></span>
+                <span class="tutorial-route"></span>
+              </div>
+
+              <h2 id="tutorialTitle">Run the Field</h2>
+              <p id="tutorialText"></p>
+              <ul class="tutorial-list" id="tutorialList"></ul>
+              <div class="tutorial-dots" id="tutorialDots" aria-label="Tutorial progress"></div>
+
+              <div class="tutorial-actions">
+                <button id="tutorialBackButton" class="secondary-button" type="button">Back</button>
+                <button id="tutorialNextButton" type="button">Next</button>
+              </div>
+            </div>
+          </div>
           <div class="overlay" id="overlay">
             <div class="homepage" id="homepagePanel">
+              <button id="gameLibraryButton" class="library-return-button secondary-button" type="button">
+                Back to Game Library
+              </button>
+
               <div class="franchise-module load-save-panel" id="loadSavePanel" hidden>
                 <div class="module-head">
-                  <h3>Load Franchise</h3>
+                  <h3 id="loadCareerTitle">Load Franchise</h3>
                   <span>5 Slots Max</span>
                 </div>
                 <div class="franchise-slot-grid" id="franchiseSlotGrid"></div>
               </div>
 
               <div class="homepage-hero" id="homepageHero">
-                <p class="homepage-kicker">Franchise Hub</p>
+                <p class="homepage-kicker" id="careerHubLabel">Franchise Hub</p>
                 <h2 id="overlayTitle">Kickoff</h2>
                 <p id="overlayText">
                   Cross the field, dodge defenders, and start your season.
@@ -115,7 +290,7 @@
 
               <div class="franchise-module" id="onboardingPanel" hidden>
                 <div class="module-head">
-                  <h3>Create Franchise</h3>
+                  <h3 id="createCareerTitle">Create Franchise</h3>
                   <span>Career Start</span>
                 </div>
                 <div class="setup-grid">
@@ -124,7 +299,7 @@
                     <input id="teamNameInput" type="text" maxlength="28" value="Bay City Falcons" />
                   </label>
                   <label class="setup-field">
-                    <span class="label">Runner Name</span>
+                    <span class="label" id="playerNameLabel">Runner Name</span>
                     <input id="runnerNameInput" type="text" maxlength="24" value="D. Carter" />
                   </label>
                   <label class="setup-field">
@@ -135,6 +310,38 @@
                     <span class="label">Secondary</span>
                     <input id="teamSecondaryInput" type="color" value="#2e3547" />
                   </label>
+                </div>
+
+                <div class="character-designer">
+                  <div class="character-preview" id="characterPreview" aria-label="Player appearance preview">
+                    <span class="preview-player" aria-hidden="true">
+                      <span class="preview-head"></span>
+                      <span class="preview-hair"></span>
+                      <span class="preview-helmet"></span>
+                      <span class="preview-arm preview-arm-left"></span>
+                      <span class="preview-arm preview-arm-right"></span>
+                      <span class="preview-jersey"><strong id="characterNumberPreview">7</strong></span>
+                      <span class="preview-shorts"></span>
+                      <span class="preview-leg preview-leg-left"></span>
+                      <span class="preview-leg preview-leg-right"></span>
+                    </span>
+                    <span>Player Preview</span>
+                  </div>
+
+                  <div class="character-fields">
+                    <label class="setup-field">
+                      <span class="label">Skin Tone</span>
+                      <input id="playerSkinInput" type="color" value="#efc79d" />
+                    </label>
+                    <label class="setup-field">
+                      <span class="label">Hair / Visor</span>
+                      <input id="playerHairInput" type="color" value="#302218" />
+                    </label>
+                    <label class="setup-field">
+                      <span class="label">Number</span>
+                      <input id="playerNumberInput" type="number" min="0" max="99" value="7" />
+                    </label>
+                  </div>
                 </div>
                 <button id="createFranchiseButton" type="button">Create Franchise</button>
               </div>
@@ -233,6 +440,51 @@
         </div>
       </section>
     </main>
+
+    <div class="creator-modal" id="creatorModal" hidden>
+      <div class="creator-card">
+        <div class="module-head">
+          <h3>Creator Tools</h3>
+          <span id="creatorAttemptsText">3 Tries</span>
+        </div>
+
+        <form id="creatorLoginForm" class="creator-form">
+          <label class="setup-field">
+            <span class="label">Username</span>
+            <input id="creatorUsernameInput" type="text" autocomplete="off" />
+          </label>
+          <label class="setup-field">
+            <span class="label">Password</span>
+            <input id="creatorPasswordInput" type="password" autocomplete="off" />
+          </label>
+          <p class="creator-message" id="creatorMessage">Enter creator access to edit player levels.</p>
+          <div class="creator-actions">
+            <button type="button" class="secondary-button" id="creatorCancelButton">Cancel</button>
+            <button type="submit">Unlock</button>
+          </div>
+        </form>
+
+        <form id="creatorLevelsForm" class="creator-form" hidden>
+          <label class="setup-field">
+            <span class="label">Speed</span>
+            <input id="creatorSpeedInput" type="number" min="1" max="100" />
+          </label>
+          <label class="setup-field">
+            <span class="label">Power</span>
+            <input id="creatorPowerInput" type="number" min="1" max="100" />
+          </label>
+          <label class="setup-field">
+            <span class="label">Cut</span>
+            <input id="creatorCutInput" type="number" min="1" max="100" />
+          </label>
+          <p class="creator-message" id="creatorKickModeText">Set levels from 1 to 100. Static field-goal sliders are enabled for this save.</p>
+          <div class="creator-actions">
+            <button type="button" class="secondary-button" id="creatorCloseButton">Cancel</button>
+            <button type="submit">Save Levels</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="game.js"></script>
   </body>
