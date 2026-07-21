@@ -89,6 +89,8 @@ assert.match(styles, /\.game-select-card\s*\{\s*--card-accent:\s*#c83b42/);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
+assert.match(styles, /\.game-select-card:hover,\s*\.game-select-card:focus-visible,\s*\.game-select-card\.selected\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--card-accent\) 18%, #14283f\)/s);
+assert.match(styles, /\.game-select-card:hover \.game-card-copy strong/);
 assert.match(styles, /body\[data-game="basketball"\] \.basketball-backboard/);
 assert.match(styles, /body\[data-game="basketball"\] \.kick-ball/);
 assert.match(styles, /body\[data-game="basketball"\] \.basketball-shooter/);

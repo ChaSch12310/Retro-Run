@@ -191,14 +191,16 @@ body.game-library-open .play-panel {
   box-shadow:
     inset 0 0 0 4px rgba(255, 255, 255, 0.05),
     0 9px 0 rgba(6, 13, 20, 0.42);
+  transition:
+    background 100ms steps(2, end),
+    border-color 100ms steps(2, end),
+    box-shadow 100ms steps(2, end);
 }
 
-.game-select-card:hover {
-  filter: none;
-  border-color: var(--card-accent);
-}
-
+.game-select-card:hover,
+.game-select-card:focus-visible,
 .game-select-card.selected {
+  filter: none;
   border-color: var(--card-accent);
   background: color-mix(in srgb, var(--card-accent) 18%, #14283f);
   box-shadow:
@@ -206,6 +208,10 @@ body.game-library-open .play-panel {
     0 9px 0 rgba(6, 13, 20, 0.42);
 }
 
+.game-select-card:hover .game-card-copy strong,
+.game-select-card:hover .game-card-tag,
+.game-select-card:focus-visible .game-card-copy strong,
+.game-select-card:focus-visible .game-card-tag,
 .game-select-card.selected .game-card-copy strong,
 .game-select-card.selected .game-card-tag {
   color: var(--card-accent);
