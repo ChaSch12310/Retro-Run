@@ -120,6 +120,7 @@ assert.match(source, /const TEAM_VENUE_MARKS = \{/);
 assert.match(source, /function drawTeamPixelBadge\(/);
 assert.match(source, /function drawSoccerPenaltyOverlay\(/);
 assert.doesNotMatch(source, /basketballCourtHasEnded/);
+assert.match(source, /const TEAM_ALTERNATE_UNIFORMS = \{/);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
 const canvas = elements.get("gameCanvas");
@@ -231,6 +232,13 @@ globalThis.__retroRunTest = {
   difficultyForLevel,
   get currentVenueIdentity() { return teamVenueIdentity(currentTeam()); },
   get venueIdentities() { return currentTeams().map((team) => teamVenueIdentity(team)); },
+  get alternateUniformCount() { return Object.keys(TEAM_ALTERNATE_UNIFORMS).length; },
+  uniformForTeam(teamName, homeTeam) {
+    const team = Object.values(GAME_MODES)
+      .flatMap((mode) => mode.teams)
+      .find((candidate) => candidate.name === teamName);
+    return opponentUniform(team, homeTeam);
+  },
   get tutorial() { return tutorialSlides(); },
   selectFranchiseSlot,
   createFranchiseFromForm,
@@ -271,6 +279,22 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
+assert.equal(game.alternateUniformCount, 36);
+const brazilClashUniform = game.uniformForTeam("Brazil", {
+  primary: "#ffdf00",
+  secondary: "#002776",
+});
+assert.equal(brazilClashUniform.variant, "alternate");
+assert.equal(brazilClashUniform.primary, "#1d3f8f");
+assert.equal(game.uniformForTeam("Brazil", {
+  primary: "#f5d80a",
+  secondary: "#082b70",
+}).variant, "alternate");
+const brazilAwayClashUniform = game.uniformForTeam("Brazil", {
+  primary: "#1d3f8f",
+  secondary: "#f6f3de",
+});
+assert.equal(brazilAwayClashUniform.variant, "standard");
 assert.equal(game.gameLibraryOpen, true);
 assert.equal(elements.get("creatorTrigger").disabled, true);
 

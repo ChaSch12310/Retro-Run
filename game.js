@@ -304,6 +304,46 @@ const BASKETBALL_TEAMS = [
   { name: "Raptors", primary: "#ce1141", secondary: "#751027", accent: "#b4975a", fieldTint: "#d6a55e", fieldStripe: "#c28c46", uiText: "#f6f3de" },
 ];
 
+// Opponent sprites can switch kits without changing their venue or scoreboard branding.
+const TEAM_ALTERNATE_UNIFORMS = {
+  "49ers": { primary: "#f6f3de", secondary: "#aa0000", accent: "#d3bc8d" },
+  Chiefs: { primary: "#f6f3de", secondary: "#e31837", accent: "#ffb81c" },
+  Eagles: { primary: "#f6f3de", secondary: "#004c54", accent: "#d3d7d9" },
+  Cowboys: { primary: "#f6f3de", secondary: "#003594", accent: "#b0b7bc" },
+  Packers: { primary: "#f6f3de", secondary: "#203731", accent: "#ffb612" },
+  Bills: { primary: "#f6f3de", secondary: "#00338d", accent: "#c60c30" },
+  Ravens: { primary: "#f6f3de", secondary: "#241773", accent: "#9e7c0c" },
+  Dolphins: { primary: "#f6f3de", secondary: "#008e97", accent: "#fc4c02" },
+  Vikings: { primary: "#f6f3de", secondary: "#4f2683", accent: "#ffc62f" },
+  Bengals: { primary: "#1c1c1c", secondary: "#fb4f14", accent: "#f6f3de" },
+  Lions: { primary: "#f6f3de", secondary: "#0076b6", accent: "#b0b7bc" },
+  Jets: { primary: "#f6f3de", secondary: "#125740", accent: "#d8dfd5" },
+  Brazil: { primary: "#1d3f8f", secondary: "#f6f3de", accent: "#ffdf00" },
+  Argentina: { primary: "#172b4d", secondary: "#74acdf", accent: "#f6f3de" },
+  France: { primary: "#f6f3de", secondary: "#1d3f8f", accent: "#ed2939" },
+  England: { primary: "#ce1126", secondary: "#172b4d", accent: "#f6f3de" },
+  Spain: { primary: "#74acdf", secondary: "#c60b1e", accent: "#ffc400" },
+  Germany: { primary: "#dd0000", secondary: "#17151a", accent: "#ffce00" },
+  Italy: { primary: "#f6f3de", secondary: "#0066b3", accent: "#173b67" },
+  Netherlands: { primary: "#1b365d", secondary: "#f36c21", accent: "#f6f3de" },
+  Portugal: { primary: "#f6f3de", secondary: "#046a38", accent: "#c8102e" },
+  Japan: { primary: "#f6f3de", secondary: "#1f4e99", accent: "#bc002d" },
+  Mexico: { primary: "#f6f3de", secondary: "#006847", accent: "#ce1126" },
+  Morocco: { primary: "#f6f3de", secondary: "#c1272d", accent: "#006233" },
+  Lakers: { primary: "#fdb927", secondary: "#552583", accent: "#f6f3de" },
+  Celtics: { primary: "#f6f3de", secondary: "#007a33", accent: "#ba9653" },
+  Warriors: { primary: "#ffc72c", secondary: "#1d428a", accent: "#f6f3de" },
+  Bulls: { primary: "#f6f3de", secondary: "#ce1141", accent: "#111016" },
+  Knicks: { primary: "#f58426", secondary: "#006bb6", accent: "#f6f3de" },
+  Heat: { primary: "#f6f3de", secondary: "#98002e", accent: "#f9a01b" },
+  Suns: { primary: "#e56020", secondary: "#1d1160", accent: "#f6f3de" },
+  Mavericks: { primary: "#b8c4ca", secondary: "#00538c", accent: "#002b49" },
+  Nuggets: { primary: "#fec524", secondary: "#0e2240", accent: "#8b2131" },
+  Bucks: { primary: "#eee1c6", secondary: "#00471b", accent: "#ba9653" },
+  Spurs: { primary: "#111016", secondary: "#c4ced4", accent: "#f6f3de" },
+  Raptors: { primary: "#111016", secondary: "#ce1141", accent: "#b4975a" },
+};
+
 // These original pixel monograms identify teams without reproducing official logos.
 const TEAM_VENUE_MARKS = {
   "49ers": "SF",
@@ -1259,6 +1299,59 @@ function currentRunner() {
 
 function currentHomeTeam() {
   return franchise.team || currentGameMode().homeTeam;
+}
+
+function parseHexColor(color) {
+  const normalized = String(color || "").trim().replace(/^#/, "");
+  const expanded = normalized.length === 3
+    ? [...normalized].map((character) => character.repeat(2)).join("")
+    : normalized;
+  if (!/^[0-9a-f]{6}$/i.test(expanded)) {
+    return [0, 0, 0];
+  }
+  return [0, 2, 4].map((offset) => Number.parseInt(expanded.slice(offset, offset + 2), 16));
+}
+
+function uniformColorDistance(first, second) {
+  const [r1, g1, b1] = parseHexColor(first);
+  const [r2, g2, b2] = parseHexColor(second);
+  const redMean = (r1 + r2) / 2;
+  const red = r1 - r2;
+  const green = g1 - g2;
+  const blue = b1 - b2;
+  return Math.sqrt(
+    (2 + redMean / 256) * red ** 2 +
+    4 * green ** 2 +
+    (2 + (255 - redMean) / 256) * blue ** 2
+  );
+}
+
+function uniformContrastScore(uniform, homeTeam) {
+  const primaryContrast = uniformColorDistance(uniform.primary, homeTeam.primary);
+  const secondaryContrast = uniformColorDistance(uniform.secondary, homeTeam.secondary);
+  const crossContrast = Math.min(
+    uniformColorDistance(uniform.primary, homeTeam.secondary),
+    uniformColorDistance(uniform.secondary, homeTeam.primary)
+  );
+  return primaryContrast * 0.7 + secondaryContrast * 0.2 + crossContrast * 0.1;
+}
+
+function opponentUniform(team, homeTeam = currentHomeTeam()) {
+  const standard = {
+    primary: team.primary,
+    secondary: team.secondary,
+    accent: team.accent,
+    variant: "standard",
+  };
+  const alternatePalette = TEAM_ALTERNATE_UNIFORMS[team.name];
+  if (!alternatePalette) {
+    return standard;
+  }
+
+  const alternate = { ...alternatePalette, variant: "alternate" };
+  return uniformContrastScore(alternate, homeTeam) > uniformContrastScore(standard, homeTeam)
+    ? alternate
+    : standard;
 }
 
 function currentSeasonWeek() {
@@ -3367,6 +3460,7 @@ function drawSidelineHazard(y, lane) {
 }
 
 function drawDefenderLane(y, lane, team, time) {
+  const uniform = opponentUniform(team);
   lane.defenders.forEach((defender, index) => {
     const x = defenderPosition(lane, defender, time);
     const facing = lane.direction > 0 ? "right" : "left";
@@ -3388,14 +3482,14 @@ function drawDefenderLane(y, lane, team, time) {
       drawDefenderSprite(
         tackleX,
         tackleY,
-        team,
+        uniform,
         time + 90,
         hitEffect.facing,
         hitEffect.variant,
         1 + lunge * 0.55
       );
     } else {
-      drawDefenderSprite(spriteX, spriteY, team, time, facing, variant);
+      drawDefenderSprite(spriteX, spriteY, uniform, time, facing, variant);
     }
   });
 
