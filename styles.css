@@ -2093,6 +2093,132 @@ body[data-game="soccer"] .soccer-keeper::after {
   line-height: 1.42;
 }
 
+.offseason-panel {
+  display: grid;
+  gap: 10px;
+  border-color: var(--team-accent);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 8px, transparent 8px 16px),
+    #10283e;
+}
+
+.offseason-panel[hidden] {
+  display: none !important;
+}
+
+.offseason-kicker {
+  margin: 0 !important;
+  color: var(--team-accent) !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.offseason-panel h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.25rem;
+  text-transform: uppercase;
+}
+
+.offseason-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.offseason-summary span {
+  padding: 7px;
+  color: #dce4d2;
+  background: #0b1e30;
+  border: 2px solid #07131f;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.offseason-choices {
+  display: grid;
+  gap: 8px;
+}
+
+.offseason-choice {
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--text);
+  background: #193b58;
+  text-align: left;
+}
+
+.offseason-choice strong,
+.offseason-choice span {
+  display: block;
+}
+
+.offseason-choice strong {
+  color: var(--team-accent);
+}
+
+.offseason-choice span {
+  margin-top: 4px;
+  color: #d6dfc7;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.offseason-choice:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.75) brightness(0.7);
+}
+
+.team-operations {
+  display: grid;
+  gap: 10px;
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.operation-card {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  background: #0f2133;
+  border: 2px solid #07131f;
+}
+
+.operation-card[hidden] {
+  display: none !important;
+}
+
+.operation-card span,
+.operation-card small {
+  color: #d6dfc7;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.operation-card strong {
+  color: var(--team-accent);
+  font-size: 0.92rem;
+  text-transform: uppercase;
+}
+
+.team-operations > p {
+  margin: 0;
+  padding: 8px;
+  background: rgba(226, 187, 79, 0.12);
+  border-left: 4px solid var(--team-accent);
+  font-size: 0.78rem;
+}
+
 .setup-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

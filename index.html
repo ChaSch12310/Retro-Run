@@ -347,6 +347,18 @@
                 <button id="createFranchiseButton" type="button">Create Franchise</button>
               </div>
 
+              <div class="franchise-module offseason-panel" id="offseasonPanel" hidden>
+                <div class="module-head">
+                  <h3 id="offseasonHeading">Offseason</h3>
+                  <span id="offseasonProgress">Decision 1 / 2</span>
+                </div>
+                <p class="offseason-kicker" id="offseasonEventType">Coach Room</p>
+                <h4 id="offseasonEventTitle">Set the Direction</h4>
+                <p id="offseasonEventText">Choose how the franchise will prepare for next season.</p>
+                <div class="offseason-summary" id="offseasonSummary"></div>
+                <div class="offseason-choices" id="offseasonChoices"></div>
+              </div>
+
               <div id="franchiseMainContent">
 
               <div class="franchise-card">
@@ -394,6 +406,46 @@
                   </div>
                   <div class="schedule-list" id="seasonSchedule"></div>
                 </div>
+              </div>
+
+              <div class="franchise-module team-operations" id="teamOperationsPanel">
+                <div class="module-head">
+                  <h3>Team Operations</h3>
+                  <span id="featureTierValue">Season 1 Systems</span>
+                </div>
+                <div class="operations-grid">
+                  <div class="operation-card">
+                    <span id="coachRoleLabel">Head Coach</span>
+                    <strong id="coachNameValue">A. Stone</strong>
+                    <small id="coachRatingValue">Rating 58 · Players' Coach</small>
+                  </div>
+                  <div class="operation-card" id="moraleOperation" hidden>
+                    <span>Team Morale</span>
+                    <strong id="teamMoraleValue">55%</strong>
+                    <small id="teamMoraleSummary">Locked in</small>
+                  </div>
+                  <div class="operation-card" id="stadiumOperation" hidden>
+                    <span id="venueQualityLabel">Stadium Quality</span>
+                    <strong id="stadiumQualityValue">50%</strong>
+                    <small>Improves fan growth</small>
+                  </div>
+                  <div class="operation-card" id="trainingOperation" hidden>
+                    <span>Training Facility</span>
+                    <strong id="trainingQualityValue">45%</strong>
+                    <small>Improves development</small>
+                  </div>
+                  <div class="operation-card" id="scoutingOperation" hidden>
+                    <span>Scouting Department</span>
+                    <strong id="scoutingQualityValue">45%</strong>
+                    <small>Improves draft classes</small>
+                  </div>
+                  <div class="operation-card">
+                    <span>Front Office</span>
+                    <strong><span id="frontOfficeCreditsValue">3</span> Credits</strong>
+                    <small>Earned between seasons</small>
+                  </div>
+                </div>
+                <p id="nextFeatureText">Season 2 unlocks morale and press conferences.</p>
               </div>
 
               <div class="runner-select">

@@ -55,6 +55,30 @@ const fanMeterFillEl = document.getElementById("fanMeterFill");
 const fanSummaryTextEl = document.getElementById("fanSummaryText");
 const seasonStatusValueEl = document.getElementById("seasonStatusValue");
 const seasonScheduleEl = document.getElementById("seasonSchedule");
+const offseasonPanelEl = document.getElementById("offseasonPanel");
+const offseasonHeadingEl = document.getElementById("offseasonHeading");
+const offseasonProgressEl = document.getElementById("offseasonProgress");
+const offseasonEventTypeEl = document.getElementById("offseasonEventType");
+const offseasonEventTitleEl = document.getElementById("offseasonEventTitle");
+const offseasonEventTextEl = document.getElementById("offseasonEventText");
+const offseasonSummaryEl = document.getElementById("offseasonSummary");
+const offseasonChoicesEl = document.getElementById("offseasonChoices");
+const featureTierValueEl = document.getElementById("featureTierValue");
+const coachRoleLabelEl = document.getElementById("coachRoleLabel");
+const coachNameValueEl = document.getElementById("coachNameValue");
+const coachRatingValueEl = document.getElementById("coachRatingValue");
+const moraleOperationEl = document.getElementById("moraleOperation");
+const teamMoraleValueEl = document.getElementById("teamMoraleValue");
+const teamMoraleSummaryEl = document.getElementById("teamMoraleSummary");
+const stadiumOperationEl = document.getElementById("stadiumOperation");
+const venueQualityLabelEl = document.getElementById("venueQualityLabel");
+const stadiumQualityValueEl = document.getElementById("stadiumQualityValue");
+const trainingOperationEl = document.getElementById("trainingOperation");
+const trainingQualityValueEl = document.getElementById("trainingQualityValue");
+const scoutingOperationEl = document.getElementById("scoutingOperation");
+const scoutingQualityValueEl = document.getElementById("scoutingQualityValue");
+const frontOfficeCreditsValueEl = document.getElementById("frontOfficeCreditsValue");
+const nextFeatureTextEl = document.getElementById("nextFeatureText");
 const runnerFeatureRoleEl = document.getElementById("runnerFeatureRole");
 const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
@@ -539,6 +563,32 @@ const FIELD_GOAL_AIM_SWEEP_MS = 2200;
 const FIELD_GOAL_FLIGHT_MS = 900;
 const FIELD_GOAL_RESULT_MS = 650;
 const GAMES_PER_SEASON = 18;
+const COACH_POOL = [
+  { name: "A. Stone", trait: "Players' Coach", baseRating: 58 },
+  { name: "M. Price", trait: "Game Planner", baseRating: 61 },
+  { name: "C. Reid", trait: "Talent Builder", baseRating: 56 },
+  { name: "J. Bell", trait: "Fan Favorite", baseRating: 54 },
+  { name: "R. Knox", trait: "Discipline", baseRating: 63 },
+];
+const DRAFT_NAME_POOL = [
+  "K. Monroe",
+  "S. Vega",
+  "A. Foster",
+  "N. Brooks",
+  "L. Hayes",
+  "T. King",
+  "M. Cruz",
+  "D. Reed",
+  "J. Cole",
+  "R. Miles",
+];
+const SEASON_FEATURES = [
+  { season: 1, names: ["Coaches", "Draft"] },
+  { season: 2, names: ["Team Morale", "Press Conferences"] },
+  { season: 3, names: ["Stadium Quality", "Team Scenarios"] },
+  { season: 4, names: ["Training Facility", "Scouting Department"] },
+  { season: 5, names: ["Community Events", "Front Office Strategy"] },
+];
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
   year: 1,
@@ -550,11 +600,20 @@ const DEFAULT_FRANCHISE = {
   lastResult: "Season opener ahead.",
   completedGames: 0,
   history: [],
+  seasonArchive: [],
   attemptsByGame: {},
   seasonBests: {},
   team: null,
   player: null,
   pendingUpgradeChoices: [],
+  coach: null,
+  morale: 55,
+  stadiumQuality: 50,
+  trainingQuality: 45,
+  scoutingQuality: 45,
+  frontOfficeCredits: 3,
+  featureLog: [],
+  offseason: null,
   creatorStaticKicking: false,
   creatorAutoScore: false,
   tutorialComplete: false,
@@ -747,6 +806,10 @@ function resetGame() {
 }
 
 function restartSeason() {
+  if (franchise.offseason) {
+    window.alert("Complete the offseason before restarting the next season.");
+    return;
+  }
   const seasonStart = currentSeasonStartLevel();
   seasonCheckpointLevel = seasonStart;
   currentLevel = seasonStart;
@@ -839,15 +902,69 @@ function startLevel() {
   updateHud();
 }
 
+function textSeed(value) {
+  return [...String(value || "Retro Run")].reduce(
+    (total, character, index) => total + character.charCodeAt(0) * (index + 7),
+    0
+  );
+}
+
+function createCoach(seedSource = "Retro Run") {
+  const seed = textSeed(seedSource);
+  const profile = COACH_POOL[Math.floor(seededRandom(seed + 4.7) * COACH_POOL.length)];
+  return {
+    name: profile.name,
+    trait: profile.trait,
+    rating: clamp(profile.baseRating + Math.floor(seededRandom(seed + 8.1) * 8), 45, 90),
+    seasons: 0,
+  };
+}
+
+function normalizeCoach(rawCoach, seedSource) {
+  const fallback = createCoach(seedSource);
+  if (!rawCoach || typeof rawCoach !== "object") {
+    return fallback;
+  }
+  return {
+    name: String(rawCoach.name || fallback.name).slice(0, 24),
+    trait: String(rawCoach.trait || fallback.trait).slice(0, 28),
+    rating: clamp(Number(rawCoach.rating) || fallback.rating, 35, 99),
+    seasons: Math.max(0, Number(rawCoach.seasons) || 0),
+  };
+}
+
+function normalizeOffseason(rawOffseason) {
+  if (!rawOffseason || typeof rawOffseason !== "object" || !Array.isArray(rawOffseason.events)) {
+    return null;
+  }
+  return {
+    completedSeason: Math.max(1, Number(rawOffseason.completedSeason) || 1),
+    wins: clamp(Number(rawOffseason.wins) || 0, 0, GAMES_PER_SEASON),
+    losses: clamp(Number(rawOffseason.losses) || 0, 0, GAMES_PER_SEASON),
+    index: clamp(Number(rawOffseason.index) || 0, 0, rawOffseason.events.length),
+    events: rawOffseason.events.filter((event) => event && typeof event === "object"),
+    decisions: Array.isArray(rawOffseason.decisions) ? rawOffseason.decisions.slice(-8) : [],
+  };
+}
+
+function savedNumber(value, fallback) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
 function createDefaultFranchise(forcedName = null) {
   const defaultTeam = currentGameMode().homeTeam;
+  const playerProfile = createFranchisePlayer(forcedName);
   return {
     ...DEFAULT_FRANCHISE,
     history: [],
+    seasonArchive: [],
     attemptsByGame: {},
     seasonBests: {},
     team: { ...defaultTeam },
-    player: createFranchisePlayer(forcedName),
+    player: playerProfile,
+    coach: createCoach(`${defaultTeam.name}-${playerProfile.name}`),
+    featureLog: ["Season 1: Coaches and Draft"],
     pendingUpgradeChoices: [],
     seasonCheckpointLevel: 0,
     savedAt: Date.now(),
@@ -857,10 +974,13 @@ function createDefaultFranchise(forcedName = null) {
 function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
   const parsed = rawFranchise && typeof rawFranchise === "object" ? rawFranchise : {};
   const defaultTeam = currentGameMode().homeTeam;
+  const playerProfile = normalizeFranchisePlayer(parsed.player);
+  const teamProfile = parsed.team || { ...defaultTeam };
   const normalized = {
     ...DEFAULT_FRANCHISE,
     ...parsed,
     history: Array.isArray(parsed.history) ? parsed.history.slice(-24) : [],
+    seasonArchive: Array.isArray(parsed.seasonArchive) ? parsed.seasonArchive.slice(-20) : [],
     attemptsByGame: parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
       ? parsed.attemptsByGame
       : {},
@@ -868,9 +988,17 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
       ? parsed.seasonBests
       : {},
     setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
-    team: parsed.team || { ...defaultTeam },
-    player: normalizeFranchisePlayer(parsed.player),
+    team: teamProfile,
+    player: playerProfile,
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
+    coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
+    morale: clamp(savedNumber(parsed.morale, DEFAULT_FRANCHISE.morale), 0, 100),
+    stadiumQuality: clamp(savedNumber(parsed.stadiumQuality, DEFAULT_FRANCHISE.stadiumQuality), 0, 100),
+    trainingQuality: clamp(savedNumber(parsed.trainingQuality, DEFAULT_FRANCHISE.trainingQuality), 0, 100),
+    scoutingQuality: clamp(savedNumber(parsed.scoutingQuality, DEFAULT_FRANCHISE.scoutingQuality), 0, 100),
+    frontOfficeCredits: Math.max(0, savedNumber(parsed.frontOfficeCredits, DEFAULT_FRANCHISE.frontOfficeCredits)),
+    featureLog: Array.isArray(parsed.featureLog) ? parsed.featureLog.slice(-8) : ["Season 1: Coaches and Draft"],
+    offseason: normalizeOffseason(parsed.offseason),
     creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
     creatorAutoScore: Boolean(parsed.creatorAutoScore),
     tutorialComplete: Boolean(parsed.tutorialComplete),
@@ -1023,6 +1151,7 @@ function selectFranchiseSlot(index) {
 
   currentLevel = seasonCheckpointLevel;
   pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
+  gameState = franchise.offseason ? "offseason" : "menu";
   recomputeBestDistance();
   showOverlay();
   updateStartOverlay();
@@ -1160,6 +1289,7 @@ function saveCreatorLevels(event) {
     franchise.losses = completedGames.filter((entry) => entry.result === "L").length;
     pendingUpgrade = false;
     franchise.pendingUpgradeChoices = [];
+    franchise.offseason = null;
     gameState = "menu";
     creatorReturnGameState = null;
     fieldGoalPanelEl.hidden = true;
@@ -1444,6 +1574,361 @@ function buildUpgradeChoices() {
 
 function getUpgradeByKey(key) {
   return UPGRADE_POOL.find((upgrade) => upgrade.key === key);
+}
+
+function featureIntroductionForSeason(season) {
+  return SEASON_FEATURES.find((entry) => entry.season === season) || null;
+}
+
+function activeFeatureCount(season = franchise.year) {
+  return SEASON_FEATURES
+    .filter((entry) => entry.season <= season)
+    .reduce((total, entry) => total + entry.names.length, 0);
+}
+
+function fanChangeForGame(result, tries) {
+  let change = result === "W"
+    ? tries <= 3 ? 8 : tries <= 6 ? 6 : 4
+    : -4;
+  if (franchise.year >= 2) {
+    change += franchise.morale >= 75 ? 1 : franchise.morale < 35 ? -1 : 0;
+  }
+  if (franchise.year >= 3) {
+    change += Math.round((franchise.stadiumQuality - 50) / 25);
+  }
+  return clamp(change, -7, 10);
+}
+
+function moraleChangeForGame(result, tries) {
+  const resultChange = result === "W" ? (tries <= 5 ? 5 : 3) : -6;
+  const coachSupport = franchise.coach.rating >= 72 ? 2 : franchise.coach.rating >= 60 ? 1 : 0;
+  return resultChange + coachSupport;
+}
+
+function draftArchetype(speed, power, cut) {
+  if (speed >= power && speed >= cut) {
+    return isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : "Speed Back";
+  }
+  if (power >= speed && power >= cut) {
+    return isBasketballMode() ? "Power Finisher" : isSoccerMode() ? "Target Forward" : "Power Back";
+  }
+  return isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : "Cutback Back";
+}
+
+function buildDraftProspects(completedSeason) {
+  const seed = completedSeason * 137 + franchise.completedGames * 11 + franchise.scoutingQuality * 3;
+  const baseline = 43 + Math.round(franchise.scoutingQuality * 0.14) + Math.min(8, completedSeason);
+  return Array.from({ length: 3 }, (_, index) => {
+    const nameIndex = Math.floor(seededRandom(seed + index * 13.7) * DRAFT_NAME_POOL.length);
+    const speed = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 1) * 15), 45, 88);
+    const power = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 2) * 15), 45, 88);
+    const cut = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 3) * 15), 45, 88);
+    return {
+      id: `prospect-${index}`,
+      name: DRAFT_NAME_POOL[(nameIndex + index) % DRAFT_NAME_POOL.length],
+      speed,
+      power,
+      cut,
+      archetype: draftArchetype(speed, power, cut),
+    };
+  });
+}
+
+function buildOffseasonEvents(completedSeason, finalResult) {
+  const events = [];
+  if (finalResult === "W") {
+    events.push({ type: "development", keys: buildUpgradeChoices() });
+  }
+
+  if (completedSeason === 1) {
+    events.push({ type: "coach" });
+  } else if (completedSeason === 2) {
+    events.push({ type: "press" });
+  } else if (completedSeason === 3) {
+    events.push({ type: "scenario" }, { type: "stadium" });
+  } else if (completedSeason === 4) {
+    events.push({ type: "facility" });
+  } else {
+    const rotation = ["press", "scenario", "stadium", "facility", "community"];
+    events.push({ type: rotation[(completedSeason - 5) % rotation.length] });
+  }
+
+  events.push({
+    type: "draft",
+    prospects: buildDraftProspects(completedSeason),
+  });
+  return events;
+}
+
+function beginOffseason(completedSeason, wins, losses, finalResult) {
+  franchise.offseason = {
+    completedSeason,
+    wins,
+    losses,
+    index: 0,
+    events: buildOffseasonEvents(completedSeason, finalResult),
+    decisions: [],
+  };
+  gameState = "offseason";
+  pendingUpgrade = false;
+  franchise.pendingUpgradeChoices = [];
+}
+
+function offseasonEventView(event) {
+  const thirdRating = isBasketballMode() ? "HND" : "CUT";
+  if (event.type === "development") {
+    return {
+      type: "Player Development",
+      title: "Final Game Upgrade",
+      text: "Your starter earned one more development boost before offseason decisions begin.",
+      choices: event.keys.map((key) => {
+        const upgrade = getUpgradeByKey(key);
+        const display = upgradeDisplayCopy(upgrade);
+        return { id: key, title: display.title, description: display.description };
+      }),
+    };
+  }
+  if (event.type === "coach") {
+    return {
+      type: "Coach Room",
+      title: "Set the Staff Direction",
+      text: `${franchise.coach.name} completed a first season as your ${isSoccerMode() ? "manager" : "head coach"}. Choose the staff plan.`,
+      choices: [
+        { id: "trust", title: "Trust the Coach", description: "+6 morale · continuity matters" },
+        { id: "staff", title: "Upgrade the Staff", description: "Costs 1 credit · +5 coach rating · +3 morale", cost: 1 },
+        { id: "new-coach", title: "Hire a New Voice", description: "New coach · +2 morale · -1 fan support" },
+      ],
+    };
+  }
+  if (event.type === "press") {
+    return {
+      type: "Press Conference",
+      title: "Set Expectations",
+      text: "Reporters ask what supporters should expect next season. Your answer will shape the locker room and public mood.",
+      choices: [
+        { id: "bold", title: "Promise a Title", description: "+6 fans · -2 morale from pressure" },
+        { id: "team-first", title: "Praise the Team", description: "+6 morale · +2 fans" },
+        { id: "honest", title: "Stay Realistic", description: "+3 morale · +3 fans" },
+      ],
+    };
+  }
+  if (event.type === "scenario") {
+    return {
+      type: "Team Scenario",
+      title: "Choose the Offseason Focus",
+      text: "Players have one open week before camp. Decide what the team does with it.",
+      choices: [
+        { id: "community", title: "Community Event", description: "+7 fans · +1 morale" },
+        { id: "practice", title: "Extra Practice", description: "+5 training quality · -3 morale" },
+        { id: "rest", title: "Give the Team Rest", description: "+7 morale · -1 fan support" },
+      ],
+    };
+  }
+  if (event.type === "stadium") {
+    return {
+      type: "Stadium Operations",
+      title: "Improve Game Day",
+      text: "The venue needs a plan. Better facilities produce stronger crowds and faster fan growth after wins.",
+      choices: [
+        { id: "renovate", title: "Renovate the Stadium", description: "Costs 2 credits · +12 stadium · +3 fans", cost: 2 },
+        { id: "fan-zone", title: "Build a Fan Zone", description: "Costs 1 credit · +6 stadium · +6 fans", cost: 1 },
+        { id: "save", title: "Save the Budget", description: "+2 front-office credits · -2 fans" },
+      ],
+    };
+  }
+  if (event.type === "facility") {
+    return {
+      type: "Facility Plan",
+      title: "Invest Behind the Scenes",
+      text: "Choose where the front office should invest. Training strengthens development; scouting improves future draft classes.",
+      choices: [
+        { id: "training", title: "Training Center", description: "Costs 2 credits · +12 training quality", cost: 2 },
+        { id: "scouting", title: "Scouting Network", description: "Costs 2 credits · +12 scouting quality", cost: 2 },
+        { id: "balanced", title: "Balanced Upgrade", description: "Costs 3 credits · +7 training and scouting", cost: 3 },
+        { id: "fundamentals", title: "Work With What We Have", description: "+2 morale · save every credit" },
+      ],
+    };
+  }
+  if (event.type === "community") {
+    return {
+      type: "Community Strategy",
+      title: "Grow the Franchise",
+      text: "The city offers three ways to expand the team's reach beyond game day.",
+      choices: [
+        { id: "youth", title: "Youth Sports Camp", description: "+6 fans · +4 morale" },
+        { id: "international", title: "International Tour", description: "Costs 1 credit · +9 fans", cost: 1 },
+        { id: "sponsor", title: "Local Sponsor", description: "+3 credits · -3 fans" },
+      ],
+    };
+  }
+
+  const prospectChoices = event.prospects.map((prospect) => ({
+    id: prospect.id,
+    title: `${prospect.name} · ${prospect.archetype}`,
+    description: `SPD ${prospect.speed} · PWR ${prospect.power} · ${thirdRating} ${prospect.cut}`,
+  }));
+  return {
+    type: "Draft Night",
+    title: "Choose Your Featured Player",
+    text: `Keep ${currentRunner().name}, or replace the one-player roster with a drafted prospect. Scouting quality is ${franchise.scoutingQuality}%.`,
+    choices: [
+      { id: "keep", title: `Keep ${currentRunner().name}`, description: "+5 morale · preserve all upgrades" },
+      ...prospectChoices,
+    ],
+  };
+}
+
+function applyOffseasonChoice(choiceId) {
+  const offseason = franchise.offseason;
+  const event = offseason?.events[offseason.index];
+  if (!event) {
+    return;
+  }
+  const view = offseasonEventView(event);
+  const choice = view.choices.find((entry) => entry.id === choiceId);
+  if (!choice || (choice.cost || 0) > franchise.frontOfficeCredits) {
+    return;
+  }
+  franchise.frontOfficeCredits -= choice.cost || 0;
+
+  if (event.type === "development") {
+    const upgrade = getUpgradeByKey(choiceId);
+    upgrade.apply(franchise.player);
+    const facilityBonus = franchise.year >= 4
+      ? Math.max(0, Math.floor((franchise.trainingQuality - 45) / 20))
+      : 0;
+    if (facilityBonus > 0) {
+      franchise.player.speed = Math.min(99, franchise.player.speed + facilityBonus);
+      franchise.player.power = Math.min(99, franchise.player.power + facilityBonus);
+      franchise.player.cut = Math.min(99, franchise.player.cut + facilityBonus);
+    }
+    franchise.player.upgrades += 1;
+  } else if (event.type === "coach") {
+    if (choiceId === "trust") franchise.morale += 6;
+    if (choiceId === "staff") {
+      franchise.coach.rating += 5;
+      franchise.morale += 3;
+    }
+    if (choiceId === "new-coach") {
+      franchise.coach = createCoach(`${currentHomeTeam().name}-${offseason.completedSeason + 1}-new`);
+      franchise.morale += 2;
+      franchise.fans -= 1;
+    }
+  } else if (event.type === "press") {
+    if (choiceId === "bold") {
+      franchise.fans += 6;
+      franchise.morale -= 2;
+    } else if (choiceId === "team-first") {
+      franchise.morale += 6;
+      franchise.fans += 2;
+    } else {
+      franchise.morale += 3;
+      franchise.fans += 3;
+    }
+  } else if (event.type === "scenario") {
+    if (choiceId === "community") {
+      franchise.fans += 7;
+      franchise.morale += 1;
+    } else if (choiceId === "practice") {
+      franchise.trainingQuality += 5;
+      franchise.morale -= 3;
+    } else {
+      franchise.morale += 7;
+      franchise.fans -= 1;
+    }
+  } else if (event.type === "stadium") {
+    if (choiceId === "renovate") {
+      franchise.stadiumQuality += 12;
+      franchise.fans += 3;
+    } else if (choiceId === "fan-zone") {
+      franchise.stadiumQuality += 6;
+      franchise.fans += 6;
+    } else {
+      franchise.frontOfficeCredits += 2;
+      franchise.fans -= 2;
+    }
+  } else if (event.type === "facility") {
+    if (choiceId === "training") franchise.trainingQuality += 12;
+    if (choiceId === "scouting") franchise.scoutingQuality += 12;
+    if (choiceId === "balanced") {
+      franchise.trainingQuality += 7;
+      franchise.scoutingQuality += 7;
+    }
+    if (choiceId === "fundamentals") franchise.morale += 2;
+  } else if (event.type === "community") {
+    if (choiceId === "youth") {
+      franchise.fans += 6;
+      franchise.morale += 4;
+    } else if (choiceId === "international") {
+      franchise.fans += 9;
+    } else {
+      franchise.frontOfficeCredits += 3;
+      franchise.fans -= 3;
+    }
+  } else if (choiceId === "keep") {
+    franchise.morale += 5;
+  } else {
+    const prospect = event.prospects.find((entry) => entry.id === choiceId);
+    franchise.player = {
+      ...franchise.player,
+      name: prospect.name,
+      archetype: prospect.archetype,
+      speed: prospect.speed,
+      power: prospect.power,
+      cut: prospect.cut,
+      speedBonus: 0,
+      upgrades: 0,
+    };
+    franchise.morale = Math.max(franchise.morale, 58);
+    franchise.fans += 3;
+  }
+
+  franchise.fans = clamp(franchise.fans, 15, 99);
+  franchise.morale = clamp(franchise.morale, 0, 100);
+  franchise.stadiumQuality = clamp(franchise.stadiumQuality, 0, 100);
+  franchise.trainingQuality = clamp(franchise.trainingQuality, 0, 100);
+  franchise.scoutingQuality = clamp(franchise.scoutingQuality, 0, 100);
+  franchise.coach.rating = clamp(franchise.coach.rating, 35, 99);
+  offseason.decisions.push(`${view.type}: ${choice.title}`);
+  offseason.index += 1;
+
+  if (offseason.index >= offseason.events.length) {
+    finishOffseason();
+    return;
+  }
+  franchise.lastResult = `${choice.title} selected. ${view.type} is complete.`;
+  saveFranchise();
+  renderOffseasonPanel();
+  renderFranchiseDashboard();
+  renderRunnerCards();
+}
+
+function finishOffseason() {
+  const offseason = franchise.offseason;
+  const nextSeason = offseason.completedSeason + 1;
+  const earnedCredits = 2 + Math.floor(offseason.wins / 6);
+  franchise.frontOfficeCredits += earnedCredits;
+  franchise.year = nextSeason;
+  franchise.wins = 0;
+  franchise.losses = 0;
+  franchise.coach.seasons += 1;
+  franchise.morale = clamp(franchise.morale + (franchise.coach.rating >= 70 ? 3 : 1), 0, 100);
+  const introduction = featureIntroductionForSeason(nextSeason);
+  if (introduction) {
+    franchise.featureLog.push(`Season ${nextSeason}: ${introduction.names.join(" and ")}`);
+    franchise.featureLog = franchise.featureLog.slice(-8);
+  }
+  franchise.offseason = null;
+  franchise.lastResult = introduction
+    ? `Offseason complete. New in Season ${nextSeason}: ${introduction.names.join(" and ")}. You earned ${earnedCredits} front-office credits.`
+    : `Offseason complete. Season ${nextSeason} begins with ${earnedCredits} new front-office credits.`;
+  pendingUpgrade = false;
+  franchise.pendingUpgradeChoices = [];
+  gameState = "levelComplete";
+  currentLevel = seasonCheckpointLevel;
+  saveFranchise();
+  updateStartOverlay();
+  updateHud();
 }
 
 function fanMood() {
@@ -2108,6 +2593,7 @@ function tutorialSlides() {
         "The schedule shows the previous two, current, and next two matchups.",
         `Progress is saved to the active ${soccer ? "national-team" : "franchise"} slot after every game.`,
         "Restart Season resets that season's record and progress but keeps player upgrades.",
+        "Season 1 introduces coaches, every offseason includes a draft, and 1-2 new franchise systems unlock each season.",
       ],
     },
   ];
@@ -2349,6 +2835,9 @@ function rowIsSafeForReset(row) {
 function gameOver(reason) {
   gameState = "gameover";
   franchise.fans = clamp(franchise.fans - 4, 15, 99);
+  if (franchise.year >= 2) {
+    franchise.morale = clamp(franchise.morale - 1, 0, 100);
+  }
   franchise.lastResult = isSoccerMode()
     ? `${reason} against ${currentTeam().name}. Supporters want a better response.`
     : `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
@@ -2379,7 +2868,11 @@ function completeLevel() {
   }
   franchise.completedGames += 1;
   franchise.bestRecord = Math.max(franchise.bestRecord, franchise.wins);
-  franchise.fans = clamp(franchise.fans + (result === "W" ? 6 : -2), 15, 99);
+  const fanChange = fanChangeForGame(result, tries);
+  franchise.fans = clamp(franchise.fans + fanChange, 15, 99);
+  if (franchise.year >= 2) {
+    franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
+  }
   franchise.history = franchise.history.filter(
     (entry) => !(entry.season === seasonYear && entry.week === week)
   );
@@ -2389,6 +2882,7 @@ function completeLevel() {
     opponent: beatenTeam.name,
     result,
     tries,
+    fanChange,
   });
   franchise.history = franchise.history.slice(-24);
   delete franchise.attemptsByGame[gameKey];
@@ -2396,10 +2890,17 @@ function completeLevel() {
   if (seasonWrapped) {
     franchise.championships += 1;
     franchise.lastResult = `Season ${franchise.year} finished with a title run at ${franchise.wins}-${franchise.losses}.`;
-    franchise.year += 1;
-    franchise.wins = 0;
-    franchise.losses = 0;
     franchise.fans = clamp(franchise.fans + 8, 15, 99);
+    franchise.seasonArchive.push({
+      season: seasonYear,
+      wins: franchise.wins,
+      losses: franchise.losses,
+      fans: franchise.fans,
+      morale: franchise.morale,
+      championship: true,
+    });
+    franchise.seasonArchive = franchise.seasonArchive.slice(-20);
+    beginOffseason(seasonYear, franchise.wins, franchise.losses, result);
   } else {
     franchise.lastResult = result === "W"
       ? (isBasketballMode()
@@ -2410,32 +2911,40 @@ function completeLevel() {
       : isBasketballMode()
         ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
         : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
+    franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${fanChange}.`;
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
   overlayTitleEl.textContent = isBasketballMode() ? "Swish!" : isSoccerMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
     ? (isBasketballMode()
-      ? `You hit the winner, beat the ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`
+      ? `You hit the winner, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next tipoff.`
       : isSoccerMode()
-        ? `You scored, beat ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`
-        : `You made the kick, beat the ${beatenTeam.name}, and closed out the season. Season ${franchise.year} is ready to begin.`)
+        ? `You scored, beat ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next match.`
+        : `You made the kick, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before kickoff.`)
     : (isBasketballMode()
       ? `The jumper drops and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
       : isSoccerMode()
         ? `The shot is in and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
         : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
-  pendingUpgrade = result === "W";
+  pendingUpgrade = result === "W" && !seasonWrapped;
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
   saveFranchise();
-  startButton.textContent = "Next Game";
+  startButton.textContent = seasonWrapped ? "Complete Offseason" : "Next Game";
+  startButton.hidden = seasonWrapped;
   homepagePanelEl.hidden = false;
   renderUpgradeOptions();
+  renderOffseasonPanel();
   renderFranchiseDashboard();
   showOverlay();
 }
 
 function advanceLevel() {
+  if (franchise.offseason) {
+    gameState = "offseason";
+    renderOffseasonPanel();
+    return;
+  }
   pendingUpgrade = false;
   currentLevel = seasonCheckpointLevel;
   startLevel();
@@ -2581,6 +3090,7 @@ function updateStartOverlay() {
     homepageHeroEl.hidden = true;
     onboardingPanelEl.hidden = true;
     franchiseMainContentEl.hidden = true;
+    offseasonPanelEl.hidden = true;
     startButton.hidden = true;
     renderFranchiseSlots();
     return;
@@ -2612,6 +3122,7 @@ function updateStartOverlay() {
   renderRunnerCards();
   renderUpgradeOptions();
   renderFranchiseDashboard();
+  renderOffseasonPanel();
 
   if (!franchise.setupComplete) {
     overlayTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
@@ -2621,18 +3132,26 @@ function updateStartOverlay() {
         ? "Name your national team, design your forward, and set your kit colors before the opening match."
         : "Name your team, design your runner, and set your colors before kickoff.";
     startButton.textContent = "Start Career";
-  } else if (seasonCheckpointLevel > 0) {
+  } else if (franchise.offseason) {
+    overlayTitleEl.textContent = `Season ${franchise.offseason.completedSeason} Complete`;
+    overlayTextEl.textContent = "Make each offseason decision, finish the draft, and prepare the next season.";
+    startButton.hidden = true;
+  } else if (seasonCheckpointLevel > currentSeasonStartLevel()) {
     overlayTitleEl.textContent = "Resume Season";
     overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
     startButton.textContent = basketball ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
-    overlayTitleEl.textContent = basketball ? "Tipoff" : soccer ? "Opening Match" : "Kickoff";
+    overlayTitleEl.textContent = franchise.year > 1
+      ? `Season ${franchise.year} ${basketball ? "Tipoff" : soccer ? "Opening Match" : "Kickoff"}`
+      : basketball ? "Tipoff" : soccer ? "Opening Match" : "Kickoff";
     overlayTextEl.textContent = basketball
       ? "Set your guard, build fan support, and begin your first season."
       : soccer
         ? "Set your forward, build supporter energy, and begin your first season."
         : "Set your runner, build fan support, and start your first season.";
-    startButton.textContent = basketball ? "Start Game" : soccer ? "Start Match" : "Start Run";
+    startButton.textContent = franchise.year > 1
+      ? `Start Season ${franchise.year}`
+      : basketball ? "Start Game" : soccer ? "Start Match" : "Start Run";
   }
 }
 
@@ -2666,25 +3185,98 @@ function applyHomeTeamPalette(homeTeam = currentHomeTeam()) {
   document.documentElement.style.setProperty("--home-team-secondary", homeTeam.secondary);
 }
 
+function moraleMood() {
+  if (franchise.morale >= 80) return "United";
+  if (franchise.morale >= 60) return "Confident";
+  if (franchise.morale >= 40) return "Uneven";
+  return "Fractured";
+}
+
+function renderOffseasonPanel() {
+  const offseason = franchise.offseason;
+  offseasonPanelEl.hidden = !offseason;
+  restartSeasonButton.disabled = Boolean(offseason);
+  if (!offseason) {
+    return;
+  }
+
+  const event = offseason.events[offseason.index];
+  if (!event) {
+    finishOffseason();
+    return;
+  }
+  const view = offseasonEventView(event);
+  offseasonHeadingEl.textContent = `Season ${offseason.completedSeason} Offseason`;
+  offseasonProgressEl.textContent = `Decision ${offseason.index + 1} / ${offseason.events.length}`;
+  offseasonEventTypeEl.textContent = view.type;
+  offseasonEventTitleEl.textContent = view.title;
+  offseasonEventTextEl.textContent = view.text;
+  offseasonSummaryEl.innerHTML = `
+    <span>Record ${offseason.wins}-${offseason.losses}</span>
+    <span>Fans ${franchise.fans}%</span>
+    <span>Credits ${franchise.frontOfficeCredits}</span>
+  `;
+  offseasonChoicesEl.innerHTML = "";
+  view.choices.forEach((choice) => {
+    const button = document.createElement("button");
+    const cost = choice.cost || 0;
+    button.type = "button";
+    button.className = "offseason-choice";
+    button.disabled = cost > franchise.frontOfficeCredits;
+    button.innerHTML = `<strong>${choice.title}</strong><span>${choice.description}${
+      button.disabled ? " · Not enough credits" : ""
+    }</span>`;
+    button.addEventListener("click", () => applyOffseasonChoice(choice.id));
+    offseasonChoicesEl.appendChild(button);
+  });
+}
+
+function renderTeamOperations() {
+  const displaySeason = franchise.offseason?.completedSeason || franchise.year;
+  const nextIntroduction = SEASON_FEATURES.find((entry) => entry.season > displaySeason);
+  featureTierValueEl.textContent = `${activeFeatureCount(displaySeason)} Systems Active`;
+  coachRoleLabelEl.textContent = isSoccerMode() ? "Manager" : "Head Coach";
+  coachNameValueEl.textContent = franchise.coach.name;
+  coachRatingValueEl.textContent = `Rating ${franchise.coach.rating} · ${franchise.coach.trait}`;
+  moraleOperationEl.hidden = displaySeason < 2;
+  stadiumOperationEl.hidden = displaySeason < 3;
+  trainingOperationEl.hidden = displaySeason < 4;
+  scoutingOperationEl.hidden = displaySeason < 4;
+  venueQualityLabelEl.textContent = isBasketballMode() ? "Arena Quality" : "Stadium Quality";
+  teamMoraleValueEl.textContent = `${franchise.morale}%`;
+  teamMoraleSummaryEl.textContent = moraleMood();
+  stadiumQualityValueEl.textContent = `${franchise.stadiumQuality}%`;
+  trainingQualityValueEl.textContent = `${franchise.trainingQuality}%`;
+  scoutingQualityValueEl.textContent = `${franchise.scoutingQuality}%`;
+  frontOfficeCreditsValueEl.textContent = franchise.frontOfficeCredits;
+  nextFeatureTextEl.textContent = nextIntroduction
+    ? `Season ${nextIntroduction.season} unlocks ${nextIntroduction.names.join(" and ")}.`
+    : "All franchise systems are active. Offseason events now rotate every year.";
+}
+
 function renderFranchiseDashboard() {
   const mood = fanMood();
   const runner = currentRunner();
   const seasonOpponents = currentSeasonOpponents();
+  const dashboardSeason = franchise.offseason?.completedSeason || franchise.year;
   const start = Math.floor(seasonCheckpointLevel / GAMES_PER_SEASON) * GAMES_PER_SEASON;
-  const activeWeek = seasonCheckpointLevel - start;
+  const activeWeek = franchise.offseason ? GAMES_PER_SEASON - 1 : seasonCheckpointLevel - start;
   const seasonHistory = new Map(
     franchise.history
-      .filter((entry) => entry.season === franchise.year)
+      .filter((entry) => entry.season === dashboardSeason)
       .map((entry) => [entry.week, { result: entry.result, tries: entry.tries || 1 }])
   );
 
-  seasonYearValueEl.textContent = franchise.year;
+  seasonYearValueEl.textContent = franchise.offseason ? `${dashboardSeason} Final` : franchise.year;
   seasonRecordValueEl.textContent = `${franchise.wins}-${franchise.losses}`;
   fanSupportValueEl.textContent = `${franchise.fans}%`;
   fanMoodLabelEl.textContent = mood.label;
   fanSummaryTextEl.textContent = franchise.lastResult || mood.summary;
   fanMeterFillEl.style.width = `${franchise.fans}%`;
-  seasonStatusValueEl.textContent = `Week ${currentSeasonWeek()} of ${GAMES_PER_SEASON}`;
+  seasonStatusValueEl.textContent = franchise.offseason
+    ? "Offseason"
+    : `Week ${currentSeasonWeek()} of ${GAMES_PER_SEASON}`;
+  renderTeamOperations();
 
   runnerFeatureRoleEl.textContent = runner.archetype;
   runnerFeatureNameEl.textContent = runner.name;

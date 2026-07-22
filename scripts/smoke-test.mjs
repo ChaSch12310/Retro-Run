@@ -35,8 +35,8 @@ class FakeElement {
     this.checked = false;
     this.value = "";
     this.textContent = "";
-    this.innerHTML = "";
     this.children = [];
+    this.innerHTML = "";
     this.dataset = {};
     this.attributes = new Map();
     this.listeners = new Map();
@@ -52,6 +52,17 @@ class FakeElement {
   appendChild(child) {
     this.children.push(child);
     return child;
+  }
+
+  get innerHTML() {
+    return this._innerHTML || "";
+  }
+
+  set innerHTML(value) {
+    this._innerHTML = String(value);
+    if (this.children) {
+      this.children = [];
+    }
   }
 
   setAttribute(name, value) {
@@ -91,6 +102,13 @@ assert.match(html, /id="creatorPowerInput"[^>]+min="1"[^>]+max="101"/);
 assert.match(html, /101 = Invincible/);
 assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="creatorAutoScoreInput"[^>]+type="checkbox"[^>]+role="switch"/);
+assert.match(html, /id="offseasonPanel"[^>]+hidden/);
+assert.match(html, /id="teamOperationsPanel"/);
+assert.match(html, /id="coachNameValue"/);
+assert.match(html, /id="teamMoraleValue"/);
+assert.match(html, /id="stadiumQualityValue"/);
+assert.match(html, /id="trainingQualityValue"/);
+assert.match(html, /id="scoutingQualityValue"/);
 assert.match(html, /id="characterPreview"/);
 assert.match(html, /id="playerSkinInput"/);
 assert.match(html, /id="playerHairInput"/);
@@ -105,6 +123,8 @@ assert.match(styles, /\.load-save-panel\s*\{\s*--team-accent:\s*var\(--menu-acce
 assert.match(styles, /\.game-select-card\s*\{\s*--card-accent:\s*#c83b42/);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
+assert.match(styles, /\.offseason-panel\s*\{/);
+assert.match(styles, /\.operations-grid\s*\{/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
 assert.match(styles, /\.game-select-card:hover,\s*\.game-select-card:focus-visible,\s*\.game-select-card\.selected\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--card-accent\) 18%, #14283f\)/s);
 assert.match(styles, /\.game-select-card:hover \.game-card-copy strong/);
@@ -227,6 +247,7 @@ globalThis.__retroRunTest = {
   get runnerHair() { return currentRunner().appearance.hair; },
   get runnerNumber() { return currentRunner().appearance.number; },
   get runnerPower() { return currentRunner().power; },
+  get runnerUpgrades() { return currentRunner().upgrades; },
   get currentSeasonOpponentNames() { return currentSeasonOpponents().map((team) => team.name); },
   teamNameForLevel(level) { return teamForLevel(level).name; },
   difficultyForLevel,
@@ -262,6 +283,36 @@ globalThis.__retroRunTest = {
   get creatorStaticKicking() { return franchise.creatorStaticKicking; },
   get creatorAutoScore() { return franchise.creatorAutoScore; },
   setCreatorAutoScore(enabled) { franchise.creatorAutoScore = enabled; },
+  get coach() { return franchise.coach; },
+  get morale() { return franchise.morale; },
+  get stadiumQuality() { return franchise.stadiumQuality; },
+  get frontOfficeCredits() { return franchise.frontOfficeCredits; },
+  get offseason() { return franchise.offseason; },
+  get offseasonEventTypes() { return franchise.offseason?.events.map((event) => event.type) || []; },
+  get offseasonView() {
+    const event = franchise.offseason?.events[franchise.offseason.index];
+    return event ? offseasonEventView(event) : null;
+  },
+  beginTestOffseason(season, wins, losses, result) {
+    franchise.year = season;
+    franchise.wins = wins;
+    franchise.losses = losses;
+    beginOffseason(season, wins, losses, result);
+    renderOffseasonPanel();
+  },
+  completeSeasonForTest(season, wins, losses, tries) {
+    franchise.year = season;
+    franchise.wins = wins;
+    franchise.losses = losses;
+    seasonCheckpointLevel = season * GAMES_PER_SEASON - 1;
+    currentLevel = seasonCheckpointLevel;
+    franchise.attemptsByGame[currentGameKey()] = tries;
+    completeLevel();
+  },
+  chooseOffseason: applyOffseasonChoice,
+  setManagement(values) { Object.assign(franchise, values); },
+  fanChangeForGame,
+  activeFeatureCount,
   stiffarmChanceForPower,
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
@@ -317,6 +368,19 @@ assert.equal(migratedSoccerSave.attemptsByGame["1-2-Argentina"], 3);
 assert.match(migratedSoccerSave.lastResult, /France/);
 assert.equal(game.normalizeFranchise({ creatorAutoScore: true }).creatorAutoScore, true);
 assert.equal(game.normalizeFranchise({}).creatorAutoScore, false);
+const migratedManagementSave = game.normalizeFranchise({
+  morale: 0,
+  stadiumQuality: 0,
+  trainingQuality: 0,
+  scoutingQuality: 0,
+  frontOfficeCredits: 0,
+});
+assert.ok(migratedManagementSave.coach.name);
+assert.equal(migratedManagementSave.morale, 0);
+assert.equal(migratedManagementSave.stadiumQuality, 0);
+assert.equal(migratedManagementSave.frontOfficeCredits, 0);
+assert.equal(game.activeFeatureCount(1), 2);
+assert.equal(game.activeFeatureCount(4), 8);
 
 game.selectFranchiseSlot(0);
 elements.get("teamNameInput").value = " BRA-ZIL ";
@@ -592,4 +656,54 @@ assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentit
 assert.ok(storage.has("pitch-dash-franchise-slots"));
 assert.ok(storage.has("gridiron-dash-franchise-slots"));
 assert.ok(storage.has("hoop-hustle-franchise-slots"));
+
+const upgradesBeforeOffseason = game.runnerUpgrades;
+game.completeSeasonForTest(1, 11, 6, 2);
+assert.equal(game.seasonYear, 1);
+assert.equal(game.seasonCheckpointLevel, 18);
+assert.equal(game.gameState, "offseason");
+assert.deepEqual([...game.offseasonEventTypes], ["development", "coach", "draft"]);
+game.chooseOffseason(game.offseasonView.choices[0].id);
+assert.equal(game.runnerUpgrades, upgradesBeforeOffseason + 1);
+
+game.beginTestOffseason(1, 12, 6, "L");
+assert.equal(game.gameState, "offseason");
+assert.deepEqual([...game.offseasonEventTypes], ["coach", "draft"]);
+assert.equal(elements.get("offseasonPanel").hidden, false);
+assert.equal(elements.get("offseasonEventType").textContent, "Coach Room");
+assert.equal(elements.get("offseasonChoices").children.length, 3);
+const moraleBeforeCoachChoice = game.morale;
+game.chooseOffseason("trust");
+assert.equal(game.morale, moraleBeforeCoachChoice + 6);
+assert.equal(game.offseasonView.type, "Draft Night");
+assert.equal(game.offseasonView.choices.length, 4);
+game.chooseOffseason("keep");
+assert.equal(game.offseason, null);
+assert.equal(game.seasonYear, 2);
+assert.equal(elements.get("startButton").textContent, "Start Season 2");
+assert.equal(elements.get("moraleOperation").hidden, false);
+
+game.beginTestOffseason(2, 10, 8, "L");
+assert.deepEqual([...game.offseasonEventTypes], ["press", "draft"]);
+const fansBeforePress = Number(elements.get("fanSupportValue").textContent.replace("%", ""));
+game.chooseOffseason("team-first");
+assert.equal(game.offseasonView.type, "Draft Night");
+game.chooseOffseason("keep");
+assert.equal(game.seasonYear, 3);
+assert.ok(Number(elements.get("fanSupportValue").textContent.replace("%", "")) >= fansBeforePress);
+assert.equal(elements.get("stadiumOperation").hidden, false);
+
+game.beginTestOffseason(3, 11, 7, "L");
+assert.deepEqual([...game.offseasonEventTypes], ["scenario", "stadium", "draft"]);
+game.setManagement({ stadiumQuality: 100, morale: 80 });
+const highSupportFanChange = game.fanChangeForGame("W", 2);
+game.setManagement({ stadiumQuality: 50, morale: 50 });
+assert.ok(highSupportFanChange > game.fanChangeForGame("W", 2));
+
+game.beginTestOffseason(4, 13, 5, "L");
+assert.deepEqual([...game.offseasonEventTypes], ["facility", "draft"]);
+game.setManagement({ frontOfficeCredits: 0 });
+assert.equal(game.offseasonView.choices.some((choice) => (choice.cost || 0) === 0), true);
+game.chooseOffseason("fundamentals");
+assert.equal(game.offseasonView.type, "Draft Night");
 console.log("Retro Run smoke tests passed for Gridiron Dash, Goal Rush, and Hoop Hustle.");
