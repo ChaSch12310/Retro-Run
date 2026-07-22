@@ -90,6 +90,7 @@ assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="18"/);
 assert.match(html, /id="creatorPowerInput"[^>]+min="1"[^>]+max="101"/);
 assert.match(html, /101 = Invincible/);
 assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
+assert.match(html, /id="creatorAutoScoreInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="characterPreview"/);
 assert.match(html, /id="playerSkinInput"/);
 assert.match(html, /id="playerHairInput"/);
@@ -251,6 +252,8 @@ globalThis.__retroRunTest = {
   get seasonWeek() { return currentSeasonWeek(); },
   get seasonCheckpointLevel() { return seasonCheckpointLevel; },
   get creatorStaticKicking() { return franchise.creatorStaticKicking; },
+  get creatorAutoScore() { return franchise.creatorAutoScore; },
+  setCreatorAutoScore(enabled) { franchise.creatorAutoScore = enabled; },
   stiffarmChanceForPower,
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
@@ -288,6 +291,8 @@ const migratedSoccerSave = game.normalizeFranchise({
 assert.equal(migratedSoccerSave.history[0].opponent, "Brazil");
 assert.equal(migratedSoccerSave.attemptsByGame["1-2-Argentina"], 3);
 assert.match(migratedSoccerSave.lastResult, /France/);
+assert.equal(game.normalizeFranchise({ creatorAutoScore: true }).creatorAutoScore, true);
+assert.equal(game.normalizeFranchise({}).creatorAutoScore, false);
 
 game.selectFranchiseSlot(0);
 elements.get("teamNameInput").value = " BRA-ZIL ";
@@ -315,12 +320,18 @@ assert.equal(elements.get("creatorSeasonInput").value, 1);
 assert.equal(elements.get("creatorGameInput").value, 1);
 assert.equal(elements.get("creatorStaticKickingInput").checked, false);
 assert.equal(elements.get("creatorSliderModeValue").textContent, "Automatic");
+assert.equal(elements.get("creatorAutoScoreInput").checked, false);
+assert.equal(elements.get("creatorAutoScoreValue").textContent, "Off");
 elements.get("creatorSeasonInput").value = "3";
 elements.get("creatorGameInput").value = "7";
 elements.get("creatorPowerInput").value = "101";
 elements.get("creatorStaticKickingInput").checked = true;
 elements.get("creatorStaticKickingInput").dispatch("input");
+elements.get("creatorAutoScoreInput").checked = true;
+elements.get("creatorAutoScoreInput").dispatch("input");
 assert.equal(elements.get("creatorSliderModeValue").textContent, "Static");
+assert.equal(elements.get("creatorAutoScoreValue").textContent, "On");
+assert.match(elements.get("creatorKickModeText").textContent, /score automatically/);
 elements.get("creatorLevelsForm").submit();
 assert.equal(game.seasonYear, 3);
 assert.equal(game.seasonWeek, 7);
@@ -328,6 +339,8 @@ assert.equal(game.seasonCheckpointLevel, 42);
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 42);
 assert.equal(game.creatorStaticKicking, true);
 assert.equal(game.franchiseSlots[0].franchise.creatorStaticKicking, true);
+assert.equal(game.creatorAutoScore, true);
+assert.equal(game.franchiseSlots[0].franchise.creatorAutoScore, true);
 assert.equal(game.runnerPower, 101);
 assert.equal(game.stiffarmChanceForPower(101), 1);
 assert.ok(Math.abs(game.stiffarmChanceForPower(100) - 0.8) < 0.000001);
@@ -335,6 +348,15 @@ assert.ok(Math.abs(game.stiffarmChanceForPower(50) - 0.1) < 0.000001);
 assert.equal(elements.get("seasonYearValue").textContent, 3);
 assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 18");
 assert.equal(elements.get("creatorModal").hidden, true);
+elements.get("creatorTrigger").click();
+elements.get("creatorUsernameInput").value = "creator";
+elements.get("creatorPasswordInput").value = "creation";
+elements.get("creatorLoginForm").submit();
+assert.equal(elements.get("creatorAutoScoreInput").checked, true);
+elements.get("creatorAutoScoreInput").checked = false;
+elements.get("creatorAutoScoreInput").dispatch("input");
+elements.get("creatorLevelsForm").submit();
+assert.equal(game.creatorAutoScore, false);
 assert.notEqual(game.currentTeamName, "Brazil");
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
@@ -393,6 +415,12 @@ game.startFieldGoal();
 assert.equal(elements.get("soccerKeeper").classList.contains("diving"), false);
 game.launchTestShot(20, 70);
 assert.equal(elements.get("soccerKeeper").style["--keeper-dive-x"], "-82px");
+game.setCreatorAutoScore(true);
+game.startFieldGoal();
+assert.equal(game.fieldGoalKickMade, true);
+assert.equal(elements.get("fieldGoalBall").classList.contains("in-flight"), true);
+assert.equal(elements.get("fieldGoalStatus").textContent, "Creator auto-score is away!");
+game.setCreatorAutoScore(false);
 
 elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);

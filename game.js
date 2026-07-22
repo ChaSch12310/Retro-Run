@@ -75,6 +75,8 @@ const creatorGameInputEl = document.getElementById("creatorGameInput");
 const creatorStaticKickingInputEl = document.getElementById("creatorStaticKickingInput");
 const creatorSliderModeLabelEl = document.getElementById("creatorSliderModeLabel");
 const creatorSliderModeValueEl = document.getElementById("creatorSliderModeValue");
+const creatorAutoScoreInputEl = document.getElementById("creatorAutoScoreInput");
+const creatorAutoScoreValueEl = document.getElementById("creatorAutoScoreValue");
 const creatorCutLabelEl = document.getElementById("creatorCutLabel");
 const creatorAttemptsTextEl = document.getElementById("creatorAttemptsText");
 const creatorMessageEl = document.getElementById("creatorMessage");
@@ -514,6 +516,7 @@ const DEFAULT_FRANCHISE = {
   player: null,
   pendingUpgradeChoices: [],
   creatorStaticKicking: false,
+  creatorAutoScore: false,
   tutorialComplete: false,
   seasonCheckpointLevel: 0,
   savedAt: 0,
@@ -829,6 +832,7 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     player: normalizeFranchisePlayer(parsed.player),
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
     creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
+    creatorAutoScore: Boolean(parsed.creatorAutoScore),
     tutorialComplete: Boolean(parsed.tutorialComplete),
     seasonCheckpointLevel: Number(parsed.seasonCheckpointLevel || 0),
     savedAt: Number(parsed.savedAt || Date.now()),
@@ -1061,7 +1065,9 @@ function unlockCreatorTools(event) {
     creatorSeasonInputEl.value = franchise.year;
     creatorGameInputEl.value = currentSeasonWeek();
     creatorStaticKickingInputEl.checked = franchise.creatorStaticKicking;
+    creatorAutoScoreInputEl.checked = franchise.creatorAutoScore;
     updateCreatorSliderModeUi();
+    updateCreatorAutoScoreUi();
     creatorLoginFormEl.hidden = true;
     creatorLevelsFormEl.hidden = false;
     creatorAttemptsTextEl.textContent = "Unlocked";
@@ -1099,6 +1105,7 @@ function saveCreatorLevels(event) {
   );
   runner.cut = clamp(Math.round(Number(creatorCutInputEl.value) || runner.cut), 1, 100);
   franchise.creatorStaticKicking = creatorStaticKickingInputEl.checked;
+  franchise.creatorAutoScore = creatorAutoScoreInputEl.checked;
 
   if (progressChanged) {
     franchise.year = targetSeason;
@@ -1685,6 +1692,14 @@ function startFieldGoal() {
   fieldGoalPanelEl.hidden = false;
   resetFieldGoalBall();
   updateFieldGoalReadout();
+
+  if (franchise.creatorAutoScore) {
+    fieldGoalAim = 0;
+    fieldGoalPower = 70;
+    updateFieldGoalReadout();
+    launchFieldGoal(true);
+    fieldGoalStatusEl.textContent = "Creator auto-score is away!";
+  }
 }
 
 function updateFieldGoalChallenge(time) {
@@ -1771,16 +1786,17 @@ function handleFieldGoalAction() {
   launchFieldGoal();
 }
 
-function launchFieldGoal() {
+function launchFieldGoal(forceMade = false) {
   const copy = kickChallengeCopy();
   fieldGoalPhase = "flight";
   fieldGoalPhaseStarted = performance.now();
   fieldGoalAimMeterEl.classList.remove("active");
   fieldGoalAimMeterEl.classList.add("locked");
-  fieldGoalKickMade =
+  fieldGoalKickMade = forceMade || (
     Math.abs(fieldGoalAim) <= FIELD_GOAL_AIM_LIMIT &&
     fieldGoalPower >= FIELD_GOAL_POWER_MIN &&
-    (fieldGoalMode !== "static" || fieldGoalPower <= FIELD_GOAL_STATIC_POWER_MAX);
+    (fieldGoalMode !== "static" || fieldGoalPower <= FIELD_GOAL_STATIC_POWER_MAX)
+  );
   fieldGoalAimMarkerEl.hidden = true;
   fieldGoalStatusEl.textContent = copy.launchStatus;
   fieldGoalActionButtonEl.textContent = copy.launchingButton;
@@ -2388,9 +2404,16 @@ function updateCreatorSliderModeUi() {
     "aria-label",
     `Use static ${challengeName.toLowerCase()} sliders`
   );
-  creatorKickModeTextEl.textContent = staticMode
-    ? "Static aim and power sliders will be used for this save."
-    : "Automatic moving power and aim meters will be used for this save.";
+  creatorKickModeTextEl.textContent = creatorAutoScoreInputEl.checked
+    ? "The end-of-game scoring attempt will launch and score automatically for this save."
+    : staticMode
+      ? "Static aim and power sliders will be used for this save."
+      : "Automatic moving power and aim meters will be used for this save.";
+}
+
+function updateCreatorAutoScoreUi() {
+  creatorAutoScoreValueEl.textContent = creatorAutoScoreInputEl.checked ? "On" : "Off";
+  updateCreatorSliderModeUi();
 }
 
 function updateGameLibrarySelection() {
@@ -3945,6 +3968,7 @@ arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 creatorLoginFormEl.addEventListener("submit", unlockCreatorTools);
 creatorLevelsFormEl.addEventListener("submit", saveCreatorLevels);
 creatorStaticKickingInputEl.addEventListener("input", updateCreatorSliderModeUi);
+creatorAutoScoreInputEl.addEventListener("input", updateCreatorAutoScoreUi);
 creatorCancelButtonEl.addEventListener("click", closeCreatorTools);
 creatorCloseButtonEl.addEventListener("click", closeCreatorTools);
 gridironDashButtonEl.addEventListener("click", openGridironDash);
