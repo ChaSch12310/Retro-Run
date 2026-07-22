@@ -3254,6 +3254,10 @@ function drawLaneBase(y, row, team, lane) {
 }
 
 function drawBasketballLaneBase(y, row, team, lane) {
+  if (basketballCourtHasEnded(row)) {
+    return;
+  }
+
   const courtLeft = 38;
   const courtRight = CONFIG.width - 38;
   const courtWidth = courtRight - courtLeft;
@@ -3289,6 +3293,10 @@ function drawBasketballLaneBase(y, row, team, lane) {
     ctx.lineWidth = 4;
     ctx.strokeRect(courtLeft + 120, y - 1, courtWidth - 240, CONFIG.laneHeight + 2);
   }
+}
+
+function basketballCourtHasEnded(row) {
+  return row >= endzoneStartRow() + CONFIG.endzoneRows;
 }
 
 function drawSoccerLaneBase(y, row, team, lane) {

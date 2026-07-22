@@ -254,6 +254,7 @@ globalThis.__retroRunTest = {
   },
   setCameraRow(row) { cameraWorldRow = row; },
   drawScoreboardBar,
+  basketballCourtHasEnded,
   normalizeFranchise,
   render,
 };`;
@@ -398,6 +399,8 @@ assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
 assert.equal(elements.get("playerNameLabel").textContent, "Guard Name");
 assert.equal(elements.get("creatorCutLabel").textContent, "Handles");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Shot Sliders");
+assert.equal(game.basketballCourtHasEnded(54), false);
+assert.equal(game.basketballCourtHasEnded(55), true);
 assert.match(game.tutorial[0].items[0], /50 feet/);
 assert.match(game.tutorial[2].text, /Handles/);
 assert.equal(game.getUpgradeDisplay("cut").title, "Handle Boost");
