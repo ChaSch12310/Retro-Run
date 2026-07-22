@@ -221,6 +221,8 @@ globalThis.__retroRunTest = {
   get runnerNumber() { return currentRunner().appearance.number; },
   get runnerPower() { return currentRunner().power; },
   get currentSeasonOpponentNames() { return currentSeasonOpponents().map((team) => team.name); },
+  teamNameForLevel(level) { return teamForLevel(level).name; },
+  difficultyForLevel,
   get currentVenueIdentity() { return teamVenueIdentity(currentTeam()); },
   get venueIdentities() { return currentTeams().map((team) => teamVenueIdentity(team)); },
   get tutorial() { return tutorialSlides(); },
@@ -331,6 +333,10 @@ assert.equal(elements.get("creatorModal").hidden, true);
 assert.notEqual(game.currentTeamName, "Brazil");
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
+assert.equal(game.teamNameForLevel(6), game.teamNameForLevel(24));
+assert.equal(game.difficultyForLevel(0), game.difficultyForLevel(18));
+assert.equal(game.difficultyForLevel(6), game.difficultyForLevel(24));
+assert.ok(game.difficultyForLevel(17) > game.difficultyForLevel(0));
 assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
 assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
 game.selectFranchiseSlot(1);

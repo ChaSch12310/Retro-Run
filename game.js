@@ -1262,15 +1262,31 @@ function currentSeasonStartLevel() {
   return (franchise.year - 1) * GAMES_PER_SEASON;
 }
 
-function currentGameKey() {
+function seasonGameIndexForLevel(level) {
+  const numericLevel = Math.max(0, Math.trunc(Number(level) || 0));
+  return numericLevel % GAMES_PER_SEASON;
+}
+
+function teamForSeasonGame(gameIndex) {
   const teams = currentOpponentTeams();
-  return `${franchise.year}-${currentSeasonWeek()}-${teams[seasonCheckpointLevel % teams.length].name}`;
+  return teams[seasonGameIndexForLevel(gameIndex) % teams.length];
+}
+
+function teamForLevel(level) {
+  return teamForSeasonGame(seasonGameIndexForLevel(level));
+}
+
+function difficultyForLevel(level) {
+  return 1 + seasonGameIndexForLevel(level) * 0.18;
+}
+
+function currentGameKey() {
+  const opponent = teamForSeasonGame(currentSeasonWeek() - 1);
+  return `${franchise.year}-${currentSeasonWeek()}-${opponent.name}`;
 }
 
 function currentSeasonOpponents() {
-  const start = currentSeasonStartLevel();
-  const teams = currentOpponentTeams();
-  return Array.from({ length: GAMES_PER_SEASON }, (_, index) => teams[(start + index) % teams.length]);
+  return Array.from({ length: GAMES_PER_SEASON }, (_, index) => teamForSeasonGame(index));
 }
 
 function currentSeasonProgress() {
@@ -1360,7 +1376,7 @@ function generateLane(index) {
     return endzoneLane(index);
   }
 
-  const difficulty = 1 + currentLevel * 0.18;
+  const difficulty = difficultyForLevel(currentLevel);
   const roll = seededRandom(index * 13.17 + laneSeed * 0.37);
 
   if (roll < CONFIG.safeLaneChance) {
@@ -1426,12 +1442,11 @@ function seededRandom(input) {
 }
 
 function currentStage() {
-  return currentLevel;
+  return seasonGameIndexForLevel(currentLevel);
 }
 
 function currentTeam() {
-  const teams = currentOpponentTeams();
-  return teams[currentStage() % teams.length];
+  return teamForSeasonGame(currentStage());
 }
 
 function columnWidth() {
@@ -2288,8 +2303,7 @@ function completeLevel() {
         : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
   }
   saveFranchise();
-  const teams = currentOpponentTeams();
-  const nextTeam = teams[seasonCheckpointLevel % teams.length];
+  const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
   overlayTitleEl.textContent = isBasketballMode() ? "Swish!" : isSoccerMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
     ? (isBasketballMode()
@@ -2458,7 +2472,7 @@ function updateStartOverlay() {
 
   const homeTeam = currentHomeTeam();
   applyHomeTeamPalette(homeTeam);
-  const teams = currentOpponentTeams();
+  const nextOpponent = teamForSeasonGame(currentSeasonWeek() - 1);
   const soccer = isSoccerMode();
   const basketball = isBasketballMode();
   const setupReady = franchise.setupComplete;
@@ -2468,7 +2482,7 @@ function updateStartOverlay() {
   franchiseMainContentEl.hidden = !setupReady;
   startButton.hidden = !setupReady;
   homeTeamNameEl.textContent = homeTeam.name;
-  nextOpponentNameEl.textContent = teams[seasonCheckpointLevel % teams.length].name;
+  nextOpponentNameEl.textContent = nextOpponent.name;
   teamNameInputEl.value = homeTeam.name;
   const runner = currentRunner();
   const appearance = normalizePlayerAppearance(runner.appearance);
@@ -2493,7 +2507,7 @@ function updateStartOverlay() {
     startButton.textContent = "Start Career";
   } else if (seasonCheckpointLevel > 0) {
     overlayTitleEl.textContent = "Resume Season";
-    overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${teams[seasonCheckpointLevel % teams.length].name}.`;
+    overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
     startButton.textContent = basketball ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
     overlayTitleEl.textContent = basketball ? "Tipoff" : soccer ? "Opening Match" : "Kickoff";
