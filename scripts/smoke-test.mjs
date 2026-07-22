@@ -134,12 +134,22 @@ const canvasContext = new Proxy({}, {
 const drawnLabels = [];
 const drawnFillColors = [];
 const drawnArcs = [];
+const drawnLineSegments = [];
+let currentPathPoint = null;
 canvasContext.fillText = (value) => drawnLabels.push({
   text: String(value),
   color: canvasContext.fillStyle,
 });
 canvasContext.fillRect = () => drawnFillColors.push(canvasContext.fillStyle);
 canvasContext.arc = (...args) => drawnArcs.push(args);
+canvasContext.beginPath = () => { currentPathPoint = null; };
+canvasContext.moveTo = (x, y) => { currentPathPoint = { x, y }; };
+canvasContext.lineTo = (x, y) => {
+  if (currentPathPoint) {
+    drawnLineSegments.push([currentPathPoint.x, currentPathPoint.y, x, y]);
+  }
+  currentPathPoint = { x, y };
+};
 canvas.width = 540;
 canvas.height = 720;
 canvas.getContext = () => canvasContext;
@@ -336,6 +346,7 @@ game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
 drawnArcs.length = 0;
+drawnLineSegments.length = 0;
 game.render(1000);
 assert.equal(drawnFillColors.includes("#8d5524"), true);
 assert.equal(drawnFillColors.includes("#d2a24a"), true);
@@ -344,6 +355,9 @@ assert.equal(drawnFillColors.includes("#f1d24b"), false);
 assert.equal(drawnLabels.some((label) => label.text === "23"), true);
 assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
 assert.equal(drawnArcs.some(([, , radius, start, end]) => radius === 52 && start === 0 && end === Math.PI * 2), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 52 && x2 === 230), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 310 && x2 === 488), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 < 270 && x2 > 270), false);
 drawnLabels.length = 0;
 game.drawScoreboardBar();
 assert.equal(drawnLabels.some((label) => label.text === "BRA-ZIL"), true);
@@ -405,6 +419,7 @@ game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
 drawnArcs.length = 0;
+drawnLineSegments.length = 0;
 game.render(1000);
 assert.equal(drawnFillColors.includes("#d5a45b"), true);
 assert.equal(drawnFillColors.includes("#d86b20"), true);
@@ -413,6 +428,9 @@ assert.equal(drawnFillColors.includes("#fdb927"), true);
 assert.equal(drawnLabels.some((label) => label.text === "11"), true);
 assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
 assert.equal(drawnArcs.some(([, , radius, start, end]) => radius === 48 && start === 0 && end === Math.PI * 2), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 52 && x2 === 225), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 315 && x2 === 488), true);
+assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 < 270 && x2 > 270), false);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
 assert.equal(drawnFillColors.includes("#2f8fff"), true);

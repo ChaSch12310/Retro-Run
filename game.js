@@ -2921,9 +2921,10 @@ function drawField(time) {
 function drawTeamVenueDetails(team) {
   const midfieldY = laneTop(27) + CONFIG.laneHeight / 2;
   if (midfieldY > -80 && midfieldY < CONFIG.height + 80) {
-    drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, isBasketballMode() ? 82 : 72);
+    const badgeSize = isBasketballMode() ? 82 : 72;
+    drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, badgeSize);
     if (usesRoundBall()) {
-      drawCenterVenueRing(midfieldY);
+      drawCenterVenueRing(midfieldY, badgeSize);
     }
   }
 
@@ -2936,22 +2937,24 @@ function drawTeamVenueDetails(team) {
   }
 }
 
-function drawCenterVenueRing(centerY) {
+function drawCenterVenueRing(centerY, badgeSize) {
   const fieldLeft = 52;
   const fieldRight = CONFIG.width - 52;
   const radius = isBasketballMode() ? 48 : 52;
+  const logoGap = badgeSize / 2 + 4;
+  const centerX = CONFIG.width / 2;
 
   ctx.strokeStyle = PALETTE.line;
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(fieldLeft, centerY);
+  ctx.lineTo(centerX - logoGap, centerY);
+  ctx.moveTo(centerX + logoGap, centerY);
   ctx.lineTo(fieldRight, centerY);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(CONFIG.width / 2, centerY, radius, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.fillStyle = PALETTE.line;
-  ctx.fillRect(CONFIG.width / 2 - 3, centerY - 3, 6, 6);
 }
 
 function endAreaBounds() {
