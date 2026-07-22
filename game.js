@@ -2771,13 +2771,9 @@ function drawBasketballArenaBackdrop() {
   ctx.fillStyle = "#202d3b";
   ctx.fillRect(0, 126, courtLeft, CONFIG.height - 126);
   ctx.fillRect(courtRight, 126, CONFIG.width - courtRight, CONFIG.height - 126);
-  ctx.fillStyle = team.accent;
-  ctx.fillRect(courtLeft, 116, courtRight - courtLeft, 10);
-  ctx.fillRect(courtLeft, CONFIG.height - 56, courtRight - courtLeft, 10);
-
   for (let side = 0; side < 2; side += 1) {
     const x = side === 0 ? 3 : CONFIG.width - 35;
-    for (let y = 134; y < CONFIG.height - 58; y += 20) {
+    for (let y = 4; y < CONFIG.height; y += 20) {
       const colorIndex = Math.floor(y / 20) % 3;
       ctx.fillStyle = colorIndex === 0 ? "#d9a33e" : colorIndex === 1 ? "#b53b45" : "#6d8aab";
       ctx.fillRect(x + 4, y, 28, 9);
@@ -2864,14 +2860,11 @@ function drawBasketballArenaOverlay() {
   const courtRight = CONFIG.width - 38;
   const team = currentTeam();
 
-  ctx.fillStyle = "#111923";
-  ctx.fillRect(0, 116, courtLeft, 8);
-  ctx.fillRect(courtRight, 116, CONFIG.width - courtRight, 8);
   ctx.fillStyle = team.accent;
-  ctx.fillRect(4, 122, 30, CONFIG.height - 180);
-  ctx.fillRect(CONFIG.width - 34, 122, 30, CONFIG.height - 180);
+  ctx.fillRect(4, 0, 30, CONFIG.height);
+  ctx.fillRect(CONFIG.width - 34, 0, 30, CONFIG.height);
   ctx.fillStyle = team.secondary;
-  for (let y = 130; y < CONFIG.height - 70; y += 30) {
+  for (let y = 10; y < CONFIG.height; y += 30) {
     ctx.fillRect(7, y, 24, 18);
     ctx.fillRect(CONFIG.width - 31, y, 24, 18);
     ctx.fillStyle = y % 60 === 10 ? team.primary : team.uiText;
@@ -2881,15 +2874,8 @@ function drawBasketballArenaOverlay() {
   }
 
   ctx.fillStyle = PALETTE.outline;
-  ctx.fillRect(courtLeft - 4, 116, 4, CONFIG.height - 116);
-  ctx.fillRect(courtRight, 116, 4, CONFIG.height - 116);
-  ctx.fillRect(0, CONFIG.height - 58, CONFIG.width, 6);
-  ctx.fillStyle = "#253b50";
-  ctx.fillRect(54, CONFIG.height - 52, CONFIG.width - 108, 18);
-  ctx.fillStyle = team.accent;
-  for (let x = 68; x < CONFIG.width - 68; x += 46) {
-    ctx.fillRect(x, CONFIG.height - 47, 26, 5);
-  }
+  ctx.fillRect(courtLeft - 4, 0, 4, CONFIG.height);
+  ctx.fillRect(courtRight, 0, 4, CONFIG.height);
 }
 
 function drawField(time) {
@@ -3268,14 +3254,10 @@ function drawLaneBase(y, row, team, lane) {
 }
 
 function drawBasketballLaneBase(y, row, team, lane) {
-  if (basketballCourtHasEnded(row)) {
-    return;
-  }
-
   const courtLeft = 38;
   const courtRight = CONFIG.width - 38;
   const courtWidth = courtRight - courtLeft;
-  const isPaint = lane && lane.type === "endzone";
+  const isPaint = lane && lane.type === "endzone" && basketballRowIsPaint(row);
   const wood = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
 
   ctx.fillStyle = "#5d3825";
@@ -3309,8 +3291,8 @@ function drawBasketballLaneBase(y, row, team, lane) {
   }
 }
 
-function basketballCourtHasEnded(row) {
-  return row >= endzoneStartRow() + CONFIG.endzoneRows;
+function basketballRowIsPaint(row) {
+  return row >= endzoneStartRow() && row < endzoneStartRow() + CONFIG.endzoneRows;
 }
 
 function drawSoccerLaneBase(y, row, team, lane) {

@@ -118,6 +118,7 @@ assert.doesNotMatch(source, /drawLabel\("PENALTY AREA"/);
 assert.match(source, /const TEAM_VENUE_MARKS = \{/);
 assert.match(source, /function drawTeamPixelBadge\(/);
 assert.match(source, /function drawSoccerPenaltyOverlay\(/);
+assert.doesNotMatch(source, /basketballCourtHasEnded/);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
 const canvas = elements.get("gameCanvas");
@@ -133,6 +134,7 @@ const canvasContext = new Proxy({}, {
 });
 const drawnLabels = [];
 const drawnFillColors = [];
+const drawnFillRects = [];
 const drawnArcs = [];
 const drawnLineSegments = [];
 let currentPathPoint = null;
@@ -140,7 +142,10 @@ canvasContext.fillText = (value) => drawnLabels.push({
   text: String(value),
   color: canvasContext.fillStyle,
 });
-canvasContext.fillRect = () => drawnFillColors.push(canvasContext.fillStyle);
+canvasContext.fillRect = (x, y, width, height) => {
+  drawnFillColors.push(canvasContext.fillStyle);
+  drawnFillRects.push({ x, y, width, height, color: canvasContext.fillStyle });
+};
 canvasContext.arc = (...args) => drawnArcs.push(args);
 canvasContext.beginPath = () => { currentPathPoint = null; };
 canvasContext.moveTo = (x, y) => { currentPathPoint = { x, y }; };
@@ -256,7 +261,7 @@ globalThis.__retroRunTest = {
   },
   setCameraRow(row) { cameraWorldRow = row; },
   drawScoreboardBar,
-  basketballCourtHasEnded,
+  basketballRowIsPaint,
   normalizeFranchise,
   render,
 };`;
@@ -405,8 +410,9 @@ assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
 assert.equal(elements.get("playerNameLabel").textContent, "Guard Name");
 assert.equal(elements.get("creatorCutLabel").textContent, "Handles");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Shot Sliders");
-assert.equal(game.basketballCourtHasEnded(54), false);
-assert.equal(game.basketballCourtHasEnded(55), true);
+assert.equal(game.basketballRowIsPaint(52), true);
+assert.equal(game.basketballRowIsPaint(54), true);
+assert.equal(game.basketballRowIsPaint(55), false);
 assert.match(game.tutorial[0].items[0], /50 feet/);
 assert.match(game.tutorial[2].text, /Handles/);
 assert.equal(game.getUpgradeDisplay("cut").title, "Handle Boost");
@@ -440,6 +446,11 @@ assert.equal(drawnArcs.some(([, , radius, start, end]) => radius === 48 && start
 assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 52 && x2 === 225), true);
 assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 === 315 && x2 === 488), true);
 assert.equal(drawnLineSegments.some(([x1, y1, x2, y2]) => y1 === 270 && y2 === 270 && x1 < 270 && x2 > 270), false);
+drawnFillRects.length = 0;
+game.setCameraRow(50);
+game.render(1000);
+assert.equal(drawnFillRects.some(({ x, y, width, height }) => x === 46 && y < 420 && width === 448 && height === 60), true);
+game.setCameraRow(20);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
 assert.equal(drawnFillColors.includes("#2f8fff"), true);
