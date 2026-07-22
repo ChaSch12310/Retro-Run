@@ -313,6 +313,14 @@ globalThis.__retroRunTest = {
   setManagement(values) { Object.assign(franchise, values); },
   fanChangeForGame,
   activeFeatureCount,
+  get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
+  generateLaneTypes(level, count) {
+    currentLevel = level;
+    laneSeed = level * 101;
+    lanes = [];
+    createLanes(0, count);
+    return lanes.map((lane) => lane.type);
+  },
   stiffarmChanceForPower,
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
@@ -706,4 +714,14 @@ game.setManagement({ frontOfficeCredits: 0 });
 assert.equal(game.offseasonView.choices.some((choice) => (choice.cost || 0) === 0), true);
 game.chooseOffseason("fundamentals");
 assert.equal(game.offseasonView.type, "Draft Night");
+
+for (let level = 0; level < 18; level += 1) {
+  const laneTypes = game.generateLaneTypes(level, 70);
+  let defenderStreak = 0;
+  laneTypes.forEach((type) => {
+    defenderStreak = type === "defenders" ? defenderStreak + 1 : 0;
+    assert.ok(defenderStreak <= game.maxConsecutiveDefenderRows);
+  });
+}
+assert.ok(game.maxConsecutiveDefenderRows < 12);
 console.log("Retro Run smoke tests passed for Gridiron Dash, Goal Rush, and Hoop Hustle.");

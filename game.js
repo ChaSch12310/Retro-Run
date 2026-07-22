@@ -155,6 +155,7 @@ const CONFIG = {
   defenderWidth: 42,
   sidelineChance: 0.14,
   safeLaneChance: 0.24,
+  maxConsecutiveDefenderRows: 5,
   hitPauseMs: 500,
   knockbackRows: 2,
   downResetMilestone: 10,
@@ -1964,6 +1965,10 @@ function generateLane(index) {
   const difficulty = difficultyForLevel(currentLevel);
   const roll = seededRandom(index * 13.17 + laneSeed * 0.37);
 
+  if (consecutiveDefenderRowsBefore(index) >= CONFIG.maxConsecutiveDefenderRows) {
+    return safeLane(index);
+  }
+
   if (roll < CONFIG.safeLaneChance) {
     return safeLane(index);
   }
@@ -1973,6 +1978,17 @@ function generateLane(index) {
   }
 
   return defenderLane(index, difficulty);
+}
+
+function consecutiveDefenderRowsBefore(index) {
+  let count = 0;
+  for (let row = index - 1; row >= 0; row -= 1) {
+    if (lanes[row]?.type !== "defenders") {
+      break;
+    }
+    count += 1;
+  }
+  return count;
 }
 
 function safeLane(index) {
