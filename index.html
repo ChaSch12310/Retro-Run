@@ -458,7 +458,7 @@
             <span class="label">Password</span>
             <input id="creatorPasswordInput" type="password" autocomplete="off" />
           </label>
-          <p class="creator-message" id="creatorMessage">Enter creator access to edit player levels.</p>
+          <p class="creator-message" id="creatorMessage">Enter creator access to edit player levels and season position.</p>
           <div class="creator-actions">
             <button type="button" class="secondary-button" id="creatorCancelButton">Cancel</button>
             <button type="submit">Unlock</button>
@@ -478,10 +478,20 @@
             <span class="label" id="creatorCutLabel">Cut</span>
             <input id="creatorCutInput" type="number" min="1" max="100" />
           </label>
-          <p class="creator-message" id="creatorKickModeText">Set levels from 1 to 100. Static field-goal sliders are enabled for this save.</p>
+          <div class="creator-progress-fields">
+            <label class="setup-field">
+              <span class="label">Season</span>
+              <input id="creatorSeasonInput" type="number" min="1" max="999" />
+            </label>
+            <label class="setup-field">
+              <span class="label">Game</span>
+              <input id="creatorGameInput" type="number" min="1" max="18" />
+            </label>
+          </div>
+          <p class="creator-message" id="creatorKickModeText">Set levels from 1 to 100 and choose the season and game. Static field-goal sliders are enabled for this save.</p>
           <div class="creator-actions">
             <button type="button" class="secondary-button" id="creatorCloseButton">Cancel</button>
-            <button type="submit">Save Levels</button>
+            <button type="submit">Save Changes</button>
           </div>
         </form>
       </div>

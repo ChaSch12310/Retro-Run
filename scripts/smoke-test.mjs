@@ -62,6 +62,10 @@ class FakeElement {
   click() {
     this.listeners.get("click")?.({ preventDefault() {} });
   }
+
+  submit() {
+    this.listeners.get("submit")?.({ preventDefault() {} });
+  }
 }
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -76,6 +80,8 @@ assert.match(html, /<p>Choose a game to enter the arcade<\/p>/);
 assert.doesNotMatch(html, /More games can be added here/);
 assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s*<\/button>\s*<\/h1>/s);
 assert.match(html, /<h2><button[^>]+id="creatorTrigger"[^>]*>How<\/button> To Play<\/h2>/);
+assert.match(html, /id="creatorSeasonInput"[^>]+min="1"[^>]+max="999"/);
+assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="18"/);
 assert.match(html, /id="characterPreview"/);
 assert.match(html, /id="playerSkinInput"/);
 assert.match(html, /id="playerHairInput"/);
@@ -215,6 +221,9 @@ globalThis.__retroRunTest = {
   advanceFieldGoalFlight(time) { updateFieldGoalFlight(time); },
   get fieldGoalKickMade() { return fieldGoalKickMade; },
   get gameState() { return gameState; },
+  get seasonYear() { return franchise.year; },
+  get seasonWeek() { return currentSeasonWeek(); },
+  get seasonCheckpointLevel() { return seasonCheckpointLevel; },
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
   drawChainMarkers,
@@ -267,6 +276,22 @@ assert.equal(game.runnerNumber, 23);
 elements.get("creatorTrigger").click();
 assert.equal(elements.get("creatorModal").hidden, false);
 elements.get("creatorCancelButton").click();
+assert.equal(elements.get("creatorModal").hidden, true);
+elements.get("creatorTrigger").click();
+elements.get("creatorUsernameInput").value = "creator";
+elements.get("creatorPasswordInput").value = "creation";
+elements.get("creatorLoginForm").submit();
+assert.equal(elements.get("creatorSeasonInput").value, 1);
+assert.equal(elements.get("creatorGameInput").value, 1);
+elements.get("creatorSeasonInput").value = "3";
+elements.get("creatorGameInput").value = "7";
+elements.get("creatorLevelsForm").submit();
+assert.equal(game.seasonYear, 3);
+assert.equal(game.seasonWeek, 7);
+assert.equal(game.seasonCheckpointLevel, 42);
+assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 42);
+assert.equal(elements.get("seasonYearValue").textContent, 3);
+assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 18");
 assert.equal(elements.get("creatorModal").hidden, true);
 assert.notEqual(game.currentTeamName, "Brazil");
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);

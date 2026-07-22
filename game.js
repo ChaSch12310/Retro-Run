@@ -70,6 +70,8 @@ const creatorPasswordInputEl = document.getElementById("creatorPasswordInput");
 const creatorSpeedInputEl = document.getElementById("creatorSpeedInput");
 const creatorPowerInputEl = document.getElementById("creatorPowerInput");
 const creatorCutInputEl = document.getElementById("creatorCutInput");
+const creatorSeasonInputEl = document.getElementById("creatorSeasonInput");
+const creatorGameInputEl = document.getElementById("creatorGameInput");
 const creatorCutLabelEl = document.getElementById("creatorCutLabel");
 const creatorAttemptsTextEl = document.getElementById("creatorAttemptsText");
 const creatorMessageEl = document.getElementById("creatorMessage");
@@ -1024,7 +1026,7 @@ function openCreatorTools() {
   creatorLevelsFormEl.hidden = true;
   creatorUsernameInputEl.value = "";
   creatorPasswordInputEl.value = "";
-  creatorMessageEl.textContent = "Enter creator access to edit player levels.";
+  creatorMessageEl.textContent = "Enter creator access to edit player levels and season position.";
   updateCreatorAttemptsText();
   creatorModalEl.hidden = false;
   creatorUsernameInputEl.focus();
@@ -1054,6 +1056,8 @@ function unlockCreatorTools(event) {
     creatorSpeedInputEl.value = runner.speed;
     creatorPowerInputEl.value = runner.power;
     creatorCutInputEl.value = runner.cut;
+    creatorSeasonInputEl.value = franchise.year;
+    creatorGameInputEl.value = currentSeasonWeek();
     creatorLoginFormEl.hidden = true;
     creatorLevelsFormEl.hidden = false;
     creatorAttemptsTextEl.textContent = "Unlocked";
@@ -1076,14 +1080,50 @@ function unlockCreatorTools(event) {
 function saveCreatorLevels(event) {
   event.preventDefault();
   const runner = currentRunner();
+  const requestedSeason = Number.parseInt(creatorSeasonInputEl.value, 10);
+  const requestedGame = Number.parseInt(creatorGameInputEl.value, 10);
+  const targetSeason = clamp(Number.isFinite(requestedSeason) ? requestedSeason : franchise.year, 1, 999);
+  const targetGame = clamp(Number.isFinite(requestedGame) ? requestedGame : currentSeasonWeek(), 1, GAMES_PER_SEASON);
+  const targetCheckpoint = (targetSeason - 1) * GAMES_PER_SEASON + targetGame - 1;
+  const progressChanged = targetSeason !== franchise.year || targetCheckpoint !== seasonCheckpointLevel;
+
   runner.speed = clamp(Math.round(Number(creatorSpeedInputEl.value) || runner.speed), 1, 100);
   runner.power = clamp(Math.round(Number(creatorPowerInputEl.value) || runner.power), 1, 100);
   runner.cut = clamp(Math.round(Number(creatorCutInputEl.value) || runner.cut), 1, 100);
-  franchise.lastResult = `Creator tools updated ${runner.name}'s levels.`;
+
+  if (progressChanged) {
+    franchise.year = targetSeason;
+    seasonCheckpointLevel = targetCheckpoint;
+    currentLevel = targetCheckpoint;
+    player.distance = 0;
+    player.downsLeft = CONFIG.startingDowns;
+    const completedGames = franchise.history.filter(
+      (entry) => entry.season === targetSeason && entry.week < targetGame
+    );
+    franchise.wins = completedGames.filter((entry) => entry.result === "W").length;
+    franchise.losses = completedGames.filter((entry) => entry.result === "L").length;
+    pendingUpgrade = false;
+    franchise.pendingUpgradeChoices = [];
+    gameState = "menu";
+    creatorReturnGameState = null;
+    fieldGoalPanelEl.hidden = true;
+    tutorialPanelEl.hidden = true;
+    franchise.lastResult = `Creator tools moved the franchise to Season ${targetSeason}, Game ${targetGame}.`;
+  } else {
+    franchise.lastResult = `Creator tools updated ${runner.name}'s levels.`;
+  }
+
   saveFranchise();
+  creatorSeasonInputEl.value = targetSeason;
+  creatorGameInputEl.value = targetGame;
   renderRunnerCards();
+  renderUpgradeOptions();
   renderFranchiseDashboard();
   updateHud();
+  if (progressChanged) {
+    showOverlay();
+    updateStartOverlay();
+  }
   closeCreatorTools();
 }
 
@@ -2297,10 +2337,10 @@ function applyGameModeUi() {
   kickChallengeKickerEl.textContent = basketball ? "Clutch Shot Challenge" : soccer ? "Goal Challenge" : "Field Goal Challenge";
   kickChallengeTitleEl.textContent = basketball ? "Shot for the Win" : soccer ? "Shot on Goal" : "Field Goal";
   creatorKickModeTextEl.textContent = basketball
-    ? "Set levels from 1 to 100. Static jump-shot sliders are enabled for this save."
+    ? "Set levels from 1 to 100 and choose the season and game. Static jump-shot sliders are enabled for this save."
     : soccer
-      ? "Set levels from 1 to 100. Static shot sliders are enabled for this save."
-      : "Set levels from 1 to 100. Static field-goal sliders are enabled for this save.";
+      ? "Set levels from 1 to 100 and choose the season and game. Static shot sliders are enabled for this save."
+      : "Set levels from 1 to 100 and choose the season and game. Static field-goal sliders are enabled for this save.";
   loadCareerTitleEl.textContent = soccer ? "Load National Team" : "Load Franchise";
   careerHubLabelEl.textContent = soccer ? "National Team Hub" : "Franchise Hub";
   createCareerTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
