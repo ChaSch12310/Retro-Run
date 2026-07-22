@@ -119,11 +119,13 @@ const canvasContext = new Proxy({}, {
 });
 const drawnLabels = [];
 const drawnFillColors = [];
+const drawnArcs = [];
 canvasContext.fillText = (value) => drawnLabels.push({
   text: String(value),
   color: canvasContext.fillStyle,
 });
 canvasContext.fillRect = () => drawnFillColors.push(canvasContext.fillStyle);
+canvasContext.arc = (...args) => drawnArcs.push(args);
 canvas.width = 540;
 canvas.height = 720;
 canvas.getContext = () => canvasContext;
@@ -284,6 +286,7 @@ game.setChainRows(20, 23);
 game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
+drawnArcs.length = 0;
 game.render(1000);
 assert.equal(drawnFillColors.includes("#8d5524"), true);
 assert.equal(drawnFillColors.includes("#d2a24a"), true);
@@ -291,6 +294,7 @@ assert.equal(drawnFillColors.includes("#2f8fff"), true);
 assert.equal(drawnFillColors.includes("#f1d24b"), false);
 assert.equal(drawnLabels.some((label) => label.text === "23"), true);
 assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
+assert.equal(drawnArcs.some(([, , radius, start, end]) => radius === 52 && start === 0 && end === Math.PI * 2), true);
 drawnLabels.length = 0;
 game.drawScoreboardBar();
 assert.equal(drawnLabels.some((label) => label.text === "BRA-ZIL"), true);
@@ -348,6 +352,7 @@ game.setChainRows(20, 23);
 game.setCameraRow(20);
 drawnFillColors.length = 0;
 drawnLabels.length = 0;
+drawnArcs.length = 0;
 game.render(1000);
 assert.equal(drawnFillColors.includes("#d5a45b"), true);
 assert.equal(drawnFillColors.includes("#d86b20"), true);
@@ -355,6 +360,7 @@ assert.equal(drawnFillColors.includes("#b8764e"), true);
 assert.equal(drawnFillColors.includes("#fdb927"), true);
 assert.equal(drawnLabels.some((label) => label.text === "11"), true);
 assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
+assert.equal(drawnArcs.some(([, , radius, start, end]) => radius === 48 && start === 0 && end === Math.PI * 2), true);
 drawnFillColors.length = 0;
 game.drawChainMarkers();
 assert.equal(drawnFillColors.includes("#2f8fff"), true);

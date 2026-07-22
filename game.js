@@ -2852,6 +2852,9 @@ function drawTeamVenueDetails(team) {
   const midfieldY = laneTop(27) + CONFIG.laneHeight / 2;
   if (midfieldY > -80 && midfieldY < CONFIG.height + 80) {
     drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, isBasketballMode() ? 82 : 72);
+    if (usesRoundBall()) {
+      drawCenterVenueRing(midfieldY);
+    }
   }
 
   if (isBasketballMode()) {
@@ -2861,6 +2864,24 @@ function drawTeamVenueDetails(team) {
   } else {
     drawFootballEndzoneOverlay(team);
   }
+}
+
+function drawCenterVenueRing(centerY) {
+  const fieldLeft = 52;
+  const fieldRight = CONFIG.width - 52;
+  const radius = isBasketballMode() ? 48 : 52;
+
+  ctx.strokeStyle = PALETTE.line;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(fieldLeft, centerY);
+  ctx.lineTo(fieldRight, centerY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(CONFIG.width / 2, centerY, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(CONFIG.width / 2 - 3, centerY - 3, 6, 6);
 }
 
 function endAreaBounds() {
@@ -3188,15 +3209,6 @@ function drawBasketballLaneBase(y, row, team, lane) {
     ctx.fillRect(courtLeft + 14, y + 1, courtWidth - 28, 3);
   }
 
-  if (row === 27) {
-    ctx.fillRect(courtLeft + 14, y + Math.round(CONFIG.laneHeight / 2) - 2, courtWidth - 28, 4);
-    ctx.strokeStyle = PALETTE.line;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(CONFIG.width / 2, y + CONFIG.laneHeight / 2, 48, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
   if (isPaint) {
     ctx.fillStyle = team.primary;
     ctx.fillRect(courtLeft + 120, y, courtWidth - 240, CONFIG.laneHeight);
@@ -3226,18 +3238,6 @@ function drawSoccerLaneBase(y, row, team, lane) {
   if (row % 5 === 0) {
     ctx.fillStyle = "rgba(245,239,199,0.72)";
     ctx.fillRect(fieldLeft + 14, y + 1, fieldWidth - 28, 3);
-  }
-
-  if (row === 27) {
-    ctx.fillStyle = PALETTE.line;
-    ctx.fillRect(fieldLeft + 14, y + Math.round(CONFIG.laneHeight / 2) - 2, fieldWidth - 28, 4);
-    ctx.strokeStyle = PALETTE.line;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(CONFIG.width / 2, y + CONFIG.laneHeight / 2, 52, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = PALETTE.line;
-    ctx.fillRect(CONFIG.width / 2 - 3, y + CONFIG.laneHeight / 2 - 3, 6, 6);
   }
 
   for (let x = fieldLeft + 16; x < fieldRight - 18; x += 34) {
