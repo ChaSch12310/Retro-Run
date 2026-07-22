@@ -687,6 +687,16 @@ body.franchise-slot-selecting #loadSavePanel {
   font-weight: 800;
 }
 
+.creator-rating-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.creator-rating-label span {
+  color: var(--team-accent);
+}
+
 .creator-progress-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -487,6 +487,7 @@ const MAX_FRANCHISE_SLOTS = 5;
 const CREATOR_USERNAME = "creator";
 const CREATOR_PASSWORD = "creation";
 const CREATOR_MAX_ATTEMPTS = 3;
+const CREATOR_INVINCIBLE_POWER = 101;
 const FIELD_GOAL_DURATION_MS = 30000;
 const FIELD_GOAL_AIM_LIMIT = 35;
 const FIELD_GOAL_POWER_MIN = 55;
@@ -1091,7 +1092,11 @@ function saveCreatorLevels(event) {
   const progressChanged = targetSeason !== franchise.year || targetCheckpoint !== seasonCheckpointLevel;
 
   runner.speed = clamp(Math.round(Number(creatorSpeedInputEl.value) || runner.speed), 1, 100);
-  runner.power = clamp(Math.round(Number(creatorPowerInputEl.value) || runner.power), 1, 100);
+  runner.power = clamp(
+    Math.round(Number(creatorPowerInputEl.value) || runner.power),
+    1,
+    CREATOR_INVINCIBLE_POWER
+  );
   runner.cut = clamp(Math.round(Number(creatorCutInputEl.value) || runner.cut), 1, 100);
   franchise.creatorStaticKicking = creatorStaticKickingInputEl.checked;
 
@@ -1286,7 +1291,14 @@ function currentSeriesYards() {
 }
 
 function stiffarmChance() {
-  const power = currentRunner().power;
+  return stiffarmChanceForPower(currentRunner().power);
+}
+
+function stiffarmChanceForPower(power) {
+  if (power >= CREATOR_INVINCIBLE_POWER) {
+    return 1;
+  }
+
   const clampedPower = clamp(power, 50, 100);
   const progress = (clampedPower - 50) / 50;
   return 0.1 + progress * 0.7;

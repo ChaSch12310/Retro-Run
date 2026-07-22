@@ -87,6 +87,8 @@ assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s
 assert.match(html, /<h2><button[^>]+id="creatorTrigger"[^>]*>How<\/button> To Play<\/h2>/);
 assert.match(html, /id="creatorSeasonInput"[^>]+min="1"[^>]+max="999"/);
 assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="18"/);
+assert.match(html, /id="creatorPowerInput"[^>]+min="1"[^>]+max="101"/);
+assert.match(html, /101 = Invincible/);
 assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="characterPreview"/);
 assert.match(html, /id="playerSkinInput"/);
@@ -207,6 +209,7 @@ globalThis.__retroRunTest = {
   get runnerSkin() { return currentRunner().appearance.skin; },
   get runnerHair() { return currentRunner().appearance.hair; },
   get runnerNumber() { return currentRunner().appearance.number; },
+  get runnerPower() { return currentRunner().power; },
   get currentSeasonOpponentNames() { return currentSeasonOpponents().map((team) => team.name); },
   get currentVenueIdentity() { return teamVenueIdentity(currentTeam()); },
   get venueIdentities() { return currentTeams().map((team) => teamVenueIdentity(team)); },
@@ -231,6 +234,7 @@ globalThis.__retroRunTest = {
   get seasonWeek() { return currentSeasonWeek(); },
   get seasonCheckpointLevel() { return seasonCheckpointLevel; },
   get creatorStaticKicking() { return franchise.creatorStaticKicking; },
+  stiffarmChanceForPower,
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
   drawChainMarkers,
@@ -295,6 +299,7 @@ assert.equal(elements.get("creatorStaticKickingInput").checked, false);
 assert.equal(elements.get("creatorSliderModeValue").textContent, "Automatic");
 elements.get("creatorSeasonInput").value = "3";
 elements.get("creatorGameInput").value = "7";
+elements.get("creatorPowerInput").value = "101";
 elements.get("creatorStaticKickingInput").checked = true;
 elements.get("creatorStaticKickingInput").dispatch("input");
 assert.equal(elements.get("creatorSliderModeValue").textContent, "Static");
@@ -305,6 +310,10 @@ assert.equal(game.seasonCheckpointLevel, 42);
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 42);
 assert.equal(game.creatorStaticKicking, true);
 assert.equal(game.franchiseSlots[0].franchise.creatorStaticKicking, true);
+assert.equal(game.runnerPower, 101);
+assert.equal(game.stiffarmChanceForPower(101), 1);
+assert.ok(Math.abs(game.stiffarmChanceForPower(100) - 0.8) < 0.000001);
+assert.ok(Math.abs(game.stiffarmChanceForPower(50) - 0.1) < 0.000001);
 assert.equal(elements.get("seasonYearValue").textContent, 3);
 assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 18");
 assert.equal(elements.get("creatorModal").hidden, true);
