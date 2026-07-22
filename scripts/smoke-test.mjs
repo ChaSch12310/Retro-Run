@@ -32,6 +32,7 @@ class FakeElement {
     this.id = id;
     this.hidden = false;
     this.disabled = false;
+    this.checked = false;
     this.value = "";
     this.textContent = "";
     this.innerHTML = "";
@@ -66,6 +67,10 @@ class FakeElement {
   submit() {
     this.listeners.get("submit")?.({ preventDefault() {} });
   }
+
+  dispatch(type) {
+    this.listeners.get(type)?.({ preventDefault() {} });
+  }
 }
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -82,6 +87,7 @@ assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s
 assert.match(html, /<h2><button[^>]+id="creatorTrigger"[^>]*>How<\/button> To Play<\/h2>/);
 assert.match(html, /id="creatorSeasonInput"[^>]+min="1"[^>]+max="999"/);
 assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="18"/);
+assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="characterPreview"/);
 assert.match(html, /id="playerSkinInput"/);
 assert.match(html, /id="playerHairInput"/);
@@ -224,6 +230,7 @@ globalThis.__retroRunTest = {
   get seasonYear() { return franchise.year; },
   get seasonWeek() { return currentSeasonWeek(); },
   get seasonCheckpointLevel() { return seasonCheckpointLevel; },
+  get creatorStaticKicking() { return franchise.creatorStaticKicking; },
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
   updateCharacterPreview,
   drawChainMarkers,
@@ -248,6 +255,7 @@ assert.equal(elements.get("creatorTrigger").disabled, false);
 assert.equal(body.dataset.game, "soccer");
 assert.equal(elements.get("distanceLabel").textContent, "Meters");
 assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
+assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Goal Sliders");
 assert.equal(game.currentTeamName, "Brazil");
 assert.match(game.tutorial[0].items[0], /50 meters/);
 const migratedSoccerSave = game.normalizeFranchise({
@@ -283,13 +291,20 @@ elements.get("creatorPasswordInput").value = "creation";
 elements.get("creatorLoginForm").submit();
 assert.equal(elements.get("creatorSeasonInput").value, 1);
 assert.equal(elements.get("creatorGameInput").value, 1);
+assert.equal(elements.get("creatorStaticKickingInput").checked, false);
+assert.equal(elements.get("creatorSliderModeValue").textContent, "Automatic");
 elements.get("creatorSeasonInput").value = "3";
 elements.get("creatorGameInput").value = "7";
+elements.get("creatorStaticKickingInput").checked = true;
+elements.get("creatorStaticKickingInput").dispatch("input");
+assert.equal(elements.get("creatorSliderModeValue").textContent, "Static");
 elements.get("creatorLevelsForm").submit();
 assert.equal(game.seasonYear, 3);
 assert.equal(game.seasonWeek, 7);
 assert.equal(game.seasonCheckpointLevel, 42);
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 42);
+assert.equal(game.creatorStaticKicking, true);
+assert.equal(game.franchiseSlots[0].franchise.creatorStaticKicking, true);
 assert.equal(elements.get("seasonYearValue").textContent, 3);
 assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 18");
 assert.equal(elements.get("creatorModal").hidden, true);
@@ -328,6 +343,8 @@ assert.equal(drawnLabels.some((label) => label.text.startsWith("MTR ")), true);
 assert.equal(drawnLabels.some((label) => label.text.startsWith("POSS ")), true);
 game.startFieldGoal();
 assert.equal(elements.get("kickChallengeTitle").textContent, "Shot on Goal");
+assert.equal(elements.get("fieldGoalStaticControls").hidden, false);
+assert.equal(elements.get("fieldGoalPowerMeter").hidden, true);
 assert.equal(elements.get("fieldGoalBall").style.bottom, "-18%");
 assert.equal(elements.get("fieldGoalBall").classList.contains("in-flight"), false);
 game.launchTestShot(-20, 70);
@@ -357,6 +374,7 @@ assert.equal(elements.get("distanceLabel").textContent, "Feet");
 assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
 assert.equal(elements.get("playerNameLabel").textContent, "Guard Name");
 assert.equal(elements.get("creatorCutLabel").textContent, "Handles");
+assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Shot Sliders");
 assert.match(game.tutorial[0].items[0], /50 feet/);
 assert.match(game.tutorial[2].text, /Handles/);
 assert.equal(game.getUpgradeDisplay("cut").title, "Handle Boost");
@@ -430,6 +448,7 @@ assert.equal(elements.get("gridironDashButton").classList.contains("selected"), 
 assert.equal(elements.get("hoopHustleButton").classList.contains("selected"), false);
 assert.equal(body.dataset.game, "football");
 assert.equal(elements.get("distanceLabel").textContent, "Yards");
+assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Field-Goal Sliders");
 assert.equal(game.franchiseSlots[0].franchise.team.name, "Test Falcons");
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 21);
 game.selectFranchiseSlot(1);

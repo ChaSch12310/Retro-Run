@@ -693,6 +693,72 @@ body.franchise-slot-selecting #loadSavePanel {
   gap: 12px;
 }
 
+.creator-mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: #102a42;
+  border: 3px solid #06121d;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+.creator-mode-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.creator-mode-copy strong {
+  color: var(--team-accent);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.creator-mode-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.creator-switch-track {
+  position: relative;
+  width: 58px;
+  height: 30px;
+  background: #263f57;
+  border: 3px solid var(--line);
+  box-shadow: inset 0 0 0 2px #102234;
+}
+
+.creator-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: var(--line);
+  transition: transform 120ms steps(2, end);
+}
+
+.creator-mode-switch input:checked + .creator-switch-track {
+  background: var(--team-accent);
+}
+
+.creator-mode-switch input:checked + .creator-switch-track::after {
+  background: #102234;
+  transform: translateX(28px);
+}
+
+.creator-mode-switch input:focus-visible + .creator-switch-track {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
 .creator-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

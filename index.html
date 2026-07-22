@@ -488,7 +488,15 @@
               <input id="creatorGameInput" type="number" min="1" max="18" />
             </label>
           </div>
-          <p class="creator-message" id="creatorKickModeText">Set levels from 1 to 100 and choose the season and game. Static field-goal sliders are enabled for this save.</p>
+          <label class="creator-mode-switch" for="creatorStaticKickingInput">
+            <span class="creator-mode-copy">
+              <span class="label" id="creatorSliderModeLabel">Static Field-Goal Sliders</span>
+              <strong id="creatorSliderModeValue">Automatic</strong>
+            </span>
+            <input id="creatorStaticKickingInput" type="checkbox" role="switch" />
+            <span class="creator-switch-track" aria-hidden="true"></span>
+          </label>
+          <p class="creator-message" id="creatorKickModeText">Automatic moving power and aim meters will be used for this save.</p>
           <div class="creator-actions">
             <button type="button" class="secondary-button" id="creatorCloseButton">Cancel</button>
             <button type="submit">Save Changes</button>

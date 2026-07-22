@@ -72,6 +72,9 @@ const creatorPowerInputEl = document.getElementById("creatorPowerInput");
 const creatorCutInputEl = document.getElementById("creatorCutInput");
 const creatorSeasonInputEl = document.getElementById("creatorSeasonInput");
 const creatorGameInputEl = document.getElementById("creatorGameInput");
+const creatorStaticKickingInputEl = document.getElementById("creatorStaticKickingInput");
+const creatorSliderModeLabelEl = document.getElementById("creatorSliderModeLabel");
+const creatorSliderModeValueEl = document.getElementById("creatorSliderModeValue");
 const creatorCutLabelEl = document.getElementById("creatorCutLabel");
 const creatorAttemptsTextEl = document.getElementById("creatorAttemptsText");
 const creatorMessageEl = document.getElementById("creatorMessage");
@@ -1013,7 +1016,7 @@ function openCreatorTools() {
   }
 
   if (activeSlotIndex === null || !franchise.setupComplete) {
-    window.alert("Choose or create a franchise before editing player levels.");
+    window.alert("Choose or create a franchise before using Creator Tools.");
     return;
   }
 
@@ -1051,13 +1054,13 @@ function unlockCreatorTools(event) {
 
   if (username === CREATOR_USERNAME && password === CREATOR_PASSWORD) {
     const runner = currentRunner();
-    franchise.creatorStaticKicking = true;
-    saveFranchise();
     creatorSpeedInputEl.value = runner.speed;
     creatorPowerInputEl.value = runner.power;
     creatorCutInputEl.value = runner.cut;
     creatorSeasonInputEl.value = franchise.year;
     creatorGameInputEl.value = currentSeasonWeek();
+    creatorStaticKickingInputEl.checked = franchise.creatorStaticKicking;
+    updateCreatorSliderModeUi();
     creatorLoginFormEl.hidden = true;
     creatorLevelsFormEl.hidden = false;
     creatorAttemptsTextEl.textContent = "Unlocked";
@@ -1090,6 +1093,7 @@ function saveCreatorLevels(event) {
   runner.speed = clamp(Math.round(Number(creatorSpeedInputEl.value) || runner.speed), 1, 100);
   runner.power = clamp(Math.round(Number(creatorPowerInputEl.value) || runner.power), 1, 100);
   runner.cut = clamp(Math.round(Number(creatorCutInputEl.value) || runner.cut), 1, 100);
+  franchise.creatorStaticKicking = creatorStaticKickingInputEl.checked;
 
   if (progressChanged) {
     franchise.year = targetSeason;
@@ -2336,17 +2340,31 @@ function applyGameModeUi() {
       : "Reach the end zone at 50 yards to move to the next NFL matchup. Earn first downs after tackles beyond the marker.";
   kickChallengeKickerEl.textContent = basketball ? "Clutch Shot Challenge" : soccer ? "Goal Challenge" : "Field Goal Challenge";
   kickChallengeTitleEl.textContent = basketball ? "Shot for the Win" : soccer ? "Shot on Goal" : "Field Goal";
-  creatorKickModeTextEl.textContent = basketball
-    ? "Set levels from 1 to 100 and choose the season and game. Static jump-shot sliders are enabled for this save."
-    : soccer
-      ? "Set levels from 1 to 100 and choose the season and game. Static shot sliders are enabled for this save."
-      : "Set levels from 1 to 100 and choose the season and game. Static field-goal sliders are enabled for this save.";
+  updateCreatorSliderModeUi();
   loadCareerTitleEl.textContent = soccer ? "Load National Team" : "Load Franchise";
   careerHubLabelEl.textContent = soccer ? "National Team Hub" : "Franchise Hub";
   createCareerTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
   createFranchiseButton.textContent = soccer ? "Create National Team" : "Create Franchise";
   playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : "Runner Name";
   creatorCutLabelEl.textContent = basketball ? "Handles" : "Cut";
+}
+
+function updateCreatorSliderModeUi() {
+  const staticMode = creatorStaticKickingInputEl.checked;
+  const challengeName = isBasketballMode()
+    ? "Shot"
+    : isSoccerMode()
+      ? "Goal"
+      : "Field-Goal";
+  creatorSliderModeLabelEl.textContent = `Static ${challengeName} Sliders`;
+  creatorSliderModeValueEl.textContent = staticMode ? "Static" : "Automatic";
+  creatorStaticKickingInputEl.setAttribute(
+    "aria-label",
+    `Use static ${challengeName.toLowerCase()} sliders`
+  );
+  creatorKickModeTextEl.textContent = staticMode
+    ? "Static aim and power sliders will be used for this save."
+    : "Automatic moving power and aim meters will be used for this save.";
 }
 
 function updateGameLibrarySelection() {
@@ -3907,6 +3925,7 @@ arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 ].forEach((input) => input.addEventListener("input", updateCharacterPreview));
 creatorLoginFormEl.addEventListener("submit", unlockCreatorTools);
 creatorLevelsFormEl.addEventListener("submit", saveCreatorLevels);
+creatorStaticKickingInputEl.addEventListener("input", updateCreatorSliderModeUi);
 creatorCancelButtonEl.addEventListener("click", closeCreatorTools);
 creatorCloseButtonEl.addEventListener("click", closeCreatorTools);
 gridironDashButtonEl.addEventListener("click", openGridironDash);
