@@ -4155,26 +4155,38 @@ function drawSoccerDefenderSprite(x, y, team, time, facing, variant, tackleLean 
   const leanDirection = facing === "right" ? 1 : -1;
   const tackleShift = (tackleLean - 1) * 6 * leanDirection;
   const tackleDrop = (tackleLean - 1) * 6;
-  const skin = variant === 1 ? PALETTE.skinDark : PALETTE.skinLight;
-  const hair = variant === 2 ? "#d2a24a" : variant === 3 ? "#5a321d" : PALETTE.outline;
+  const skinTones = [PALETTE.skinLight, PALETTE.skinDark, "#b8764e", "#6f442f"];
+  const hairColors = [PALETTE.outline, "#5a321d", "#d2a24a", "#302218"];
+  const skin = skinTones[variant % skinTones.length];
+  const hair = hairColors[variant % hairColors.length];
   const shorts = variant % 2 === 0 ? team.secondary : team.accent;
-  const leadLegX = frame === 0 ? 3 : 7;
-  const trailLegX = frame === 0 ? 7 : 3;
-  const stripeX = variant === 0 ? 4 : variant === 1 ? 2 : variant === 2 ? 7 : 5;
+  const headShift = facing === "right" ? 1 : facing === "left" ? -1 : 0;
+  const bodyInset = variant === 3 ? 1 : 2;
+  const bodyWidth = variant === 3 ? 12 : variant === 1 ? 9 : 10;
+  const leadLegX = frame === 0 ? 4 : 9;
+  const trailLegX = frame === 0 ? 9 : 4;
+  const armReach = variant === 2 ? 2 : 1;
+  const number = (variant * 3 + 4) % 10;
 
-  pixelRect(x + 3 * s + tackleShift, y + bob * s + tackleDrop, 6, 2, hair, s);
-  pixelRect(x + 2 * s + tackleShift, y + (2 + bob) * s + tackleDrop, 8, 3, skin, s);
-  pixelRect(x + (variant === 3 ? 1 : 2) * s + tackleShift, y + (5 + bob) * s + tackleDrop, variant === 3 ? 10 : 8, 5, team.primary, s);
-  pixelRect(x + stripeX * s + tackleShift, y + (5 + bob) * s + tackleDrop, 2, 5, team.accent, s);
-  pixelRect(x + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 3, 5, skin, s);
-  pixelRect(x + 9 * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 3, 5, skin, s);
-  pixelRect(x + 2 * s + tackleShift, y + (10 + bob) * s + tackleDrop, 8, 3, shorts, s);
-  pixelRect(x + leadLegX * s + tackleShift, y + (13 + bob) * s + tackleDrop, 2, 4, skin, s);
-  pixelRect(x + trailLegX * s + tackleShift, y + (13 + bob) * s + tackleDrop, 2, 4, skin, s);
-  pixelRect(x + leadLegX * s + tackleShift, y + (16 + bob) * s + tackleDrop, 2, 2, team.accent, s);
-  pixelRect(x + trailLegX * s + tackleShift, y + (16 + bob) * s + tackleDrop, 2, 2, team.accent, s);
-  pixelRect(x + leadLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
-  pixelRect(x + trailLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  pixelRect(x + (3 + headShift) * s + tackleShift, y + bob * s + tackleDrop, 10, 5, PALETTE.outline, s);
+  pixelRect(x + (4 + headShift) * s + tackleShift, y + (1 + bob) * s + tackleDrop, 8, 2, hair, s);
+  pixelRect(x + (4 + headShift) * s + tackleShift, y + (3 + bob) * s + tackleDrop, 8, 2, skin, s);
+  pixelRect(x + (facing === "left" ? 4 : 10) * s + tackleShift, y + (3 + bob) * s + tackleDrop, 1, 1, PALETTE.outline, s);
+  pixelRect(x + (bodyInset - 1) * s + tackleShift, y + (5 + bob) * s + tackleDrop, bodyWidth + 2, 7, PALETTE.outline, s);
+  pixelRect(x + bodyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, bodyWidth, 6, team.primary, s);
+  pixelRect(x + bodyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, bodyWidth, 1, team.secondary, s);
+  pixelRect(x + (variant % 2 === 0 ? 5 : 9) * s + tackleShift, y + (6 + bob) * s + tackleDrop, 2, 5, team.accent, s);
+  pixelRect(x + (bodyInset - armReach) * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 2, 5, skin, s);
+  pixelRect(x + (bodyInset + bodyWidth - 1) * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 2, 5, skin, s);
+  pixelRect(x + 3 * s + tackleShift, y + (11 + bob) * s + tackleDrop, 10, 4, PALETTE.outline, s);
+  pixelRect(x + 4 * s + tackleShift, y + (11 + bob) * s + tackleDrop, 8, 3, shorts, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 3, skin, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 3, skin, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (17 + bob) * s + tackleDrop, 2, 3, team.primary, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (17 + bob) * s + tackleDrop, 2, 3, team.primary, s);
+  pixelRect(x + leadLegX * s - s + tackleShift, y + (20 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLegX * s - s + tackleShift, y + (20 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  drawSpriteNumber(number, x + 8 * s + tackleShift, y + (10 + bob) * s + tackleDrop, team.accent);
 }
 
 function drawBasketballDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
@@ -4189,22 +4201,32 @@ function drawBasketballDefenderSprite(x, y, team, time, facing, variant, tackleL
   const skin = skinTones[variant % skinTones.length];
   const hair = hairColors[variant % hairColors.length];
   const shorts = variant % 2 === 0 ? team.secondary : team.primary;
-  const leadLegX = frame === 0 ? 3 : 7;
-  const trailLegX = frame === 0 ? 7 : 3;
+  const headShift = facing === "right" ? 1 : facing === "left" ? -1 : 0;
+  const leadLegX = frame === 0 ? 4 : 9;
+  const trailLegX = frame === 0 ? 9 : 4;
   const jerseyInset = variant === 3 ? 1 : 2;
-  const jerseyWidth = variant === 3 ? 10 : 8;
+  const jerseyWidth = variant === 3 ? 12 : variant === 1 ? 9 : 10;
+  const armDrop = variant === 2 ? 1 : 0;
+  const number = (variant * 4 + 2) % 10;
 
-  pixelRect(x + 3 * s + tackleShift, y + bob * s + tackleDrop, 6, 2, hair, s);
-  pixelRect(x + 2 * s + tackleShift, y + (2 + bob) * s + tackleDrop, 8, 3, skin, s);
-  pixelRect(x + jerseyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, jerseyWidth, 6, team.primary, s);
-  pixelRect(x + (variant === 0 ? 5 : variant === 1 ? 3 : 7) * s + tackleShift, y + (6 + bob) * s + tackleDrop, 2, 4, team.accent, s);
-  pixelRect(x - s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 4, 3, skin, s);
-  pixelRect(x + 9 * s + tackleShift + leanDirection * 2, y + (6 + bob) * s + tackleDrop, 4, 3, skin, s);
-  pixelRect(x + 2 * s + tackleShift, y + (11 + bob) * s + tackleDrop, 8, 3, shorts, s);
-  pixelRect(x + leadLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 4, skin, s);
-  pixelRect(x + trailLegX * s + tackleShift, y + (14 + bob) * s + tackleDrop, 2, 4, skin, s);
-  pixelRect(x + leadLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
-  pixelRect(x + trailLegX * s - s + tackleShift, y + (18 + bob) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+  pixelRect(x + (3 + headShift) * s + tackleShift, y + bob * s + tackleDrop, 10, 5, PALETTE.outline, s);
+  pixelRect(x + (4 + headShift) * s + tackleShift, y + (1 + bob) * s + tackleDrop, 8, 2, hair, s);
+  pixelRect(x + (4 + headShift) * s + tackleShift, y + (3 + bob) * s + tackleDrop, 8, 2, skin, s);
+  pixelRect(x + (facing === "left" ? 4 : 10) * s + tackleShift, y + (3 + bob) * s + tackleDrop, 1, 1, PALETTE.outline, s);
+  pixelRect(x + (jerseyInset - 1) * s + tackleShift, y + (5 + bob) * s + tackleDrop, jerseyWidth + 2, 8, PALETTE.outline, s);
+  pixelRect(x + jerseyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, jerseyWidth, 7, team.primary, s);
+  pixelRect(x + jerseyInset * s + tackleShift, y + (5 + bob) * s + tackleDrop, jerseyWidth, 1, team.accent, s);
+  pixelRect(x + (variant === 0 ? 5 : variant === 1 ? 3 : 9) * s + tackleShift, y + (7 + bob) * s + tackleDrop, 2, 4, team.accent, s);
+  pixelRect(x - s + tackleShift + leanDirection * 3, y + (6 + bob + armDrop) * s + tackleDrop, 5, 3, skin, s);
+  pixelRect(x + 12 * s + tackleShift + leanDirection * 3, y + (6 + bob + armDrop) * s + tackleDrop, 5, 3, skin, s);
+  pixelRect(x + 3 * s + tackleShift, y + (12 + bob) * s + tackleDrop, 10, 4, PALETTE.outline, s);
+  pixelRect(x + 4 * s + tackleShift, y + (12 + bob) * s + tackleDrop, 8, 3, shorts, s);
+  pixelRect(x + 7 * s + tackleShift, y + (12 + bob) * s + tackleDrop, 2, 3, team.accent, s);
+  pixelRect(x + leadLegX * s + tackleShift, y + (15 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + trailLegX * s + tackleShift, y + (15 + bob) * s + tackleDrop, 2, 4, skin, s);
+  pixelRect(x + leadLegX * s - s + tackleShift, y + (19 + bob) * s + tackleDrop, 3, 1, team.secondary, s);
+  pixelRect(x + trailLegX * s - s + tackleShift, y + (19 + bob) * s + tackleDrop, 3, 1, team.secondary, s);
+  drawSpriteNumber(number, x + 8 * s + tackleShift, y + (11 + bob) * s + tackleDrop, team.accent);
 }
 
 function drawPlayer(time) {
@@ -4316,29 +4338,37 @@ function drawSoccerPlayerSprite(x, y, facing, flash, frame) {
   const shorts = flash ? PALETTE.white : homeTeam.secondary;
   const skin = flash ? PALETTE.white : appearance.skin;
   const hair = flash ? PALETTE.cream : appearance.hair;
-  const leadLeg = frame === 0 ? 4 : 8;
-  const trailLeg = frame === 0 ? 8 : 4;
+  const leadLeg = frame === 0 ? 4 : 9;
+  const trailLeg = frame === 0 ? 9 : 4;
   const sideShift = facing === "left" ? -1 : facing === "right" ? 1 : 0;
-  const ballX = facing === "left" ? 2 : facing === "right" ? 11 : frame === 0 ? 5 : 9;
-  const ballY = facing === "up" ? 17 : 18;
+  const leftArmX = facing === "left" ? 0 : 2;
+  const rightArmX = facing === "right" ? 13 : 12;
+  const ballX = facing === "left" ? 0 : facing === "right" ? 12 : frame === 0 ? 3 : 9;
+  const ballY = facing === "up" ? 15 : facing === "down" ? 19 : 17;
 
-  pixelRect(x + (5 + sideShift) * s, y, 6, 2, hair, s);
-  pixelRect(x + (4 + sideShift) * s, y + 2 * s, 8, 3, skin, s);
-  pixelRect(x + 3 * s, y + 5 * s, 10, 6, jersey, s);
-  pixelRect(x + (facing === "left" ? 1 : 2) * s, y + 6 * s, 3, 5, skin, s);
-  pixelRect(x + (facing === "right" ? 12 : 11) * s, y + 6 * s, 3, 5, skin, s);
-  pixelRect(x + 4 * s, y + 11 * s, 8, 3, shorts, s);
-  pixelRect(x + leadLeg * s, y + 14 * s, 2, 4, skin, s);
-  pixelRect(x + trailLeg * s, y + 14 * s, 2, 4, skin, s);
-  pixelRect(x + leadLeg * s, y + 17 * s, 2, 2, PALETTE.white, s);
-  pixelRect(x + trailLeg * s, y + 17 * s, 2, 2, PALETTE.white, s);
-  pixelRect(x + leadLeg * s - s, y + 19 * s, 3, 1, PALETTE.outline, s);
-  pixelRect(x + trailLeg * s - s, y + 19 * s, 3, 1, PALETTE.outline, s);
+  pixelRect(x + (3 + sideShift) * s, y, 10, 5, PALETTE.outline, s);
+  pixelRect(x + (4 + sideShift) * s, y + s, 8, 2, hair, s);
+  pixelRect(x + (4 + sideShift) * s, y + 3 * s, 8, 2, skin, s);
+  pixelRect(x + (facing === "left" ? 4 : 10) * s, y + 3 * s, 1, 1, PALETTE.outline, s);
+  pixelRect(x + 2 * s, y + 5 * s, 12, 8, PALETTE.outline, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 7, jersey, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 1, homeTeam.secondary, s);
+  pixelRect(x + 7 * s, y + 6 * s, 2, 5, homeTeam.secondary, s);
+  pixelRect(x + leftArmX * s, y + (6 + (frame === 0 ? 0 : 1)) * s, 3, 5, skin, s);
+  pixelRect(x + rightArmX * s, y + (6 + (frame === 0 ? 1 : 0)) * s, 3, 5, skin, s);
+  pixelRect(x + 3 * s, y + 12 * s, 10, 4, PALETTE.outline, s);
+  pixelRect(x + 4 * s, y + 12 * s, 8, 3, shorts, s);
+  pixelRect(x + leadLeg * s, y + 15 * s, 2, 3, skin, s);
+  pixelRect(x + trailLeg * s, y + 15 * s, 2, 3, skin, s);
+  pixelRect(x + leadLeg * s, y + 18 * s, 2, 2, homeTeam.primary, s);
+  pixelRect(x + trailLeg * s, y + 18 * s, 2, 2, homeTeam.primary, s);
+  pixelRect(x + leadLeg * s - s, y + 20 * s, 3, 1, PALETTE.outline, s);
+  pixelRect(x + trailLeg * s - s, y + 20 * s, 3, 1, PALETTE.outline, s);
+  drawSpriteNumber(appearance.number, x + 8 * s, y + 11 * s, homeTeam.secondary);
 
-  drawSpriteNumber(appearance.number, x + 8 * s, y + 10 * s, homeTeam.secondary);
-
-  pixelRect(x + ballX * s, y + ballY * s, 4, 4, PALETTE.white, s);
-  pixelRect(x + (ballX + 1) * s, y + (ballY + 1) * s, 2, 2, PALETTE.outline, s);
+  pixelRect(x + ballX * s, y + ballY * s, 5, 5, PALETTE.outline, s);
+  pixelRect(x + (ballX + 1) * s, y + (ballY + 1) * s, 3, 3, PALETTE.white, s);
+  pixelRect(x + (ballX + 2) * s, y + (ballY + 2) * s, 1, 1, PALETTE.outline, s);
 }
 
 function drawBasketballPlayerSprite(x, y, facing, flash, frame) {
@@ -4349,27 +4379,38 @@ function drawBasketballPlayerSprite(x, y, facing, flash, frame) {
   const shorts = flash ? PALETTE.white : homeTeam.secondary;
   const skin = flash ? PALETTE.white : appearance.skin;
   const hair = flash ? PALETTE.cream : appearance.hair;
-  const leadLeg = frame === 0 ? 4 : 8;
-  const trailLeg = frame === 0 ? 8 : 4;
+  const leadLeg = frame === 0 ? 4 : 9;
+  const trailLeg = frame === 0 ? 9 : 4;
   const sideShift = facing === "left" ? -1 : facing === "right" ? 1 : 0;
-  const ballX = facing === "left" ? 0 : facing === "right" ? 12 : frame === 0 ? 1 : 12;
-  const ballY = frame === 0 ? 11 : 15;
+  const dribbleLeft = facing === "left" || (facing !== "right" && frame === 0);
+  const ballX = dribbleLeft ? -1 : 12;
+  const ballY = frame === 0 ? 12 : 16;
+  const leftArmX = dribbleLeft ? -1 : 2;
+  const rightArmX = dribbleLeft ? 12 : 14;
 
-  pixelRect(x + (5 + sideShift) * s, y, 6, 2, hair, s);
-  pixelRect(x + (4 + sideShift) * s, y + 2 * s, 8, 3, skin, s);
-  pixelRect(x + 3 * s, y + 5 * s, 10, 6, jersey, s);
-  pixelRect(x + (facing === "left" ? 0 : 2) * s, y + 6 * s, 3, 5, skin, s);
-  pixelRect(x + (facing === "right" ? 13 : 11) * s, y + 6 * s, 3, 5, skin, s);
-  pixelRect(x + 4 * s, y + 11 * s, 8, 3, shorts, s);
-  pixelRect(x + leadLeg * s, y + 14 * s, 2, 4, skin, s);
-  pixelRect(x + trailLeg * s, y + 14 * s, 2, 4, skin, s);
-  pixelRect(x + leadLeg * s - s, y + 18 * s, 3, 1, PALETTE.outline, s);
-  pixelRect(x + trailLeg * s - s, y + 18 * s, 3, 1, PALETTE.outline, s);
-  drawSpriteNumber(appearance.number, x + 8 * s, y + 10 * s, homeTeam.secondary);
+  pixelRect(x + (3 + sideShift) * s, y, 10, 5, PALETTE.outline, s);
+  pixelRect(x + (4 + sideShift) * s, y + s, 8, 2, hair, s);
+  pixelRect(x + (4 + sideShift) * s, y + 3 * s, 8, 2, skin, s);
+  pixelRect(x + (facing === "left" ? 4 : 10) * s, y + 3 * s, 1, 1, PALETTE.outline, s);
+  pixelRect(x + 2 * s, y + 5 * s, 12, 8, PALETTE.outline, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 7, jersey, s);
+  pixelRect(x + 3 * s, y + 5 * s, 10, 1, homeTeam.secondary, s);
+  pixelRect(x + 7 * s, y + 6 * s, 2, 5, homeTeam.secondary, s);
+  pixelRect(x + leftArmX * s, y + (dribbleLeft ? 7 : 6) * s, 4, dribbleLeft ? 7 : 4, skin, s);
+  pixelRect(x + rightArmX * s, y + (dribbleLeft ? 6 : 7) * s, 4, dribbleLeft ? 4 : 7, skin, s);
+  pixelRect(x + 3 * s, y + 12 * s, 10, 4, PALETTE.outline, s);
+  pixelRect(x + 4 * s, y + 12 * s, 8, 3, shorts, s);
+  pixelRect(x + 7 * s, y + 12 * s, 2, 3, homeTeam.primary, s);
+  pixelRect(x + leadLeg * s, y + 15 * s, 2, 4, skin, s);
+  pixelRect(x + trailLeg * s, y + 15 * s, 2, 4, skin, s);
+  pixelRect(x + leadLeg * s - s, y + 19 * s, 3, 1, homeTeam.secondary, s);
+  pixelRect(x + trailLeg * s - s, y + 19 * s, 3, 1, homeTeam.secondary, s);
+  drawSpriteNumber(appearance.number, x + 8 * s, y + 11 * s, homeTeam.secondary);
 
-  pixelRect(x + ballX * s, y + ballY * s, 4, 4, "#d86b20", s);
-  pixelRect(x + (ballX + 1) * s, y + ballY * s, 1, 4, PALETTE.outline, s);
-  pixelRect(x + ballX * s, y + (ballY + 2) * s, 4, 1, PALETTE.outline, s);
+  pixelRect(x + ballX * s, y + ballY * s, 5, 5, PALETTE.outline, s);
+  pixelRect(x + (ballX + 1) * s, y + (ballY + 1) * s, 3, 3, "#d86b20", s);
+  pixelRect(x + (ballX + 2) * s, y + (ballY + 1) * s, 1, 3, PALETTE.outline, s);
+  pixelRect(x + (ballX + 1) * s, y + (ballY + 2) * s, 3, 1, PALETTE.outline, s);
 }
 
 function drawSpriteNumber(number, centerX, baselineY, color) {

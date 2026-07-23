@@ -331,6 +331,12 @@ globalThis.__retroRunTest = {
   },
   setCameraRow(row) { cameraWorldRow = row; },
   drawScoreboardBar,
+  drawPlayerSpriteForTest(facing, frame = 0) {
+    drawPlayerSprite(100, 100, facing, false, frame);
+  },
+  drawCurrentDefenderSpriteForTest(facing, variant, tackleLean = 1) {
+    drawDefenderSprite(100, 100, opponentUniform(currentTeam()), 1000, facing, variant, tackleLean);
+  },
   basketballRowIsPaint,
   normalizeFranchise,
   render,
@@ -404,6 +410,25 @@ assert.ok(storage.has("pitch-dash-franchise-slots"));
 assert.equal(game.runnerSkin, "#8d5524");
 assert.equal(game.runnerHair, "#d2a24a");
 assert.equal(game.runnerNumber, 23);
+drawnFillRects.length = 0;
+drawnLabels.length = 0;
+game.drawPlayerSpriteForTest("left", 0);
+const soccerLeftBall = drawnFillRects.find(({ width, height, color }) => (
+  width === 6 && height === 6 && color === "#f6f3de"
+));
+assert.ok(soccerLeftBall);
+assert.equal(drawnLabels.some((label) => label.text === "23"), true);
+drawnFillRects.length = 0;
+game.drawPlayerSpriteForTest("right", 1);
+const soccerRightBall = drawnFillRects.find(({ width, height, color }) => (
+  width === 6 && height === 6 && color === "#f6f3de"
+));
+assert.ok(soccerRightBall.x > soccerLeftBall.x);
+drawnLabels.length = 0;
+game.drawCurrentDefenderSpriteForTest("left", 0);
+game.drawCurrentDefenderSpriteForTest("right", 3);
+assert.equal(drawnLabels.some((label) => label.text === "4"), true);
+assert.equal(drawnLabels.some((label) => label.text === "3"), true);
 elements.get("creatorTrigger").click();
 assert.equal(elements.get("creatorModal").hidden, false);
 elements.get("creatorCancelButton").click();
@@ -552,6 +577,25 @@ assert.ok(storage.has("hoop-hustle-franchise-slots"));
 assert.equal(game.currentSeasonOpponentNames.includes("Warriors"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Lakers"), true);
 assert.match(elements.get("runnerGrid").children.at(-1).innerHTML, /HND 50/);
+drawnFillRects.length = 0;
+drawnLabels.length = 0;
+game.drawPlayerSpriteForTest("left", 0);
+const basketballLeftBall = drawnFillRects.find(({ width, height, color }) => (
+  width === 6 && height === 6 && color === "#d86b20"
+));
+assert.ok(basketballLeftBall);
+assert.equal(drawnLabels.some((label) => label.text === "11"), true);
+drawnFillRects.length = 0;
+game.drawPlayerSpriteForTest("right", 1);
+const basketballRightBall = drawnFillRects.find(({ width, height, color }) => (
+  width === 6 && height === 6 && color === "#d86b20"
+));
+assert.ok(basketballRightBall.x > basketballLeftBall.x);
+drawnLabels.length = 0;
+game.drawCurrentDefenderSpriteForTest("left", 0);
+game.drawCurrentDefenderSpriteForTest("right", 1);
+assert.equal(drawnLabels.some((label) => label.text === "2"), true);
+assert.equal(drawnLabels.some((label) => label.text === "6"), true);
 game.startLevel();
 game.setChainRows(20, 23);
 game.setCameraRow(20);
