@@ -147,6 +147,8 @@ assert.match(styles, /@media \(min-width: 981px\)\s*\{[\s\S]*?\.featured-game-ca
 assert.match(styles, /@media \(min-width: 981px\)\s*\{[\s\S]*?\.featured-game-card \.mini-football\s*\{[^}]*width:\s*88px[^}]*height:\s*54px/s);
 assert.match(styles, /@media \(max-width: 980px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
 assert.match(styles, /@media \(max-width: 640px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
+assert.match(styles, /@media \(max-width: 640px\)\s*\{[\s\S]*?\.game-card-art\s*\{[^}]*min-height:\s*154px/);
+assert.match(styles, /body\[data-device="mobile"\]\[data-orientation="landscape"\] \.mini-scoreboard\s*\{[^}]*left:\s*27%[^}]*max-width:\s*38%/s);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.hockey-game-card\s*\{\s*--card-accent:\s*#79d8ef/);

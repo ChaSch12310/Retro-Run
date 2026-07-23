@@ -3975,7 +3975,7 @@ button:active {
   }
 
   .game-card-art {
-    min-height: 124px;
+    min-height: 154px;
     border-right: 0;
     border-bottom: 4px solid var(--line);
   }
@@ -4356,6 +4356,9 @@ body[data-device="mobile"][data-orientation="landscape"] .stadium-lights {
 body[data-device="mobile"][data-orientation="landscape"] .mini-scoreboard {
   top: 13px;
   left: 27%;
+  max-width: 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 body[data-device="mobile"][data-orientation="landscape"] .game-sport-badge {
