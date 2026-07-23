@@ -4984,6 +4984,10 @@ function drawSidelineAprons() {
 }
 
 function drawStadiumOverlay() {
+  if (isSkiingMode()) {
+    drawSkiCourseBorder();
+    return;
+  }
   if (isBasketballMode() || isHockeyMode() || isWaterPoloMode() || isDodgeballMode()) {
     drawBasketballArenaOverlay();
     return;
@@ -5014,6 +5018,60 @@ function drawStadiumOverlay() {
   ctx.fillStyle = team.accent;
   ctx.fillRect(fieldLeft + 6, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
   ctx.fillRect(fieldRight - 12, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
+}
+
+function drawSkiCourseBorder() {
+  const borderWidth = 38;
+  const rightBorderX = CONFIG.width - borderWidth;
+
+  ctx.fillStyle = "#c9dce0";
+  ctx.fillRect(0, 0, borderWidth, CONFIG.height);
+  ctx.fillRect(rightBorderX, 0, borderWidth, CONFIG.height);
+
+  ctx.fillStyle = "#f6f3de";
+  ctx.fillRect(borderWidth - 7, 0, 4, CONFIG.height);
+  ctx.fillRect(rightBorderX + 3, 0, 4, CONFIG.height);
+  ctx.fillStyle = "#7d9da5";
+  ctx.fillRect(borderWidth - 3, 0, 3, CONFIG.height);
+  ctx.fillRect(rightBorderX, 0, 3, CONFIG.height);
+
+  for (let y = -12, index = 0; y < CONFIG.height + 48; y += 58, index += 1) {
+    if (index % 2 === 0) {
+      drawSkiPineTree(3, y);
+      drawSkiRockCluster(rightBorderX + 5, y + 15);
+    } else {
+      drawSkiRockCluster(5, y + 14);
+      drawSkiPineTree(rightBorderX + 4, y);
+    }
+  }
+}
+
+function drawSkiPineTree(x, y) {
+  ctx.fillStyle = "#6a4c34";
+  ctx.fillRect(x + 13, y + 30, 5, 16);
+  ctx.fillStyle = "#173e36";
+  ctx.fillRect(x + 10, y + 4, 11, 9);
+  ctx.fillRect(x + 7, y + 12, 17, 10);
+  ctx.fillRect(x + 3, y + 21, 25, 12);
+  ctx.fillStyle = "#2f6557";
+  ctx.fillRect(x + 12, y + 7, 7, 5);
+  ctx.fillRect(x + 9, y + 15, 12, 5);
+  ctx.fillStyle = "#f6f3de";
+  ctx.fillRect(x + 11, y + 3, 9, 4);
+  ctx.fillRect(x + 7, y + 12, 9, 3);
+  ctx.fillRect(x + 3, y + 21, 11, 3);
+}
+
+function drawSkiRockCluster(x, y) {
+  ctx.fillStyle = "#53666b";
+  ctx.fillRect(x + 2, y + 8, 25, 16);
+  ctx.fillRect(x + 7, y + 3, 16, 7);
+  ctx.fillStyle = "#7e9297";
+  ctx.fillRect(x + 7, y + 4, 13, 5);
+  ctx.fillRect(x + 4, y + 11, 8, 5);
+  ctx.fillStyle = "#f6f3de";
+  ctx.fillRect(x + 7, y + 2, 14, 4);
+  ctx.fillRect(x + 2, y + 8, 7, 3);
 }
 
 function drawBasketballArenaOverlay() {
