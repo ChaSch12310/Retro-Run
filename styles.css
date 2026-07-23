@@ -924,10 +924,19 @@ body.game-library-open .play-panel {
 .baseball-sport-badge { background: #9f352d; }
 .lacrosse-sport-badge { background: #216b45; }
 
+.surfing-sport-badge .game-icon-speed,
+.skiing-sport-badge .game-icon-speed,
+.baseball-sport-badge .game-icon-speed,
+.lacrosse-sport-badge .game-icon-speed,
+.dodgeball-sport-badge .game-icon-speed {
+  display: none;
+}
+
 .mini-surf-fin,
 .mini-mountain,
 .mini-baseball,
-.mini-lacrosse-stick {
+.mini-lacrosse-stick,
+.mini-dodgeball {
   position: absolute;
   z-index: 2;
   left: 50%;
@@ -936,89 +945,87 @@ body.game-library-open .play-panel {
 }
 
 .mini-surf-fin {
-  width: 46px;
-  height: 13px;
-  background: #f2c84b;
-  border: 4px solid #111016;
-  border-radius: 50%;
-  rotate: -18deg;
+  width: 54px;
+  height: 36px;
 }
 
 .mini-surf-fin::before {
   content: "";
   position: absolute;
-  left: 12px;
-  top: -20px;
-  width: 20px;
-  height: 15px;
-  border: 4px solid #dff7f2;
-  border-left-color: transparent;
-  border-bottom-color: transparent;
+  left: 5px;
+  bottom: 3px;
+  width: 44px;
+  height: 12px;
+  background: #f2c84b;
+  border: 3px solid #111016;
   border-radius: 50%;
-  rotate: -10deg;
+  rotate: -12deg;
 }
 
 .mini-surf-fin::after {
   content: "";
   position: absolute;
-  right: 8px;
-  bottom: -9px;
-  width: 5px;
-  height: 9px;
-  background: #111016;
-  transform: skewX(-18deg);
+  left: 1px;
+  top: 0;
+  width: 34px;
+  height: 24px;
+  border: 5px solid #dff7f2;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  rotate: -14deg;
 }
 
 .mini-mountain {
-  width: 0;
-  height: 0;
-  border-left: 22px solid transparent;
-  border-right: 22px solid transparent;
-  border-bottom: 34px solid #d7edf2;
+  width: 50px;
+  height: 42px;
+  background:
+    linear-gradient(135deg, #f6f3de 0 38%, #9fc3cf 39% 54%, #d7edf2 55%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
   filter:
-    drop-shadow(-3px 2px 0 #111016)
-    drop-shadow(3px 2px 0 #111016)
+    drop-shadow(-3px 1px 0 #111016)
+    drop-shadow(3px 1px 0 #111016)
     drop-shadow(0 4px 0 #111016);
 }
 
 .mini-mountain::before {
   content: "";
   position: absolute;
-  left: -9px;
-  top: 16px;
-  width: 18px;
-  height: 10px;
-  background: #f6f3de;
-  clip-path: polygon(50% 0, 100% 100%, 68% 72%, 50% 100%, 31% 72%, 0 100%);
+  left: 16px;
+  top: 18px;
+  width: 5px;
+  height: 24px;
+  background: #d8333f;
+  box-shadow: 15px 0 0 #2b66b1;
 }
 
 .mini-mountain::after {
   content: "";
   position: absolute;
-  left: -14px;
-  top: 27px;
-  width: 5px;
-  height: 20px;
-  background: #e65d45;
-  rotate: 24deg;
-  box-shadow: 10px 0 0 #e65d45;
+  left: 12px;
+  top: 20px;
+  width: 28px;
+  height: 4px;
+  background: #111016;
+  box-shadow: 0 14px 0 #111016;
 }
 
 .mini-baseball {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   background: #f6f3de;
   border: 4px solid #111016;
   border-radius: 50%;
+  box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.38);
 }
 
 .mini-baseball::before,
 .mini-baseball::after {
   content: "";
   position: absolute;
-  top: 5px;
-  width: 8px;
-  height: 16px;
+  top: 6px;
+  width: 9px;
+  height: 18px;
   border-color: #d84848;
   border-style: solid;
 }
@@ -1036,35 +1043,36 @@ body.game-library-open .play-panel {
 }
 
 .mini-lacrosse-stick {
-  width: 7px;
-  height: 43px;
+  width: 6px;
+  height: 40px;
   background: #c39052;
-  border: 3px solid #111016;
+  box-shadow: 0 0 0 3px #111016;
   rotate: 28deg;
 }
 
 .mini-lacrosse-stick::before {
   content: "";
   position: absolute;
-  left: -8px;
-  top: -12px;
-  width: 17px;
-  height: 15px;
+  left: -9px;
+  top: -15px;
+  width: 24px;
+  height: 20px;
   border: 4px solid #f6f3de;
-  border-radius: 50%;
+  border-radius: 50% 50% 45% 45%;
+  box-shadow: 0 0 0 3px #111016;
 }
 
 .mini-lacrosse-stick::after {
   content: "";
   position: absolute;
-  left: -4px;
-  top: -7px;
-  width: 11px;
-  height: 8px;
+  left: -5px;
+  top: -10px;
+  width: 16px;
+  height: 12px;
   background:
     repeating-linear-gradient(90deg, transparent 0 3px, #9eb6ab 3px 4px),
     repeating-linear-gradient(0deg, transparent 0 3px, #9eb6ab 3px 4px);
-  border-radius: 50%;
+  border-radius: 45%;
 }
 
 .dodgeball-mini-court {
@@ -1099,12 +1107,34 @@ body.game-library-open .play-panel {
 }
 
 .mini-dodgeball {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   background: #d94c45;
   border: 4px solid #111016;
   border-radius: 50%;
-  box-shadow: inset 5px 0 0 #f0c84f;
+  overflow: hidden;
+}
+
+.mini-dodgeball::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: -4px;
+  width: 7px;
+  height: 38px;
+  background: #f0c84f;
+  rotate: 22deg;
+}
+
+.mini-dodgeball::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 12px;
+  width: 38px;
+  height: 7px;
+  background: #f6f3de;
+  rotate: -18deg;
 }
 
 .soccer-game-card .play-game-label {
