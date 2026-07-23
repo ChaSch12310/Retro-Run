@@ -6,12 +6,12 @@
     <title>Retro Run</title>
     <meta
       name="description"
-      content="Retro Run is a browser-based retro sports arcade with football, soccer, basketball, hockey, and water polo games, franchise saves, seasons, upgrades, and mobile swipe controls."
+      content="Retro Run is a browser-based retro sports arcade with football, soccer, basketball, hockey, water polo, surfing, skiing, baseball, and lacrosse games."
     />
     <meta property="og:title" content="Retro Run" />
     <meta
       property="og:description"
-      content="Choose football, soccer, basketball, hockey, or water polo, build a franchise, dodge defenders, and chase an 18-game retro sports season."
+      content="Choose from nine retro sports games, build a franchise, dodge defenders and hazards, and chase an 18-game season."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://retrorun.win" />
@@ -24,12 +24,12 @@
     <meta name="twitter:title" content="Retro Run" />
     <meta
       name="twitter:description"
-      content="A retro sports arcade with football, soccer, basketball, hockey, and water polo games, franchise saves, upgrades, seasons, and mobile swipe controls."
+      content="A nine-game retro sports arcade with franchise saves, upgrades, seasons, and mobile swipe controls."
     />
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260723-water-polo" />
+    <link rel="stylesheet" href="styles.css?v=20260723-four-sports" />
   </head>
   <body>
     <main class="game-shell">
@@ -156,6 +156,92 @@
               <span class="game-card-tag">Water Polo Arcade</span>
               <strong>Splash Strike</strong>
               <span>Swim past international defenses, build your club, and finish every game with a shot on goal.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card surfing-game-card" id="waveRiderButton" type="button">
+            <span class="game-card-art surfing-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">SET 3</span>
+              <span class="mini-field surfing-mini-break">
+                <span class="mini-wave-crest"></span>
+                <span class="mini-surf-board"></span>
+              </span>
+              <span class="game-sport-badge surfing-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-surf-fin"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Surfing Arcade</span>
+              <strong>Wave Rider</strong>
+              <span>Carve through legendary breaks, dodge crowded water, and land a final aerial.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card skiing-game-card" id="slopeSprintButton" type="button">
+            <span class="game-card-art skiing-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">RUN 2</span>
+              <span class="mini-field skiing-mini-slope">
+                <span class="mini-ski-gate gate-left"></span>
+                <span class="mini-ski-gate gate-right"></span>
+                <span class="mini-skis"></span>
+              </span>
+              <span class="game-sport-badge skiing-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-mountain"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Skiing Arcade</span>
+              <strong>Slope Sprint</strong>
+              <span>Race iconic mountain courses, avoid gates and racers, and stick the final jump.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card baseball-game-card" id="diamondDashButton" type="button">
+            <span class="game-card-art baseball-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">BOT 9</span>
+              <span class="mini-field baseball-mini-diamond">
+                <span class="mini-base base-one"></span>
+                <span class="mini-base base-two"></span>
+                <span class="mini-base base-three"></span>
+              </span>
+              <span class="game-sport-badge baseball-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-baseball"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Baseball Arcade</span>
+              <strong>Diamond Dash</strong>
+              <span>Run through MLB defenses, dodge tags, and finish each game with a clutch swing.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card lacrosse-game-card" id="crosseClashButton" type="button">
+            <span class="game-card-art lacrosse-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">Q4 0:18</span>
+              <span class="mini-field lacrosse-mini-field">
+                <span class="mini-lacrosse-crease"></span>
+                <span class="mini-lacrosse-goal"></span>
+              </span>
+              <span class="game-sport-badge lacrosse-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-lacrosse-stick"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Lacrosse Arcade</span>
+              <strong>Crosse Clash</strong>
+              <span>Carry through international defenses and fire a final shot past the goalie.</span>
             </span>
             <span class="play-game-label">Play Game</span>
           </button>
@@ -616,6 +702,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260723-water-polo"></script>
+    <script src="game.js?v=20260723-four-sports"></script>
   </body>
 </html>

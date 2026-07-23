@@ -747,6 +747,192 @@ body.game-library-open .play-panel {
   --card-accent: #54d2e6;
 }
 
+.surfing-game-card {
+  --card-accent: #46c6d3;
+}
+
+.skiing-game-card {
+  --card-accent: #d7edf2;
+}
+
+.baseball-game-card {
+  --card-accent: #e65d45;
+}
+
+.lacrosse-game-card {
+  --card-accent: #55b982;
+}
+
+.surfing-card-art,
+.skiing-card-art,
+.baseball-card-art,
+.lacrosse-card-art {
+  background: #10263b;
+}
+
+.surfing-mini-break {
+  background:
+    repeating-linear-gradient(165deg, transparent 0 16px, rgba(225, 249, 244, 0.45) 16px 20px),
+    #238bad;
+}
+
+.mini-wave-crest {
+  position: absolute;
+  inset: 8px 8px auto 8px;
+  height: 26px;
+  border-top: 7px solid #dff7f2;
+  border-radius: 50%;
+  rotate: -6deg;
+}
+
+.mini-surf-board {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 46px;
+  height: 9px;
+  translate: -50% 0;
+  rotate: -16deg;
+  background: #f2c84b;
+  border: 3px solid #111016;
+  border-radius: 50%;
+}
+
+.skiing-mini-slope {
+  background:
+    linear-gradient(165deg, transparent 0 44%, rgba(123, 166, 180, 0.28) 44% 48%, transparent 48%),
+    #e3eef0;
+}
+
+.mini-ski-gate {
+  position: absolute;
+  top: 9px;
+  width: 5px;
+  height: 38px;
+  background: #d8333f;
+  box-shadow: 18px 0 0 #d8333f;
+}
+
+.mini-ski-gate.gate-left {
+  left: 20%;
+}
+
+.mini-ski-gate.gate-right {
+  right: 28%;
+  top: 30px;
+  background: #2b66b1;
+  box-shadow: 18px 0 0 #2b66b1;
+}
+
+.mini-skis {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 5px;
+  height: 30px;
+  background: #26343d;
+  rotate: -14deg;
+  box-shadow: 10px 2px 0 #26343d;
+}
+
+.baseball-mini-diamond {
+  background:
+    linear-gradient(45deg, transparent 0 39%, #b77d4e 39% 61%, transparent 61%),
+    linear-gradient(-45deg, transparent 0 39%, #b77d4e 39% 61%, transparent 61%),
+    #47884b;
+}
+
+.mini-base {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  rotate: 45deg;
+  background: #f6f3de;
+  border: 2px solid #111016;
+}
+
+.mini-base.base-one { right: 24%; top: 42%; }
+.mini-base.base-two { left: 50%; top: 14%; }
+.mini-base.base-three { left: 24%; top: 42%; }
+
+.lacrosse-mini-field {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(246, 243, 222, 0.1) 42px 45px),
+    #397b43;
+}
+
+.mini-lacrosse-crease {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  width: 46px;
+  height: 46px;
+  translate: -50% 0;
+  border: 4px solid #f6f3de;
+  border-radius: 50%;
+}
+
+.mini-lacrosse-goal {
+  position: absolute;
+  left: 50%;
+  top: 25px;
+  width: 32px;
+  height: 25px;
+  translate: -50% 0;
+  border: 4px solid #e65d45;
+}
+
+.surfing-sport-badge { background: #146684; }
+.skiing-sport-badge { background: #376b8d; }
+.baseball-sport-badge { background: #9f352d; }
+.lacrosse-sport-badge { background: #216b45; }
+
+.mini-surf-fin {
+  width: 34px;
+  height: 12px;
+  background: #f2c84b;
+  border: 4px solid #111016;
+  border-radius: 50%;
+  rotate: -18deg;
+}
+
+.mini-mountain {
+  width: 0;
+  height: 0;
+  border-left: 22px solid transparent;
+  border-right: 22px solid transparent;
+  border-bottom: 34px solid #d7edf2;
+  filter: drop-shadow(0 4px 0 #111016);
+}
+
+.mini-baseball {
+  width: 28px;
+  height: 28px;
+  background: #f6f3de;
+  border: 4px solid #111016;
+  border-radius: 50%;
+  box-shadow: inset 5px 0 0 #d84848;
+}
+
+.mini-lacrosse-stick {
+  width: 7px;
+  height: 43px;
+  background: #c39052;
+  border: 3px solid #111016;
+  rotate: 28deg;
+}
+
+.mini-lacrosse-stick::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: -12px;
+  width: 17px;
+  height: 15px;
+  border: 4px solid #f6f3de;
+  border-radius: 50%;
+}
+
 .soccer-game-card .play-game-label {
   color: #f6f3de;
 }
@@ -1417,6 +1603,199 @@ body[data-game="water-polo"] .kick-aim-marker {
   top: 45%;
 }
 
+body[data-game="surfing"] .field-goal-scene {
+  background:
+    repeating-linear-gradient(165deg, transparent 0 36px, rgba(225, 249, 244, 0.34) 36px 42px),
+    linear-gradient(180deg, #79bfd3 0 28%, #238bad 28% 100%);
+}
+
+body[data-game="surfing"] .field-goal-scene::before {
+  top: 67%;
+  height: 18px;
+  background: #dff7f2;
+  border-color: #176985;
+  transform: skewY(-4deg);
+}
+
+body[data-game="surfing"] .field-goal-scene::after,
+body[data-game="skiing"] .field-goal-scene::after {
+  content: "";
+  position: absolute;
+  left: 31%;
+  right: 31%;
+  top: 41%;
+  height: 48%;
+  border: 5px dashed rgba(246, 243, 222, 0.72);
+}
+
+body[data-game="surfing"] .goal-post,
+body[data-game="surfing"] .goal-crossbar,
+body[data-game="skiing"] .goal-post,
+body[data-game="skiing"] .goal-crossbar,
+body[data-game="baseball"] .goal-post,
+body[data-game="baseball"] .goal-crossbar {
+  display: none;
+}
+
+body[data-game="surfing"] .kick-ball {
+  width: 36px;
+  height: 9px;
+  rotate: -14deg;
+  scale: 0.9;
+  background: #f2c84b;
+  border-radius: 50%;
+}
+
+body[data-game="surfing"] .kick-ball::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  bottom: 6px;
+  width: 8px;
+  height: 20px;
+  background: var(--home-team-primary);
+  border: 3px solid #111016;
+}
+
+body[data-game="surfing"] .kick-aim-marker,
+body[data-game="skiing"] .kick-aim-marker {
+  top: 68%;
+  background: #f0c84f;
+}
+
+body[data-game="skiing"] .field-goal-scene {
+  background:
+    linear-gradient(160deg, transparent 0 46%, rgba(102, 147, 162, 0.28) 46% 49%, transparent 49%),
+    linear-gradient(180deg, #79aaca 0 28%, #e4eff1 28% 100%);
+}
+
+body[data-game="skiing"] .field-goal-scene::before {
+  top: 42%;
+  left: 18%;
+  right: 18%;
+  height: 58%;
+  background: #c9dde1;
+  border: 0;
+  clip-path: polygon(28% 0, 72% 0, 100% 100%, 0 100%);
+}
+
+body[data-game="skiing"] .kick-ball {
+  width: 20px;
+  height: 24px;
+  rotate: 0deg;
+  scale: 0.9;
+  background: var(--home-team-primary);
+  border-radius: 0;
+  box-shadow: -8px 20px 0 -6px #26343d, 8px 20px 0 -6px #26343d;
+}
+
+body[data-game="skiing"] .kick-ball::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: -12px;
+  width: 8px;
+  height: 8px;
+  background: var(--home-team-secondary);
+  border: 3px solid #111016;
+}
+
+body[data-game="baseball"] .field-goal-scene {
+  background:
+    linear-gradient(45deg, transparent 0 43%, #b77d4e 43% 57%, transparent 57%),
+    linear-gradient(-45deg, transparent 0 43%, #b77d4e 43% 57%, transparent 57%),
+    linear-gradient(180deg, #182536 0 28%, #47884b 28% 100%);
+}
+
+body[data-game="baseball"] .field-goal-scene::before {
+  top: 27%;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, #315a3d 0 18px, #f0c84f 18px 24px);
+  border-color: #111016;
+}
+
+body[data-game="baseball"] .field-goal-scene::after {
+  content: "";
+  position: absolute;
+  left: 44%;
+  top: 38%;
+  width: 12%;
+  height: 34%;
+  border: 4px solid rgba(246, 243, 222, 0.82);
+}
+
+body[data-game="baseball"] .kick-ball {
+  width: 17px;
+  height: 17px;
+  rotate: 0deg;
+  scale: 0.68;
+  background: #f6f3de;
+  border-radius: 50%;
+  box-shadow: inset 4px 0 0 #d84848;
+}
+
+body[data-game="baseball"] .kick-aim-marker {
+  top: 52%;
+  width: 10px;
+  height: 10px;
+  background: #e65d45;
+}
+
+body[data-game="lacrosse"] .field-goal-scene {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 44px, rgba(246, 243, 222, 0.08) 44px 47px),
+    linear-gradient(180deg, #587f9e 0 34%, #397b43 34% 100%);
+}
+
+body[data-game="lacrosse"] .field-goal-scene::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 29%;
+  right: 29%;
+  top: 27%;
+  height: 44%;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 12px, rgba(246, 243, 222, 0.3) 12px 14px),
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(246, 243, 222, 0.3) 10px 12px);
+}
+
+body[data-game="lacrosse"] .goal-post,
+body[data-game="lacrosse"] .goal-crossbar {
+  z-index: 2;
+  background: #e65d45;
+  box-shadow: 3px 0 0 #6e2424;
+}
+
+body[data-game="lacrosse"] .goal-post {
+  top: 27%;
+  height: 44%;
+}
+
+body[data-game="lacrosse"] .goal-post-left { left: 29%; }
+body[data-game="lacrosse"] .goal-post-right { right: 29%; }
+body[data-game="lacrosse"] .goal-crossbar {
+  left: 29%;
+  right: 29%;
+  top: 27%;
+}
+
+body[data-game="lacrosse"] .kick-ball {
+  width: 14px;
+  height: 14px;
+  rotate: 0deg;
+  scale: 0.68;
+  background: #f0c84f;
+  border-radius: 50%;
+}
+
+body[data-game="lacrosse"] .kick-aim-marker {
+  top: 47%;
+  width: 10px;
+  height: 10px;
+  background: #55b982;
+}
+
 .basketball-backboard,
 .basketball-rim,
 .basketball-shooter,
@@ -1777,7 +2156,8 @@ body[data-game="basketball"] .kick-aim-marker {
   display: none;
 }
 
-body[data-game="soccer"] .soccer-keeper {
+body[data-game="soccer"] .soccer-keeper,
+body[data-game="lacrosse"] .soccer-keeper {
   --keeper-dive-x: 0px;
   --keeper-dive-mid-x: 0px;
   --keeper-dive-y: 0px;
@@ -1819,7 +2199,8 @@ body[data-game="water-polo"] .soccer-keeper {
   will-change: transform;
 }
 
-body[data-game="soccer"] .soccer-keeper.diving {
+body[data-game="soccer"] .soccer-keeper.diving,
+body[data-game="lacrosse"] .soccer-keeper.diving {
   animation: soccer-keeper-dive 720ms cubic-bezier(0.18, 0.75, 0.24, 1) 70ms forwards;
 }
 
@@ -1827,7 +2208,8 @@ body[data-game="water-polo"] .soccer-keeper.diving {
   animation: soccer-keeper-dive 720ms cubic-bezier(0.18, 0.75, 0.24, 1) 70ms forwards;
 }
 
-body[data-game="soccer"] .soccer-keeper::before {
+body[data-game="soccer"] .soccer-keeper::before,
+body[data-game="lacrosse"] .soccer-keeper::before {
   content: "";
   position: absolute;
   left: 4px;
@@ -1838,7 +2220,8 @@ body[data-game="soccer"] .soccer-keeper::before {
   border: 3px solid #111016;
 }
 
-body[data-game="soccer"] .soccer-keeper::after {
+body[data-game="soccer"] .soccer-keeper::after,
+body[data-game="lacrosse"] .soccer-keeper::after {
   content: "";
   position: absolute;
   left: 2px;
