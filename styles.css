@@ -208,6 +208,35 @@ body.game-library-open .play-panel {
     box-shadow 100ms steps(2, end);
 }
 
+.featured-game-card {
+  grid-column: 1 / -1;
+  min-height: 300px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "art copy"
+    "art play";
+}
+
+.featured-game-card .game-card-art {
+  min-height: 300px;
+  border-right: 4px solid var(--line);
+  border-bottom: 0;
+}
+
+.featured-game-card .game-card-copy {
+  align-content: center;
+  padding: 34px 30px 20px;
+}
+
+.featured-game-card .game-card-copy strong {
+  font-size: clamp(2.25rem, 5vw, 4.1rem);
+}
+
+.featured-game-card .game-card-copy > span:last-child {
+  font-size: 1rem;
+}
+
 .game-select-card:hover,
 .game-select-card:focus-visible,
 .game-select-card.selected {
@@ -3719,6 +3748,10 @@ button:active {
       "play"
       "info";
   }
+
+  .game-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -3736,8 +3769,37 @@ button:active {
   }
 
   .game-card-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .featured-game-card {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "art"
+      "copy"
+      "play";
+  }
+
+  .featured-game-card .game-card-art {
+    min-height: 168px;
+    border-right: 0;
+    border-bottom: 4px solid var(--line);
+  }
+
+  .featured-game-card .game-card-copy {
+    padding: 14px 12px 9px;
+  }
+
+  .featured-game-card .game-card-copy strong {
+    font-size: clamp(1.25rem, 7vw, 1.8rem);
+  }
+
+  .featured-game-card .game-card-copy > span:last-child {
+    display: block;
+    font-size: 0.78rem;
   }
 
   .game-card-art {

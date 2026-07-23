@@ -108,6 +108,7 @@ assert.match(html, /id="crosseClashButton"/);
 assert.match(html, /Crosse Clash/);
 assert.match(html, /id="dodgeballDashButton"/);
 assert.match(html, /Dodgeball Dash/);
+assert.match(html, /class="game-select-card featured-game-card" id="gridironDashButton"/);
 assert.match(html, /id="hockeyGoalie"/);
 assert.match(html, /<p>Choose a game to enter the arcade<\/p>/);
 assert.doesNotMatch(html, /More games can be added here/);
@@ -140,6 +141,10 @@ assert.match(styles, /\.game-library\s*\{\s*--team-accent:\s*var\(--menu-accent\
 assert.match(styles, /\.homepage\s*\{\s*--team-accent:\s*var\(--menu-accent\)/);
 assert.match(styles, /\.load-save-panel\s*\{\s*--team-accent:\s*var\(--menu-accent\)/);
 assert.match(styles, /\.game-select-card\s*\{\s*--card-accent:\s*#c83b42/);
+assert.match(styles, /\.game-card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
+assert.match(styles, /\.featured-game-card\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+assert.match(styles, /@media \(max-width: 980px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+assert.match(styles, /@media \(max-width: 640px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.hockey-game-card\s*\{\s*--card-accent:\s*#79d8ef/);
