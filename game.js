@@ -4814,7 +4814,11 @@ function drawStadiumBackdrop() {
     drawMountainBackdrop();
     return;
   }
-  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode() || isDodgeballMode()) {
+  if (isWaterPoloMode()) {
+    drawWaterPoloPoolBackdrop();
+    return;
+  }
+  if (isBasketballMode() || isHockeyMode() || isDodgeballMode()) {
     drawBasketballArenaBackdrop();
     return;
   }
@@ -4909,6 +4913,33 @@ function drawMountainBackdrop() {
   }
 }
 
+function drawWaterPoloPoolBackdrop() {
+  ctx.fillStyle = "#c8dad9";
+  ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+  ctx.fillStyle = "#8eb3bb";
+  ctx.fillRect(0, 0, CONFIG.width, 116);
+
+  ctx.fillStyle = "#dff3f1";
+  for (let x = 14; x < CONFIG.width; x += 54) {
+    ctx.fillRect(x, 16, 34, 22);
+    ctx.fillStyle = "#5f91a0";
+    ctx.fillRect(x + 4, 20, 26, 14);
+    ctx.fillStyle = "#dff3f1";
+  }
+
+  ctx.fillStyle = "#527b83";
+  ctx.fillRect(0, 62, CONFIG.width, 5);
+  ctx.fillStyle = "#eef4e8";
+  ctx.fillRect(0, 108, CONFIG.width, 8);
+  ctx.fillStyle = "#167fa8";
+  ctx.fillRect(38, 112, CONFIG.width - 76, 5);
+
+  ctx.fillStyle = "#a9c2c1";
+  for (let y = 128; y < CONFIG.height; y += 28) {
+    ctx.fillRect(0, y, CONFIG.width, 2);
+  }
+}
+
 function drawBasketballArenaBackdrop() {
   const courtLeft = 38;
   const courtRight = CONFIG.width - 38;
@@ -4992,7 +5023,11 @@ function drawStadiumOverlay() {
     drawSkiCourseBorder();
     return;
   }
-  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode() || isDodgeballMode()) {
+  if (isWaterPoloMode()) {
+    drawWaterPoloPoolBorder();
+    return;
+  }
+  if (isBasketballMode() || isHockeyMode() || isDodgeballMode()) {
     drawBasketballArenaOverlay();
     return;
   }
@@ -5022,6 +5057,53 @@ function drawStadiumOverlay() {
   ctx.fillStyle = team.accent;
   ctx.fillRect(fieldLeft + 6, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
   ctx.fillRect(fieldRight - 12, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
+}
+
+function drawWaterPoloPoolBorder() {
+  const deckWidth = 38;
+  const rightDeckX = CONFIG.width - deckWidth;
+
+  ctx.fillStyle = "#cadcda";
+  ctx.fillRect(0, 0, deckWidth, CONFIG.height);
+  ctx.fillRect(rightDeckX, 0, deckWidth, CONFIG.height);
+
+  ctx.fillStyle = "#a3bdbc";
+  for (let y = 0; y < CONFIG.height; y += 24) {
+    ctx.fillRect(0, y, deckWidth, 2);
+    ctx.fillRect(rightDeckX, y + 12, deckWidth, 2);
+  }
+  ctx.fillRect(17, 0, 2, CONFIG.height);
+  ctx.fillRect(rightDeckX + 19, 0, 2, CONFIG.height);
+
+  ctx.fillStyle = "#f1f1dc";
+  ctx.fillRect(deckWidth - 8, 0, 4, CONFIG.height);
+  ctx.fillRect(rightDeckX + 4, 0, 4, CONFIG.height);
+  ctx.fillStyle = "#397b8a";
+  ctx.fillRect(deckWidth - 4, 0, 4, CONFIG.height);
+  ctx.fillRect(rightDeckX, 0, 4, CONFIG.height);
+
+  for (let y = 7, index = 0; y < CONFIG.height; y += 16, index += 1) {
+    ctx.fillStyle = index % 3 === 0 ? "#cf3545" : index % 3 === 1 ? "#f3d34a" : "#f6f3de";
+    ctx.fillRect(deckWidth - 13, y, 8, 9);
+    ctx.fillRect(rightDeckX + 5, y, 8, 9);
+  }
+
+  for (let y = 72; y < CONFIG.height; y += 180) {
+    drawPoolLadder(2, y);
+    drawPoolLadder(rightDeckX + 7, y + 72);
+  }
+}
+
+function drawPoolLadder(x, y) {
+  ctx.fillStyle = "#617b80";
+  ctx.fillRect(x + 5, y, 4, 38);
+  ctx.fillRect(x + 22, y, 4, 38);
+  ctx.fillRect(x + 5, y, 21, 4);
+  ctx.fillRect(x + 5, y + 14, 21, 3);
+  ctx.fillRect(x + 5, y + 27, 21, 3);
+  ctx.fillStyle = "#eef4e8";
+  ctx.fillRect(x + 8, y + 4, 3, 28);
+  ctx.fillRect(x + 19, y + 4, 3, 28);
 }
 
 function drawSurfBreakBorder() {
