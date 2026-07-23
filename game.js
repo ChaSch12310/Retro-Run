@@ -1259,13 +1259,21 @@ function detectDeviceProfile() {
 }
 
 function applyDeviceProfile() {
+  const previousDevice = document.body.dataset.device;
   document.body.dataset.device = detectDeviceProfile();
   document.body.dataset.orientation =
     window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+  if (previousDevice && previousDevice !== document.body.dataset.device) {
+    renderRunnerCards();
+  }
 }
 
 function usesTouchControls() {
   return document.body.dataset.device === "tablet" || document.body.dataset.device === "mobile";
+}
+
+function creatorAccessUsesRunnerPower() {
+  return document.body.dataset.device === "mobile";
 }
 
 function touchInputReady() {
@@ -1788,6 +1796,14 @@ function openCreatorTools() {
   updateCreatorAttemptsText();
   creatorModalEl.hidden = false;
   creatorUsernameInputEl.focus();
+}
+
+function openCreatorToolsFromRunnerPower(runnerId) {
+  if (!creatorAccessUsesRunnerPower() || runnerId !== currentRunner().id) {
+    return false;
+  }
+  openCreatorTools();
+  return !creatorModalEl.hidden;
 }
 
 function closeCreatorTools() {
@@ -7027,7 +7043,7 @@ function renderRunnerCards() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = `runner-card${selected ? " selected" : ""}${injured ? " injured" : ""}`;
-    card.disabled = injured || !franchise.rosterUnlocked || pendingUpgrade;
+    card.disabled = injured || pendingUpgrade || (!franchise.rosterUnlocked && !(selected && creatorAccessUsesRunnerPower()));
     card.setAttribute("aria-pressed", String(selected));
     card.innerHTML = `
       <div class="runner-top">
@@ -7036,12 +7052,22 @@ function renderRunnerCards() {
       </div>
       <div class="runner-meta">
         <span>SPD ${candidate.speed}</span>
-        <span>PWR ${candidate.power}</span>
+        <span class="runner-power-stat${selected ? " active-runner-power" : ""}"${selected && creatorAccessUsesRunnerPower() ? ' title="Open Creator Tools"' : ""}>PWR ${candidate.power}</span>
         <span>${thirdRating} ${candidate.cut}</span>
       </div>
       <span class="runner-health">${injured ? `Injured · ${candidate.injuredGames} game${candidate.injuredGames === 1 ? "" : "s"}` : selected ? "Active Starter" : "Healthy · Select"}</span>
     `;
-    card.addEventListener("click", () => selectRunner(candidate.id));
+    card.addEventListener("click", (event) => {
+      const powerTarget = event.target?.closest?.(".runner-power-stat");
+      if (powerTarget && openCreatorToolsFromRunnerPower(candidate.id)) {
+        event.preventDefault();
+        return;
+      }
+      if (!franchise.rosterUnlocked) {
+        return;
+      }
+      selectRunner(candidate.id);
+    });
     runnerGridEl.appendChild(card);
   });
 }

@@ -3860,6 +3860,15 @@ body[data-game="water-polo"] .preview-helmet {
   font-weight: 700;
 }
 
+body[data-device="mobile"] .runner-card.selected .runner-power-stat {
+  padding: 4px 3px;
+  color: var(--team-accent);
+  background: #0f2235;
+  outline: 2px solid var(--team-accent);
+  outline-offset: -2px;
+  cursor: pointer;
+}
+
 button {
   border: 3px solid var(--line);
   padding: 12px 20px;

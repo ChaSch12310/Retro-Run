@@ -387,6 +387,7 @@ globalThis.__retroRunTest = {
   openCrosseClash,
   openDodgeballDash,
   openGameLibrary,
+  openCreatorToolsFromRunnerPower,
   startLevel,
   startFieldGoal,
   launchTestShot(aim, power) {
@@ -520,6 +521,13 @@ assert.equal(elements.get("downsLabel").textContent, "Possessions Left");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Goal Sliders");
 assert.equal(game.currentTeamName, "Brazil");
 assert.match(game.tutorial[0].items[0], /50 meters/);
+body.dataset.device = "mobile";
+assert.equal(game.openCreatorToolsFromRunnerPower(game.activeRunnerId), true);
+assert.equal(elements.get("creatorModal").hidden, false);
+elements.get("creatorCancelButton").click();
+body.dataset.device = "laptop";
+assert.equal(game.openCreatorToolsFromRunnerPower(game.activeRunnerId), false);
+assert.equal(elements.get("creatorModal").hidden, true);
 const migratedSoccerSave = game.normalizeFranchise({
   history: [{ season: 1, week: 1, opponent: "North London", result: "W", tries: 2 }],
   attemptsByGame: { "1-2-Mersey Blue": 3 },
