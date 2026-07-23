@@ -560,6 +560,13 @@ assert.equal(game.teamNameForLevel(6), game.teamNameForLevel(24));
 assert.equal(game.difficultyForLevel(0), game.difficultyForLevel(18));
 assert.equal(game.difficultyForLevel(6), game.difficultyForLevel(24));
 assert.ok(game.difficultyForLevel(17) > game.difficultyForLevel(0));
+const firstCowboysDifficulty = game.difficultyForLevel(3);
+assert.ok(game.difficultyForLevel(2) < firstCowboysDifficulty);
+for (let level = 3; level < 180; level += 1) {
+  assert.ok(game.difficultyForLevel(level) <= firstCowboysDifficulty);
+}
+assert.equal(game.difficultyForLevel(17), firstCowboysDifficulty);
+assert.equal(game.difficultyForLevel(179), firstCowboysDifficulty);
 assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
 assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
 game.selectFranchiseSlot(1);

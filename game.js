@@ -302,6 +302,10 @@ const FOOTBALL_TEAMS = [
   },
 ];
 
+const DIFFICULTY_STEP = 0.18;
+const COWBOYS_DIFFICULTY_STAGE = FOOTBALL_TEAMS.findIndex((team) => team.name === "Cowboys");
+const MAX_GAME_DIFFICULTY = 1 + COWBOYS_DIFFICULTY_STAGE * DIFFICULTY_STEP;
+
 const SOCCER_TEAMS = [
   { name: "Brazil", primary: "#ffdf00", secondary: "#002776", accent: "#009c3b", fieldTint: "#3f8b4d", fieldStripe: "#2f713d", uiText: "#172c56" },
   { name: "Argentina", primary: "#74acdf", secondary: "#f6f3de", accent: "#d4a62a", fieldTint: "#428d4f", fieldStripe: "#30733e", uiText: "#173b67" },
@@ -1735,7 +1739,8 @@ function teamForLevel(level) {
 }
 
 function difficultyForLevel(level) {
-  return 1 + seasonGameIndexForLevel(level) * 0.18;
+  const uncappedDifficulty = 1 + seasonGameIndexForLevel(level) * DIFFICULTY_STEP;
+  return Math.min(MAX_GAME_DIFFICULTY, uncappedDifficulty);
 }
 
 function currentGameKey() {
