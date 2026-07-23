@@ -4984,6 +4984,10 @@ function drawSidelineAprons() {
 }
 
 function drawStadiumOverlay() {
+  if (isSurfingMode()) {
+    drawSurfBreakBorder();
+    return;
+  }
   if (isSkiingMode()) {
     drawSkiCourseBorder();
     return;
@@ -5018,6 +5022,63 @@ function drawStadiumOverlay() {
   ctx.fillStyle = team.accent;
   ctx.fillRect(fieldLeft + 6, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
   ctx.fillRect(fieldRight - 12, topDeckY + 16, 6, CONFIG.height - 96 - topDeckY);
+}
+
+function drawSurfBreakBorder() {
+  const borderWidth = 38;
+  const rightBorderX = CONFIG.width - borderWidth;
+
+  ctx.fillStyle = "#155873";
+  ctx.fillRect(0, 0, borderWidth, CONFIG.height);
+  ctx.fillRect(rightBorderX, 0, borderWidth, CONFIG.height);
+
+  for (let y = 8; y < CONFIG.height; y += 28) {
+    ctx.fillStyle = Math.floor(y / 28) % 2 === 0 ? "#217f9c" : "#1b6d89";
+    ctx.fillRect(0, y, borderWidth - 5, 5);
+    ctx.fillRect(rightBorderX + 5, y + 10, borderWidth - 5, 5);
+  }
+
+  ctx.fillStyle = "#dff7f2";
+  ctx.fillRect(borderWidth - 7, 0, 4, CONFIG.height);
+  ctx.fillRect(rightBorderX + 3, 0, 4, CONFIG.height);
+  ctx.fillStyle = "#49b8c9";
+  ctx.fillRect(borderWidth - 3, 0, 3, CONFIG.height);
+  ctx.fillRect(rightBorderX, 0, 3, CONFIG.height);
+
+  for (let y = -10, index = 0; y < CONFIG.height + 52; y += 56, index += 1) {
+    if (index % 2 === 0) {
+      drawSurfReefRock(4, y + 12);
+      drawSurfWaveCurl(rightBorderX + 5, y + 4);
+    } else {
+      drawSurfWaveCurl(4, y + 4);
+      drawSurfReefRock(rightBorderX + 5, y + 12);
+    }
+  }
+}
+
+function drawSurfWaveCurl(x, y) {
+  ctx.fillStyle = "#40b7ca";
+  ctx.fillRect(x + 2, y + 18, 27, 8);
+  ctx.fillRect(x + 9, y + 10, 20, 10);
+  ctx.fillStyle = "#dff7f2";
+  ctx.fillRect(x + 8, y + 7, 18, 5);
+  ctx.fillRect(x + 19, y + 3, 9, 7);
+  ctx.fillRect(x + 4, y + 17, 18, 4);
+  ctx.fillStyle = "#17617b";
+  ctx.fillRect(x + 19, y + 12, 7, 7);
+}
+
+function drawSurfReefRock(x, y) {
+  ctx.fillStyle = "#34494c";
+  ctx.fillRect(x + 2, y + 8, 27, 18);
+  ctx.fillRect(x + 8, y + 3, 17, 8);
+  ctx.fillStyle = "#61777a";
+  ctx.fillRect(x + 8, y + 4, 13, 5);
+  ctx.fillRect(x + 5, y + 11, 8, 5);
+  ctx.fillStyle = "#dff7f2";
+  ctx.fillRect(x, y + 6, 9, 4);
+  ctx.fillRect(x + 21, y + 8, 11, 4);
+  ctx.fillRect(x + 3, y + 25, 25, 4);
 }
 
 function drawSkiCourseBorder() {
