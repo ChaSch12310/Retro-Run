@@ -139,6 +139,9 @@ assert.doesNotMatch(source, /drawLabel\("PENALTY AREA"/);
 assert.match(source, /const TEAM_VENUE_MARKS = \{/);
 assert.match(source, /function drawTeamPixelBadge\(/);
 assert.match(source, /function drawSoccerPenaltyOverlay\(/);
+assert.match(source, /function drawFootballOutOfBoundsMarker\(/);
+assert.match(source, /function drawSoccerOutOfBoundsMarker\(/);
+assert.match(source, /function drawBasketballOutOfBoundsMarker\(/);
 assert.doesNotMatch(source, /basketballCourtHasEnded/);
 assert.match(source, /const TEAM_ALTERNATE_UNIFORMS = \{/);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
@@ -337,6 +340,9 @@ globalThis.__retroRunTest = {
   drawCurrentDefenderSpriteForTest(facing, variant, tackleLean = 1) {
     drawDefenderSprite(100, 100, opponentUniform(currentTeam()), 1000, facing, variant, tackleLean);
   },
+  drawOutOfBoundsMarkerForTest() {
+    drawSidelineHazard(100, { index: 5, unsafeColumns: [0] });
+  },
   basketballRowIsPaint,
   normalizeFranchise,
   render,
@@ -410,6 +416,10 @@ assert.ok(storage.has("pitch-dash-franchise-slots"));
 assert.equal(game.runnerSkin, "#8d5524");
 assert.equal(game.runnerHair, "#d2a24a");
 assert.equal(game.runnerNumber, 23);
+drawnFillColors.length = 0;
+game.drawOutOfBoundsMarkerForTest();
+assert.equal(drawnFillColors.includes("#d63b45"), true);
+assert.equal(drawnFillColors.includes("#226c46"), true);
 drawnFillRects.length = 0;
 drawnLabels.length = 0;
 game.drawPlayerSpriteForTest("left", 0);
@@ -577,6 +587,10 @@ assert.ok(storage.has("hoop-hustle-franchise-slots"));
 assert.equal(game.currentSeasonOpponentNames.includes("Warriors"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Lakers"), true);
 assert.match(elements.get("runnerGrid").children.at(-1).innerHTML, /HND 50/);
+drawnFillColors.length = 0;
+game.drawOutOfBoundsMarkerForTest();
+assert.equal(drawnFillColors.includes("#65b7e8"), true);
+assert.equal(drawnFillColors.includes("#6d3524"), true);
 drawnFillRects.length = 0;
 drawnLabels.length = 0;
 game.drawPlayerSpriteForTest("left", 0);
@@ -666,6 +680,10 @@ assert.equal(elements.get("distanceLabel").textContent, "Yards");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Field-Goal Sliders");
 assert.equal(game.franchiseSlots[0].franchise.team.name, "Test Falcons");
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 21);
+drawnFillColors.length = 0;
+game.drawOutOfBoundsMarkerForTest();
+assert.equal(drawnFillColors.includes("#f28c28"), true);
+assert.equal(drawnFillColors.includes("#f05a28"), true);
 game.selectFranchiseSlot(1);
 elements.get("teamNameInput").value = "Niners";
 elements.get("playerSkinInput").value = "#6d4c41";

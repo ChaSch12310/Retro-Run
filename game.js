@@ -4052,18 +4052,90 @@ function drawSidelineHazard(y, lane) {
     const x = col * columnWidth();
     const width = columnWidth();
 
-    ctx.fillStyle = PALETTE.warningDark;
-    ctx.fillRect(x, y, width, CONFIG.laneHeight);
-
-    for (let i = 0; i < Math.ceil(width / 12); i += 1) {
-      ctx.fillStyle = i % 2 === 0 ? PALETTE.warning : PALETTE.cream;
-      ctx.fillRect(x + i * 12, y, 12, CONFIG.laneHeight);
+    if (isBasketballMode()) {
+      drawBasketballOutOfBoundsMarker(x, y, width, lane.index);
+    } else if (isSoccerMode()) {
+      drawSoccerOutOfBoundsMarker(x, y, width, lane.index);
+    } else {
+      drawFootballOutOfBoundsMarker(x, y, width, lane.index);
     }
+  }
+}
 
+function drawFootballOutOfBoundsMarker(x, y, width, row) {
+  ctx.fillStyle = PALETTE.warningDark;
+  ctx.fillRect(x, y, width, CONFIG.laneHeight);
+
+  const tileSize = 12;
+  for (let tileY = 0; tileY < CONFIG.laneHeight; tileY += tileSize) {
+    for (let tileX = 0; tileX < width; tileX += tileSize) {
+      const alternating = (Math.floor(tileX / tileSize) + Math.floor(tileY / tileSize) + row) % 2 === 0;
+      ctx.fillStyle = alternating ? "#f28c28" : PALETTE.cream;
+      ctx.fillRect(x + tileX, y + tileY, tileSize, tileSize);
+    }
+  }
+
+  for (let marker = 0; marker < 2; marker += 1) {
+    const pylonX = x + 8 + marker * Math.max(22, width - 22);
     ctx.fillStyle = PALETTE.outline;
-    for (let i = 0; i < 4; i += 1) {
-      ctx.fillRect(x + 6 + i * 16, y + 8 + ((i + lane.index) % 2) * 18, 8, 8);
+    ctx.fillRect(pylonX - 2, y + 18, 10, 26);
+    ctx.fillStyle = "#f05a28";
+    ctx.fillRect(pylonX, y + 16, 6, 24);
+    ctx.fillStyle = PALETTE.cream;
+    ctx.fillRect(pylonX, y + 16, 6, 5);
+  }
+}
+
+function drawSoccerOutOfBoundsMarker(x, y, width, row) {
+  ctx.fillStyle = "#174b35";
+  ctx.fillRect(x, y, width, CONFIG.laneHeight);
+
+  const checkerSize = 10;
+  for (let tileY = 0; tileY < CONFIG.laneHeight; tileY += checkerSize) {
+    for (let tileX = 0; tileX < width; tileX += checkerSize) {
+      ctx.fillStyle = (Math.floor(tileX / checkerSize) + Math.floor(tileY / checkerSize) + row) % 2 === 0
+        ? "#226c46"
+        : "#2f8755";
+      ctx.fillRect(x + tileX, y + tileY, checkerSize, checkerSize);
     }
+  }
+
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(x, y + 3, width, 4);
+  ctx.fillRect(x, y + CONFIG.laneHeight - 7, width, 4);
+  for (let markerX = x + 10; markerX < x + width - 4; markerX += 28) {
+    ctx.fillStyle = PALETTE.cream;
+    ctx.fillRect(markerX, y + 13, 3, 34);
+    ctx.fillStyle = "#d63b45";
+    ctx.fillRect(markerX + 3, y + 13, 3, 3);
+    ctx.beginPath();
+    ctx.moveTo(markerX + 3, y + 13);
+    ctx.lineTo(markerX + 17, y + 19 + (row % 2) * 4);
+    ctx.lineTo(markerX + 3, y + 25);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawBasketballOutOfBoundsMarker(x, y, width, row) {
+  ctx.fillStyle = "#6d3524";
+  ctx.fillRect(x, y, width, CONFIG.laneHeight);
+
+  for (let boardY = 0; boardY < CONFIG.laneHeight; boardY += 15) {
+    ctx.fillStyle = (Math.floor(boardY / 15) + row) % 2 === 0 ? "#8b4c2f" : "#a76237";
+    ctx.fillRect(x, y + boardY, width, 13);
+  }
+
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(x, y, width, 5);
+  ctx.fillRect(x, y + CONFIG.laneHeight - 5, width, 5);
+  for (let markerX = x + 5; markerX < x + width - 5; markerX += 18) {
+    ctx.fillStyle = PALETTE.outline;
+    ctx.fillRect(markerX, y + 19, 14, 23);
+    ctx.fillStyle = "#65b7e8";
+    ctx.fillRect(markerX + 2, y + 17, 10, 9);
+    ctx.fillStyle = "#173049";
+    ctx.fillRect(markerX + 3, y + 29, 8, 10);
   }
 }
 
