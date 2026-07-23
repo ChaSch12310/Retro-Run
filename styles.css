@@ -2777,6 +2777,11 @@ body[data-game="basketball"] .preview-helmet {
   text-transform: uppercase;
 }
 
+#startButton:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.7) brightness(0.7);
+}
+
 .homepage-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

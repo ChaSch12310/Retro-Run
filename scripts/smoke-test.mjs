@@ -267,6 +267,8 @@ globalThis.__retroRunTest = {
   get runnerNumber() { return currentRunner().appearance.number; },
   get runnerPower() { return currentRunner().power; },
   get runnerUpgrades() { return currentRunner().upgrades; },
+  get pendingUpgrade() { return pendingUpgrade; },
+  get pendingUpgradeChoices() { return [...franchise.pendingUpgradeChoices]; },
   get activeRunnerId() { return currentRunner().id; },
   get rosterUnlocked() { return franchise.rosterUnlocked; },
   get roster() { return franchise.roster.map((runner) => ({ ...runner })); },
@@ -331,6 +333,20 @@ globalThis.__retroRunTest = {
     currentLevel = seasonCheckpointLevel;
     franchise.attemptsByGame[currentGameKey()] = tries;
     completeLevel();
+  },
+  completeGameForTest(level, tries) {
+    franchise.year = Math.floor(level / GAMES_PER_SEASON) + 1;
+    seasonCheckpointLevel = level;
+    currentLevel = level;
+    franchise.attemptsByGame[currentGameKey()] = tries;
+    completeLevel();
+  },
+  setRunnerRatings(ratings) { Object.assign(currentRunner(), ratings); },
+  runnerHasMaxRating,
+  advanceLevel,
+  applyPendingUpgrade(index = 0) {
+    const upgrade = getUpgradeByKey(franchise.pendingUpgradeChoices[index]);
+    if (upgrade) applyUpgrade(upgrade);
   },
   chooseOffseason: applyOffseasonChoice,
   selectRunner,
@@ -710,6 +726,9 @@ assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), tru
 game.advanceFieldGoalFlight(3000);
 assert.equal(game.gameState, "levelComplete");
 assert.equal(elements.get("overlayTitle").textContent, "Swish!");
+assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
+assert.equal(elements.get("startButton").disabled, true);
+game.applyPendingUpgrade();
 assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
@@ -785,7 +804,24 @@ assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), tru
 game.advanceFieldGoalFlight(3000);
 assert.equal(game.gameState, "levelComplete");
 assert.equal(elements.get("overlayTitle").textContent, "Goal!");
+assert.equal(game.pendingUpgrade, true);
+assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
+assert.equal(elements.get("startButton").disabled, true);
+const hockeyCheckpointAfterWin = game.seasonCheckpointLevel;
+game.advanceLevel();
+assert.equal(game.seasonCheckpointLevel, hockeyCheckpointAfterWin);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(game.selectRunner(game.activeRunnerId), false);
+game.selectFranchiseSlot(0);
+assert.equal(game.pendingUpgrade, true);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(elements.get("startButton").disabled, true);
+const hockeyUpgradesBefore = game.runnerUpgrades;
+game.applyPendingUpgrade();
+assert.equal(game.pendingUpgrade, false);
+assert.equal(game.runnerUpgrades, hockeyUpgradesBefore + 1);
 assert.equal(elements.get("startButton").textContent, "Next Game");
+assert.equal(elements.get("startButton").disabled, false);
 
 elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);
@@ -851,6 +887,11 @@ assert.ok(storage.has("rink-rush-franchise-slots"));
 game.completeSeasonForTest(1, 11, 6, 2);
 assert.equal(game.seasonYear, 1);
 assert.equal(game.seasonCheckpointLevel, 18);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(game.pendingUpgrade, true);
+assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
+assert.equal(elements.get("offseasonPanel").hidden, true);
+game.applyPendingUpgrade();
 assert.equal(game.gameState, "offseason");
 assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
 assert.equal(elements.get("offseasonPanel").hidden, false);
@@ -904,6 +945,14 @@ game.beginTestOffseason(3, 11, 7, "L");
 assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
 game.chooseOffseason("keep");
 assert.equal(game.seasonYear, 4);
+
+game.setRunnerRatings({ speed: 100, power: 55, cut: 55 });
+assert.equal(game.runnerHasMaxRating(), true);
+game.completeGameForTest(54, 2);
+assert.equal(game.pendingUpgrade, false);
+assert.equal(game.pendingUpgradeChoices.length, 0);
+assert.equal(elements.get("startButton").textContent, "Next Game");
+assert.equal(elements.get("startButton").disabled, false);
 
 for (let level = 0; level < 18; level += 1) {
   const laneTypes = game.generateLaneTypes(level, 70);

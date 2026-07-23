@@ -776,13 +776,15 @@ function usesRoundBall() {
   return isSoccerMode() || isBasketballMode();
 }
 
+const PLAYER_RATING_MAX = 100;
+
 const UPGRADE_POOL = [
   {
     key: "speed",
     title: "Speed Boost",
     description: "+4 speed, +3 burst",
     apply(playerProfile) {
-      playerProfile.speed = Math.min(99, playerProfile.speed + 4);
+      playerProfile.speed = Math.min(PLAYER_RATING_MAX, playerProfile.speed + 4);
       playerProfile.speedBonus += 3;
     },
   },
@@ -791,7 +793,7 @@ const UPGRADE_POOL = [
     title: "Power Boost",
     description: "+5 power",
     apply(playerProfile) {
-      playerProfile.power = Math.min(99, playerProfile.power + 5);
+      playerProfile.power = Math.min(PLAYER_RATING_MAX, playerProfile.power + 5);
     },
   },
   {
@@ -799,7 +801,7 @@ const UPGRADE_POOL = [
     title: "Cutback Boost",
     description: "+5 cut, +1 burst",
     apply(playerProfile) {
-      playerProfile.cut = Math.min(99, playerProfile.cut + 5);
+      playerProfile.cut = Math.min(PLAYER_RATING_MAX, playerProfile.cut + 5);
       playerProfile.speedBonus += 1;
     },
   },
@@ -808,7 +810,7 @@ const UPGRADE_POOL = [
     title: "Burst Training",
     description: "+2 speed, +2 burst",
     apply(playerProfile) {
-      playerProfile.speed = Math.min(99, playerProfile.speed + 2);
+      playerProfile.speed = Math.min(PLAYER_RATING_MAX, playerProfile.speed + 2);
       playerProfile.speedBonus += 2;
     },
   },
@@ -817,8 +819,8 @@ const UPGRADE_POOL = [
     title: "Balance Drill",
     description: "+3 power, +3 cut",
     apply(playerProfile) {
-      playerProfile.power = Math.min(99, playerProfile.power + 3);
-      playerProfile.cut = Math.min(99, playerProfile.cut + 3);
+      playerProfile.power = Math.min(PLAYER_RATING_MAX, playerProfile.power + 3);
+      playerProfile.cut = Math.min(PLAYER_RATING_MAX, playerProfile.cut + 3);
     },
   },
   {
@@ -826,9 +828,9 @@ const UPGRADE_POOL = [
     title: "Elite Session",
     description: "+2 speed, +2 power, +2 cut",
     apply(playerProfile) {
-      playerProfile.speed = Math.min(99, playerProfile.speed + 2);
-      playerProfile.power = Math.min(99, playerProfile.power + 2);
-      playerProfile.cut = Math.min(99, playerProfile.cut + 2);
+      playerProfile.speed = Math.min(PLAYER_RATING_MAX, playerProfile.speed + 2);
+      playerProfile.power = Math.min(PLAYER_RATING_MAX, playerProfile.power + 2);
+      playerProfile.cut = Math.min(PLAYER_RATING_MAX, playerProfile.cut + 2);
     },
   },
 ];
@@ -1270,8 +1272,14 @@ function selectFranchiseSlot(index) {
   }
 
   currentLevel = seasonCheckpointLevel;
+  if (runnerHasMaxRating(currentRunner())) {
+    franchise.pendingUpgradeChoices = [];
+  }
   pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
-  gameState = franchise.offseason ? "offseason" : "menu";
+  gameState = pendingUpgrade ? "levelComplete" : franchise.offseason ? "offseason" : "menu";
+  if (!pendingUpgrade && slot?.franchise?.pendingUpgradeChoices?.length) {
+    saveFranchise();
+  }
   recomputeBestDistance();
   showOverlay();
   updateStartOverlay();
@@ -1559,13 +1567,19 @@ function currentRunner() {
   return franchise.player;
 }
 
+function runnerHasMaxRating(runner = currentRunner()) {
+  return runner.speed >= PLAYER_RATING_MAX ||
+    runner.power >= PLAYER_RATING_MAX ||
+    runner.cut >= PLAYER_RATING_MAX;
+}
+
 function healthyRunners() {
   return (franchise.roster || []).filter((runner) => runner.injuredGames <= 0);
 }
 
 function selectRunner(runnerId) {
   const runner = franchise.roster?.find((candidate) => candidate.id === runnerId);
-  if (!runner || runner.injuredGames > 0) {
+  if (!runner || runner.injuredGames > 0 || pendingUpgrade) {
     return false;
   }
   franchise.activePlayerId = runner.id;
@@ -1983,6 +1997,9 @@ function offseasonEventView(event) {
 }
 
 function applyOffseasonChoice(choiceId) {
+  if (pendingUpgrade) {
+    return;
+  }
   const offseason = franchise.offseason;
   const event = offseason?.events[offseason.index];
   if (!event) {
@@ -3243,11 +3260,15 @@ function completeLevel() {
         : isHockeyMode()
           ? `The puck is in and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
           : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
-  pendingUpgrade = result === "W" && !seasonWrapped;
+  pendingUpgrade = result === "W" && !runnerHasMaxRating(currentRunner());
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
+  if (pendingUpgrade) {
+    gameState = "levelComplete";
+  }
   saveFranchise();
-  startButton.textContent = seasonWrapped ? "Complete Offseason" : "Next Game";
-  startButton.hidden = seasonWrapped;
+  startButton.textContent = pendingUpgrade ? "Choose Upgrade" : seasonWrapped ? "Complete Offseason" : "Next Game";
+  startButton.disabled = pendingUpgrade;
+  startButton.hidden = seasonWrapped && !pendingUpgrade;
   homepagePanelEl.hidden = false;
   renderUpgradeOptions();
   renderOffseasonPanel();
@@ -3256,6 +3277,10 @@ function completeLevel() {
 }
 
 function advanceLevel() {
+  if (pendingUpgrade) {
+    renderUpgradeOptions();
+    return;
+  }
   if (franchise.offseason) {
     gameState = "offseason";
     renderOffseasonPanel();
@@ -3270,7 +3295,7 @@ function syncFranchiseSetupState() {
   document.body.classList.toggle("game-library-open", gameLibraryOpen);
   document.body.classList.toggle("franchise-slot-selecting", slotSelectOpen);
   document.body.classList.toggle("franchise-setup-pending", !slotSelectOpen && !franchise.setupComplete);
-  document.body.classList.toggle("offseason-active", Boolean(franchise.offseason) && !slotSelectOpen && !gameLibraryOpen);
+  document.body.classList.toggle("offseason-active", Boolean(franchise.offseason) && !pendingUpgrade && !slotSelectOpen && !gameLibraryOpen);
   gameLibraryScreenEl.hidden = !gameLibraryOpen;
   creatorTriggerEl.disabled = gameLibraryOpen;
   creatorTriggerEl.setAttribute("aria-hidden", String(gameLibraryOpen));
@@ -3439,6 +3464,7 @@ function updateStartOverlay() {
   onboardingPanelEl.hidden = franchise.setupComplete;
   franchiseMainContentEl.hidden = !setupReady;
   startButton.hidden = !setupReady;
+  startButton.disabled = false;
   homeTeamNameEl.textContent = homeTeam.name;
   nextOpponentNameEl.textContent = nextOpponent.name;
   teamNameInputEl.value = homeTeam.name;
@@ -3466,6 +3492,11 @@ function updateStartOverlay() {
         ? "Name your national team, design your forward, and set your kit colors before the opening match."
         : "Name your team, design your runner, and set your colors before kickoff.";
     startButton.textContent = "Start Career";
+  } else if (pendingUpgrade) {
+    overlayTitleEl.textContent = "Player Upgrade Required";
+    overlayTextEl.textContent = `Choose one upgrade for ${runner.name} before continuing.`;
+    startButton.textContent = "Choose Upgrade";
+    startButton.disabled = true;
   } else if (franchise.offseason) {
     overlayTitleEl.textContent = `Season ${franchise.offseason.completedSeason} Complete`;
     overlayTextEl.textContent = "Make each offseason decision, finish the draft, and prepare the next season.";
@@ -3530,10 +3561,11 @@ function moraleMood() {
 
 function renderOffseasonPanel() {
   const offseason = franchise.offseason;
-  offseasonPanelEl.hidden = !offseason;
-  document.body.classList.toggle("offseason-active", Boolean(offseason) && !slotSelectOpen && !gameLibraryOpen);
+  const showOffseason = Boolean(offseason) && !pendingUpgrade;
+  offseasonPanelEl.hidden = !showOffseason;
+  document.body.classList.toggle("offseason-active", showOffseason && !slotSelectOpen && !gameLibraryOpen);
   restartSeasonButton.disabled = Boolean(offseason);
-  if (!offseason) {
+  if (!showOffseason) {
     return;
   }
 
@@ -3704,13 +3736,20 @@ function applyUpgrade(upgrade) {
   if (!pendingUpgrade) {
     return;
   }
-  upgrade.apply(franchise.player);
-  franchise.player.upgrades += 1;
+  const runner = currentRunner();
+  upgrade.apply(runner);
+  runner.upgrades += 1;
   const display = upgradeDisplayCopy(upgrade);
-  franchise.lastResult = `${franchise.player.name} earned a ${display.title.toLowerCase()} after the last win.`;
+  franchise.lastResult = `${runner.name} earned a ${display.title.toLowerCase()} after the last win.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
+  startButton.disabled = false;
+  startButton.textContent = franchise.offseason ? "Complete Offseason" : "Next Game";
   saveFranchise();
+  if (franchise.offseason) {
+    gameState = "offseason";
+    updateStartOverlay();
+  }
   renderRunnerCards();
   renderFranchiseDashboard();
   renderUpgradeOptions();
@@ -5159,7 +5198,7 @@ function renderRunnerCards() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = `runner-card${selected ? " selected" : ""}${injured ? " injured" : ""}`;
-    card.disabled = injured || !franchise.rosterUnlocked;
+    card.disabled = injured || !franchise.rosterUnlocked || pendingUpgrade;
     card.setAttribute("aria-pressed", String(selected));
     card.innerHTML = `
       <div class="runner-top">
