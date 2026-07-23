@@ -5175,10 +5175,12 @@ function timeLocked() {
 
 function showOverlay() {
   overlayEl.classList.remove("hidden");
+  document.body.classList.add("menu-scroll-enabled");
 }
 
 function hideOverlay() {
   overlayEl.classList.add("hidden");
+  document.body.classList.remove("menu-scroll-enabled");
   homepagePanelEl.hidden = true;
 }
 

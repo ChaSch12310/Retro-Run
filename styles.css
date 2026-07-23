@@ -43,6 +43,13 @@ body[data-device="mobile"] {
   touch-action: none;
 }
 
+body[data-device="tablet"].menu-scroll-enabled,
+body[data-device="mobile"].menu-scroll-enabled,
+body[data-device="tablet"].game-library-open,
+body[data-device="mobile"].game-library-open {
+  touch-action: pan-y;
+}
+
 .game-shell {
   width: min(1320px, calc(100vw - 32px));
   margin: 0 auto;
@@ -113,7 +120,10 @@ body[data-device="mobile"] {
   box-shadow:
     inset 0 0 0 5px rgba(255, 255, 255, 0.05),
     0 10px 0 rgba(8, 15, 22, 0.35);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .game-library[hidden] {
@@ -156,7 +166,8 @@ body.game-library-open .play-panel {
 
 .game-card-grid {
   width: min(100%, 1180px);
-  margin: auto;
+  margin: 0 auto;
+  align-self: safe center;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
@@ -2059,7 +2070,7 @@ body[data-game="soccer"] .soccer-keeper::after {
   inset: 12px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
   gap: 12px;
@@ -2068,6 +2079,16 @@ body[data-game="soccer"] .soccer-keeper::after {
   border: 4px solid var(--line);
   box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.04);
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.overlay > :first-child {
+  margin-top: auto;
+}
+
+.overlay > :last-child {
+  margin-bottom: auto;
 }
 
 .overlay.hidden {

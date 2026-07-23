@@ -132,6 +132,9 @@ assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.hockey-game-card\s*\{\s*--card-accent:\s*#79d8ef/);
 assert.match(styles, /\.offseason-panel\s*\{/);
 assert.match(styles, /body\.offseason-active #franchiseMainContent/);
+assert.match(styles, /\.game-library\s*\{[^}]*overflow-y:\s*auto/s);
+assert.match(styles, /\.overlay\s*\{[^}]*justify-content:\s*flex-start[^}]*overflow:\s*auto/s);
+assert.match(styles, /body\[data-device="mobile"\]\.menu-scroll-enabled/);
 assert.match(styles, /\.runner-card\.injured/);
 assert.match(styles, /\.operations-grid\s*\{/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
@@ -412,6 +415,7 @@ const brazilAwayClashUniform = game.uniformForTeam("Brazil", {
 assert.equal(brazilAwayClashUniform.variant, "standard");
 assert.equal(game.gameLibraryOpen, true);
 assert.equal(elements.get("creatorTrigger").disabled, true);
+assert.equal(body.classList.contains("menu-scroll-enabled"), true);
 
 game.openPitchDash();
 assert.equal(game.activeGameId, "soccer");
@@ -567,6 +571,7 @@ game.selectFranchiseSlot(0);
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
 game.startLevel();
+assert.equal(body.classList.contains("menu-scroll-enabled"), false);
 game.setChainRows(20, 23);
 game.setCameraRow(20);
 drawnFillColors.length = 0;
