@@ -143,6 +143,8 @@ assert.match(styles, /\.load-save-panel\s*\{\s*--team-accent:\s*var\(--menu-acce
 assert.match(styles, /\.game-select-card\s*\{\s*--card-accent:\s*#c83b42/);
 assert.match(styles, /\.game-card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
 assert.match(styles, /\.featured-game-card\s*\{[^}]*grid-column:\s*1 \/ -1/s);
+assert.match(styles, /@media \(min-width: 981px\)\s*\{[\s\S]*?\.featured-game-card \.game-sport-badge\s*\{[^}]*width:\s*188px[^}]*height:\s*128px/s);
+assert.match(styles, /@media \(min-width: 981px\)\s*\{[\s\S]*?\.featured-game-card \.mini-football\s*\{[^}]*width:\s*88px[^}]*height:\s*54px/s);
 assert.match(styles, /@media \(max-width: 980px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
 assert.match(styles, /@media \(max-width: 640px\)\s*\{[\s\S]*?\.game-card-grid\s*\{[^}]*grid-template-columns:\s*1fr/);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);

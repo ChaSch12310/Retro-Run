@@ -237,6 +237,47 @@ body.game-library-open .play-panel {
   font-size: 1rem;
 }
 
+@media (min-width: 981px) {
+  .featured-game-card .game-sport-badge {
+    bottom: 26px;
+    width: 188px;
+    height: 128px;
+    filter: drop-shadow(10px 10px 0 rgba(6, 13, 20, 0.48));
+  }
+
+  .featured-game-card .game-sport-badge::before {
+    inset: 8px;
+  }
+
+  .featured-game-card .game-icon-speed {
+    left: 24px;
+    top: 47px;
+    width: 30px;
+    height: 8px;
+    box-shadow:
+      -10px -18px 0 -2px var(--text),
+      6px 18px 0 -2px var(--text);
+  }
+
+  .featured-game-card .mini-football {
+    left: 58%;
+    width: 88px;
+    height: 54px;
+    border-width: 6px;
+    box-shadow: inset -10px -7px 0 #6e3015;
+  }
+
+  .featured-game-card .mini-football::after {
+    left: 20px;
+    top: 16px;
+    width: 35px;
+    height: 6px;
+    box-shadow:
+      7px -9px 0 -1px var(--text),
+      7px 9px 0 -1px var(--text);
+  }
+}
+
 .game-select-card:hover,
 .game-select-card:focus-visible,
 .game-select-card.selected {
