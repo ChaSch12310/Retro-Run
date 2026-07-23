@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260722-roster" />
   </head>
   <body>
     <main class="game-shell">
@@ -374,6 +374,7 @@
               </div>
 
               <div class="franchise-module offseason-panel" id="offseasonPanel" hidden>
+                <p class="offseason-page-label">Franchise Update</p>
                 <div class="module-head">
                   <h3 id="offseasonHeading">Offseason</h3>
                   <span id="offseasonProgress">Decision 1 / 2</span>
@@ -436,8 +437,8 @@
 
               <div class="franchise-module team-operations" id="teamOperationsPanel">
                 <div class="module-head">
-                  <h3>Team Operations</h3>
-                  <span id="featureTierValue">Season 1 Systems</span>
+                  <h3>Team Staff</h3>
+                  <span id="featureTierValue">Core Staff</span>
                 </div>
                 <div class="operations-grid">
                   <div class="operation-card">
@@ -471,12 +472,12 @@
                     <small>Earned between seasons</small>
                   </div>
                 </div>
-                <p id="nextFeatureText">Season 2 unlocks morale and press conferences.</p>
+                <p id="nextFeatureText">Finish Season 1 to unlock the runner roster and injuries.</p>
               </div>
 
-              <div class="runner-select">
+              <div class="runner-select" id="runnerSelectPanel">
                 <div class="runner-select-head">
-                  <h3>Featured Player</h3>
+                  <h3 id="runnerSelectTitle">Featured Player</h3>
                   <p id="runnerSelectionStatus">Franchise Starter</p>
                 </div>
                 <div class="runner-grid" id="runnerGrid"></div>
@@ -594,6 +595,6 @@
       </div>
     </div>
 
-    <script src="game.js"></script>
+    <script src="game.js?v=20260722-roster"></script>
   </body>
 </html>

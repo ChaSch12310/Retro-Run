@@ -2312,6 +2312,42 @@ body[data-game="soccer"] .soccer-keeper::after {
     #10283e;
 }
 
+.offseason-page-label {
+  margin: 0;
+  color: var(--team-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+body.offseason-active #homepageHero,
+body.offseason-active #franchiseMainContent,
+body.offseason-active #startButton {
+  display: none !important;
+}
+
+body.offseason-active .homepage {
+  width: min(100%, 720px);
+}
+
+body.offseason-active .offseason-panel {
+  display: grid !important;
+  min-height: min(620px, calc(100dvh - 170px));
+  align-content: center;
+  gap: 18px;
+  padding: clamp(22px, 5vw, 48px);
+  border-width: 6px;
+  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.04);
+}
+
+body.offseason-active .offseason-panel h4 {
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+}
+
+body.offseason-active .offseason-choices {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 .offseason-panel[hidden] {
   display: none !important;
 }
@@ -2762,6 +2798,29 @@ body[data-game="basketball"] .preview-helmet {
 .runner-card.selected {
   background: linear-gradient(180deg, rgba(226, 187, 79, 0.32), rgba(25, 50, 74, 0.96));
   border-color: var(--team-accent);
+}
+
+.runner-card.injured {
+  opacity: 0.62;
+  cursor: not-allowed;
+  filter: grayscale(0.45);
+  border-color: #c94d45;
+  background: #35232c;
+}
+
+.runner-card:disabled:not(.injured) {
+  cursor: default;
+}
+
+.runner-card .runner-health {
+  padding-top: 7px;
+  color: #9ad89a;
+  border-top: 2px solid rgba(246, 243, 222, 0.18);
+  font-weight: 900;
+}
+
+.runner-card.injured .runner-health {
+  color: #ff9b8f;
 }
 
 .runner-card .runner-top {

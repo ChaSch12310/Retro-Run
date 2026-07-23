@@ -47,6 +47,7 @@ const characterPreviewEl = document.getElementById("characterPreview");
 const characterNumberPreviewEl = document.getElementById("characterNumberPreview");
 const runnerGridEl = document.getElementById("runnerGrid");
 const runnerSelectionStatusEl = document.getElementById("runnerSelectionStatus");
+const runnerSelectTitleEl = document.getElementById("runnerSelectTitle");
 const seasonYearValueEl = document.getElementById("seasonYearValue");
 const seasonRecordValueEl = document.getElementById("seasonRecordValue");
 const fanSupportValueEl = document.getElementById("fanSupportValue");
@@ -655,12 +656,10 @@ const DRAFT_NAME_POOL = [
   "R. Miles",
 ];
 const SEASON_FEATURES = [
-  { season: 1, names: ["Coaches", "Draft"] },
-  { season: 2, names: ["Team Morale", "Press Conferences"] },
-  { season: 3, names: ["Stadium Quality", "Team Scenarios"] },
-  { season: 4, names: ["Training Facility", "Scouting Department"] },
-  { season: 5, names: ["Community Events", "Front Office Strategy"] },
+  { season: 2, names: ["Runner Roster", "Injuries"] },
 ];
+const MAX_ROSTER_SIZE = 4;
+const RUNNER_INJURY_CHANCE = 0.08;
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
   year: 1,
@@ -677,6 +676,9 @@ const DEFAULT_FRANCHISE = {
   seasonBests: {},
   team: null,
   player: null,
+  roster: [],
+  activePlayerId: null,
+  rosterUnlocked: false,
   pendingUpgradeChoices: [],
   coach: null,
   morale: 55,
@@ -911,6 +913,7 @@ function restartSeason() {
   delete franchise.seasonBests[String(franchise.year)];
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
+  franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
   recomputeBestDistance();
   saveFranchise();
   updateStartOverlay();
@@ -928,11 +931,16 @@ function createFranchiseFromForm() {
 
   franchise.setupComplete = true;
   franchise.team = { name: teamName, primary, secondary };
-  franchise.player = {
+  const starter = {
     ...resetPlayerToBaseline(franchise.player || createFranchisePlayer(runnerName)),
+    id: "starter",
     name: runnerName,
     appearance,
   };
+  franchise.player = starter;
+  franchise.roster = [starter];
+  franchise.activePlayerId = starter.id;
+  franchise.rosterUnlocked = false;
   franchise.lastResult = isBasketballMode()
     ? "Basketball franchise created. Time to take the court."
     : isSoccerMode()
@@ -952,6 +960,10 @@ function createFranchiseFromForm() {
 }
 
 function startLevel() {
+  if (!ensureHealthyRunner()) {
+    franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
+    ensureHealthyRunner();
+  }
   const gameKey = currentGameKey();
   franchise.attemptsByGame[gameKey] = (franchise.attemptsByGame[gameKey] || 0) + 1;
   saveFranchise();
@@ -1017,17 +1029,28 @@ function normalizeCoach(rawCoach, seedSource) {
   };
 }
 
-function normalizeOffseason(rawOffseason) {
+function normalizeOffseason(rawOffseason, context = {}) {
   if (!rawOffseason || typeof rawOffseason !== "object" || !Array.isArray(rawOffseason.events)) {
     return null;
   }
+  const completedSeason = Math.max(1, Number(rawOffseason.completedSeason) || 1);
+  const savedRosterEvent = rawOffseason.events.find((event) => (
+    ["roster", "draft"].includes(event?.type) && Array.isArray(event.prospects)
+  ));
+  const prospects = savedRosterEvent?.prospects?.length
+    ? savedRosterEvent.prospects
+    : buildDraftProspects(
+      completedSeason,
+      Number(context.completedGames) || 0,
+      Number(context.scoutingQuality) || DEFAULT_FRANCHISE.scoutingQuality
+    );
   return {
-    completedSeason: Math.max(1, Number(rawOffseason.completedSeason) || 1),
+    completedSeason,
     wins: clamp(Number(rawOffseason.wins) || 0, 0, GAMES_PER_SEASON),
     losses: clamp(Number(rawOffseason.losses) || 0, 0, GAMES_PER_SEASON),
-    index: clamp(Number(rawOffseason.index) || 0, 0, rawOffseason.events.length),
-    events: rawOffseason.events.filter((event) => event && typeof event === "object"),
-    decisions: Array.isArray(rawOffseason.decisions) ? rawOffseason.decisions.slice(-8) : [],
+    index: 0,
+    events: [{ type: "roster", prospects }],
+    decisions: [],
   };
 }
 
@@ -1047,8 +1070,11 @@ function createDefaultFranchise(forcedName = null) {
     seasonBests: {},
     team: { ...defaultTeam },
     player: playerProfile,
+    roster: [playerProfile],
+    activePlayerId: playerProfile.id,
+    rosterUnlocked: false,
     coach: createCoach(`${defaultTeam.name}-${playerProfile.name}`),
-    featureLog: ["Season 1: Coaches and Draft"],
+    featureLog: ["Season 1: Featured Player"],
     pendingUpgradeChoices: [],
     seasonCheckpointLevel: 0,
     savedAt: Date.now(),
@@ -1058,7 +1084,14 @@ function createDefaultFranchise(forcedName = null) {
 function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
   const parsed = rawFranchise && typeof rawFranchise === "object" ? rawFranchise : {};
   const defaultTeam = currentGameMode().homeTeam;
-  const playerProfile = normalizeFranchisePlayer(parsed.player);
+  const savedRoster = Array.isArray(parsed.roster) && parsed.roster.length > 0
+    ? parsed.roster
+    : [parsed.player];
+  const roster = savedRoster
+    .slice(0, MAX_ROSTER_SIZE)
+    .map((playerProfile, index) => normalizeFranchisePlayer(playerProfile, index === 0 ? "starter" : `runner-${index + 1}`));
+  const requestedActiveId = String(parsed.activePlayerId || parsed.player?.id || roster[0].id);
+  const playerProfile = roster.find((runner) => runner.id === requestedActiveId) || roster[0];
   const teamProfile = parsed.team || { ...defaultTeam };
   const normalized = {
     ...DEFAULT_FRANCHISE,
@@ -1074,6 +1107,9 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
     team: teamProfile,
     player: playerProfile,
+    roster,
+    activePlayerId: playerProfile.id,
+    rosterUnlocked: Boolean(parsed.rosterUnlocked || Number(parsed.year) > 1 || roster.length > 1),
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
     coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
     morale: clamp(savedNumber(parsed.morale, DEFAULT_FRANCHISE.morale), 0, 100),
@@ -1081,8 +1117,8 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     trainingQuality: clamp(savedNumber(parsed.trainingQuality, DEFAULT_FRANCHISE.trainingQuality), 0, 100),
     scoutingQuality: clamp(savedNumber(parsed.scoutingQuality, DEFAULT_FRANCHISE.scoutingQuality), 0, 100),
     frontOfficeCredits: Math.max(0, savedNumber(parsed.frontOfficeCredits, DEFAULT_FRANCHISE.frontOfficeCredits)),
-    featureLog: Array.isArray(parsed.featureLog) ? parsed.featureLog.slice(-8) : ["Season 1: Coaches and Draft"],
-    offseason: normalizeOffseason(parsed.offseason),
+    featureLog: Array.isArray(parsed.featureLog) ? parsed.featureLog.slice(-8) : ["Season 1: Featured Player"],
+    offseason: normalizeOffseason(parsed.offseason, parsed),
     creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
     creatorAutoScore: Boolean(parsed.creatorAutoScore),
     tutorialComplete: Boolean(parsed.tutorialComplete),
@@ -1441,6 +1477,7 @@ function renderFranchiseSlots() {
 function createFranchisePlayer(forcedName = null) {
   const name = forcedName || PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
   return {
+    id: "starter",
     name,
     archetype: isHockeyMode()
       ? "Featured Winger"
@@ -1454,6 +1491,7 @@ function createFranchisePlayer(forcedName = null) {
     cut: 50,
     speedBonus: 0,
     upgrades: 0,
+    injuredGames: 0,
     appearance: { ...DEFAULT_PLAYER_APPEARANCE },
   };
 }
@@ -1490,12 +1528,14 @@ function updateCharacterPreview() {
   characterNumberPreviewEl.textContent = String(appearance.number);
 }
 
-function normalizeFranchisePlayer(rawPlayer) {
+function normalizeFranchisePlayer(rawPlayer, fallbackId = "starter") {
   const playerProfile = rawPlayer && typeof rawPlayer === "object" ? rawPlayer : {};
   const baselinePlayer = createFranchisePlayer(playerProfile.name);
   return {
     ...baselinePlayer,
     ...playerProfile,
+    id: String(playerProfile.id || fallbackId).slice(0, 40),
+    injuredGames: Math.max(0, Math.round(Number(playerProfile.injuredGames) || 0)),
     appearance: normalizePlayerAppearance(playerProfile.appearance),
   };
 }
@@ -1504,13 +1544,101 @@ function resetPlayerToBaseline(playerProfile) {
   const baselinePlayer = createFranchisePlayer();
   return {
     ...baselinePlayer,
+    id: playerProfile?.id || baselinePlayer.id,
     name: playerProfile?.name || baselinePlayer.name,
     appearance: normalizePlayerAppearance(playerProfile?.appearance),
   };
 }
 
 function currentRunner() {
+  const activeRunner = franchise.roster?.find((runner) => runner.id === franchise.activePlayerId);
+  if (activeRunner) {
+    franchise.player = activeRunner;
+    return activeRunner;
+  }
   return franchise.player;
+}
+
+function healthyRunners() {
+  return (franchise.roster || []).filter((runner) => runner.injuredGames <= 0);
+}
+
+function selectRunner(runnerId) {
+  const runner = franchise.roster?.find((candidate) => candidate.id === runnerId);
+  if (!runner || runner.injuredGames > 0) {
+    return false;
+  }
+  franchise.activePlayerId = runner.id;
+  franchise.player = runner;
+  franchise.lastResult = `${runner.name} is now the active starter.`;
+  saveFranchise();
+  renderRunnerCards();
+  renderFranchiseDashboard();
+  updateHud();
+  return true;
+}
+
+function ensureHealthyRunner() {
+  if (currentRunner().injuredGames <= 0) {
+    return true;
+  }
+  const replacement = healthyRunners()[0];
+  if (!replacement) {
+    return false;
+  }
+  franchise.activePlayerId = replacement.id;
+  franchise.player = replacement;
+  return true;
+}
+
+function recoverInjuredRunners() {
+  (franchise.roster || []).forEach((runner) => {
+    runner.injuredGames = Math.max(0, runner.injuredGames - 1);
+  });
+}
+
+function injuryRoleName() {
+  if (isBasketballMode()) return "guard";
+  if (isSoccerMode()) return "forward";
+  if (isHockeyMode()) return "winger";
+  return "runner";
+}
+
+function injureCurrentRunner(gamesOut = 2) {
+  const injuredRunner = currentRunner();
+  const replacement = healthyRunners().find((runner) => runner.id !== injuredRunner.id);
+  if (!franchise.rosterUnlocked || !replacement) {
+    return false;
+  }
+  injuredRunner.injuredGames = clamp(Math.round(gamesOut), 1, 3);
+  franchise.activePlayerId = replacement.id;
+  franchise.player = replacement;
+  return true;
+}
+
+function maybeTriggerRunnerInjury(reason) {
+  if (Math.random() >= RUNNER_INJURY_CHANCE) {
+    return false;
+  }
+  return triggerRunnerInjury(reason, 1 + Math.floor(Math.random() * 3));
+}
+
+function triggerRunnerInjury(reason, gamesOut) {
+  const injuredRunner = currentRunner();
+  if (!injureCurrentRunner(gamesOut)) {
+    return false;
+  }
+  gameState = "gameover";
+  franchise.lastResult = `${injuredRunner.name} was injured and will miss ${injuredRunner.injuredGames} game${injuredRunner.injuredGames === 1 ? "" : "s"}.`;
+  saveFranchise();
+  overlayTitleEl.textContent = "Player Injured";
+  overlayTextEl.textContent = `${reason}. ${injuredRunner.name} is out, so ${currentRunner().name} has been selected. Try this week again with your backup ${injuryRoleName()}.`;
+  startButton.textContent = "Try Again";
+  homepagePanelEl.hidden = false;
+  renderRunnerCards();
+  renderFranchiseDashboard();
+  showOverlay();
+  return true;
 }
 
 function currentHomeTeam() {
@@ -1701,9 +1829,13 @@ function draftArchetype(speed, power, cut) {
   return isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : isHockeyMode() ? "Playmaking Winger" : "Cutback Back";
 }
 
-function buildDraftProspects(completedSeason) {
-  const seed = completedSeason * 137 + franchise.completedGames * 11 + franchise.scoutingQuality * 3;
-  const baseline = 43 + Math.round(franchise.scoutingQuality * 0.14) + Math.min(8, completedSeason);
+function buildDraftProspects(
+  completedSeason,
+  completedGames = franchise.completedGames,
+  scoutingQuality = franchise.scoutingQuality
+) {
+  const seed = completedSeason * 137 + completedGames * 11 + scoutingQuality * 3;
+  const baseline = 43 + Math.round(scoutingQuality * 0.14) + Math.min(8, completedSeason);
   return Array.from({ length: 3 }, (_, index) => {
     const nameIndex = Math.floor(seededRandom(seed + index * 13.7) * DRAFT_NAME_POOL.length);
     const speed = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 1) * 15), 45, 88);
@@ -1721,29 +1853,10 @@ function buildDraftProspects(completedSeason) {
 }
 
 function buildOffseasonEvents(completedSeason, finalResult) {
-  const events = [];
-  if (finalResult === "W") {
-    events.push({ type: "development", keys: buildUpgradeChoices() });
-  }
-
-  if (completedSeason === 1) {
-    events.push({ type: "coach" });
-  } else if (completedSeason === 2) {
-    events.push({ type: "press" });
-  } else if (completedSeason === 3) {
-    events.push({ type: "scenario" }, { type: "stadium" });
-  } else if (completedSeason === 4) {
-    events.push({ type: "facility" });
-  } else {
-    const rotation = ["press", "scenario", "stadium", "facility", "community"];
-    events.push({ type: rotation[(completedSeason - 5) % rotation.length] });
-  }
-
-  events.push({
-    type: "draft",
+  return [{
+    type: "roster",
     prospects: buildDraftProspects(completedSeason),
-  });
-  return events;
+  }];
 }
 
 function beginOffseason(completedSeason, wins, losses, finalResult) {
@@ -1848,17 +1961,22 @@ function offseasonEventView(event) {
     };
   }
 
-  const prospectChoices = event.prospects.map((prospect) => ({
+  const rosterHasRoom = franchise.roster.length < MAX_ROSTER_SIZE;
+  const prospectChoices = rosterHasRoom ? event.prospects.map((prospect) => ({
     id: prospect.id,
     title: `${prospect.name} · ${prospect.archetype}`,
     description: `SPD ${prospect.speed} · PWR ${prospect.power} · ${thirdRating} ${prospect.cut}`,
-  }));
+  })) : [];
   return {
-    type: "Draft Night",
-    title: "Choose Your Featured Player",
-    text: `Keep ${currentRunner().name}, or replace the one-player roster with a drafted prospect. Scouting quality is ${franchise.scoutingQuality}%.`,
+    type: event.type === "roster" && event.prospects ? (franchise.rosterUnlocked ? "Roster Review" : "Roster Unlocked") : "Draft Night",
+    title: rosterHasRoom ? "Add a Runner" : "Roster Set",
+    text: rosterHasRoom
+      ? "Choose one prospect to add without replacing your current starter. You can select any healthy runner from the franchise hub."
+      : `Your roster already has ${MAX_ROSTER_SIZE} runners. Keep the group together for next season.`,
     choices: [
-      { id: "keep", title: `Keep ${currentRunner().name}`, description: "+5 morale · preserve all upgrades" },
+      ...(franchise.rosterUnlocked || !rosterHasRoom
+        ? [{ id: "keep", title: "Keep Current Roster", description: "Continue with your existing runners" }]
+        : []),
       ...prospectChoices,
     ],
   };
@@ -1951,6 +2069,25 @@ function applyOffseasonChoice(choiceId) {
       franchise.frontOfficeCredits += 3;
       franchise.fans -= 3;
     }
+  } else if (event.type === "roster" && choiceId !== "keep") {
+    const prospect = event.prospects.find((entry) => entry.id === choiceId);
+    if (!prospect || franchise.roster.length >= MAX_ROSTER_SIZE) {
+      return;
+    }
+    const draftedRunner = normalizeFranchisePlayer({
+      ...prospect,
+      id: `runner-s${offseason.completedSeason + 1}-${choiceId}`,
+      speedBonus: 0,
+      upgrades: 0,
+      injuredGames: 0,
+      appearance: {
+        ...DEFAULT_PLAYER_APPEARANCE,
+        number: 10 + ((offseason.completedSeason * 17 + franchise.roster.length * 9) % 80),
+      },
+    }, `runner-${franchise.roster.length + 1}`);
+    franchise.roster.push(draftedRunner);
+    franchise.rosterUnlocked = true;
+    franchise.fans += 3;
   } else if (choiceId === "keep") {
     franchise.morale += 5;
   } else {
@@ -1998,6 +2135,8 @@ function finishOffseason() {
   franchise.wins = 0;
   franchise.losses = 0;
   franchise.coach.seasons += 1;
+  franchise.rosterUnlocked = nextSeason >= 2;
+  franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
   franchise.morale = clamp(franchise.morale + (franchise.coach.rating >= 70 ? 3 : 1), 0, 100);
   const introduction = featureIntroductionForSeason(nextSeason);
   if (introduction) {
@@ -2006,8 +2145,8 @@ function finishOffseason() {
   }
   franchise.offseason = null;
   franchise.lastResult = introduction
-    ? `Offseason complete. New in Season ${nextSeason}: ${introduction.names.join(" and ")}. You earned ${earnedCredits} front-office credits.`
-    : `Offseason complete. Season ${nextSeason} begins with ${earnedCredits} new front-office credits.`;
+    ? `Offseason complete. Season ${nextSeason} unlocks your runner roster and injuries. Choose a healthy starter before each game.`
+    : `Offseason complete. Season ${nextSeason} begins with the same roster and injury systems.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   gameState = "levelComplete";
@@ -2754,7 +2893,7 @@ function tutorialSlides() {
         "The schedule shows the previous two, current, and next two matchups.",
         `Progress is saved to the active ${soccer ? "national-team" : "franchise"} slot after every game.`,
         "Restart Season resets that season's record and progress but keeps player upgrades.",
-        "Season 1 introduces coaches, every offseason includes a draft, and 1-2 new franchise systems unlock each season.",
+        "After Season 1, the runner roster and injuries unlock. No additional management systems are added in later seasons.",
       ],
     },
   ];
@@ -2937,6 +3076,9 @@ function defenderPosition(lane, defender, time) {
 }
 
 function registerHit(time, reason, impactData = null) {
+  if (impactData && maybeTriggerRunnerInjury(reason)) {
+    return;
+  }
   player.downsLeft -= 1;
   player.flashUntil = time + 700;
   hitStopUntil = time + CONFIG.hitPauseMs;
@@ -3021,6 +3163,7 @@ function gameOver(reason) {
 
 function completeLevel() {
   gameState = "levelComplete";
+  recoverInjuredRunners();
   const beatenTeam = currentTeam();
   const seasonYear = franchise.year;
   const week = currentSeasonWeek();
@@ -3127,6 +3270,7 @@ function syncFranchiseSetupState() {
   document.body.classList.toggle("game-library-open", gameLibraryOpen);
   document.body.classList.toggle("franchise-slot-selecting", slotSelectOpen);
   document.body.classList.toggle("franchise-setup-pending", !slotSelectOpen && !franchise.setupComplete);
+  document.body.classList.toggle("offseason-active", Boolean(franchise.offseason) && !slotSelectOpen && !gameLibraryOpen);
   gameLibraryScreenEl.hidden = !gameLibraryOpen;
   creatorTriggerEl.disabled = gameLibraryOpen;
   creatorTriggerEl.setAttribute("aria-hidden", String(gameLibraryOpen));
@@ -3387,6 +3531,7 @@ function moraleMood() {
 function renderOffseasonPanel() {
   const offseason = franchise.offseason;
   offseasonPanelEl.hidden = !offseason;
+  document.body.classList.toggle("offseason-active", Boolean(offseason) && !slotSelectOpen && !gameLibraryOpen);
   restartSeasonButton.disabled = Boolean(offseason);
   if (!offseason) {
     return;
@@ -3425,15 +3570,14 @@ function renderOffseasonPanel() {
 
 function renderTeamOperations() {
   const displaySeason = franchise.offseason?.completedSeason || franchise.year;
-  const nextIntroduction = SEASON_FEATURES.find((entry) => entry.season > displaySeason);
-  featureTierValueEl.textContent = `${activeFeatureCount(displaySeason)} Systems Active`;
+  featureTierValueEl.textContent = displaySeason >= 2 ? "Roster Active" : "Core Staff";
   coachRoleLabelEl.textContent = isSoccerMode() ? "Manager" : "Head Coach";
   coachNameValueEl.textContent = franchise.coach.name;
   coachRatingValueEl.textContent = `Rating ${franchise.coach.rating} · ${franchise.coach.trait}`;
-  moraleOperationEl.hidden = displaySeason < 2;
-  stadiumOperationEl.hidden = displaySeason < 3;
-  trainingOperationEl.hidden = displaySeason < 4;
-  scoutingOperationEl.hidden = displaySeason < 4;
+  moraleOperationEl.hidden = true;
+  stadiumOperationEl.hidden = true;
+  trainingOperationEl.hidden = true;
+  scoutingOperationEl.hidden = true;
   venueQualityLabelEl.textContent = isBasketballMode() || isHockeyMode() ? "Arena Quality" : "Stadium Quality";
   teamMoraleValueEl.textContent = `${franchise.morale}%`;
   teamMoraleSummaryEl.textContent = moraleMood();
@@ -3441,9 +3585,9 @@ function renderTeamOperations() {
   trainingQualityValueEl.textContent = `${franchise.trainingQuality}%`;
   scoutingQualityValueEl.textContent = `${franchise.scoutingQuality}%`;
   frontOfficeCreditsValueEl.textContent = franchise.frontOfficeCredits;
-  nextFeatureTextEl.textContent = nextIntroduction
-    ? `Season ${nextIntroduction.season} unlocks ${nextIntroduction.names.join(" and ")}.`
-    : "All franchise systems are active. Offseason events now rotate every year.";
+  nextFeatureTextEl.textContent = displaySeason < 2
+    ? "Finish Season 1 to unlock runner selection and injuries."
+    : "Roster and injuries are active. No additional management systems unlock in later seasons.";
 }
 
 function renderFranchiseDashboard() {
@@ -3501,7 +3645,8 @@ function renderFranchiseDashboard() {
 function runnerFeatureSummary(runner) {
   const role = isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : "back";
   const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() ? "AGI" : "CUT";
-  return `${runner.name} is your lone featured ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.`;
+  const health = runner.injuredGames > 0 ? ` Injured for ${runner.injuredGames} more game${runner.injuredGames === 1 ? "" : "s"}.` : " Healthy and ready.";
+  return `${runner.name} is your active ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.${health}`;
 }
 
 function upgradeDisplayCopy(upgrade) {
@@ -5001,22 +5146,36 @@ function hideOverlay() {
 function renderRunnerCards() {
   const runner = currentRunner();
   const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() ? "AGI" : "CUT";
-  runnerSelectionStatusEl.textContent = "1 Starter Active";
+  const roster = franchise.rosterUnlocked ? franchise.roster : [runner];
+  const healthyCount = roster.filter((candidate) => candidate.injuredGames <= 0).length;
+  runnerSelectTitleEl.textContent = franchise.rosterUnlocked ? "Runner Roster" : "Featured Player";
+  runnerSelectionStatusEl.textContent = franchise.rosterUnlocked
+    ? `${healthyCount} Healthy · ${roster.length} Total`
+    : "Roster Unlocks After Season 1";
   runnerGridEl.innerHTML = "";
-  const card = document.createElement("div");
-  card.className = "runner-card selected";
-  card.innerHTML = `
-    <div class="runner-top">
-      <strong>${runner.name}</strong>
-      <span>#${normalizePlayerAppearance(runner.appearance).number} ${runner.archetype}</span>
-    </div>
-    <div class="runner-meta">
-      <span>SPD ${runner.speed}</span>
-      <span>PWR ${runner.power}</span>
-      <span>${thirdRating} ${runner.cut}</span>
-    </div>
-  `;
-  runnerGridEl.appendChild(card);
+  roster.forEach((candidate) => {
+    const selected = candidate.id === runner.id;
+    const injured = candidate.injuredGames > 0;
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `runner-card${selected ? " selected" : ""}${injured ? " injured" : ""}`;
+    card.disabled = injured || !franchise.rosterUnlocked;
+    card.setAttribute("aria-pressed", String(selected));
+    card.innerHTML = `
+      <div class="runner-top">
+        <strong>${candidate.name}</strong>
+        <span>#${normalizePlayerAppearance(candidate.appearance).number} ${candidate.archetype}</span>
+      </div>
+      <div class="runner-meta">
+        <span>SPD ${candidate.speed}</span>
+        <span>PWR ${candidate.power}</span>
+        <span>${thirdRating} ${candidate.cut}</span>
+      </div>
+      <span class="runner-health">${injured ? `Injured · ${candidate.injuredGames} game${candidate.injuredGames === 1 ? "" : "s"}` : selected ? "Active Starter" : "Healthy · Select"}</span>
+    `;
+    card.addEventListener("click", () => selectRunner(candidate.id));
+    runnerGridEl.appendChild(card);
+  });
 }
 
 window.addEventListener("keydown", (event) => {

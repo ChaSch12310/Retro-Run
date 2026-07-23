@@ -107,7 +107,9 @@ assert.match(html, /101 = Invincible/);
 assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="creatorAutoScoreInput"[^>]+type="checkbox"[^>]+role="switch"/);
 assert.match(html, /id="offseasonPanel"[^>]+hidden/);
+assert.match(html, /class="offseason-page-label">Franchise Update/);
 assert.match(html, /id="teamOperationsPanel"/);
+assert.match(html, /id="runnerSelectTitle"/);
 assert.match(html, /id="coachNameValue"/);
 assert.match(html, /id="teamMoraleValue"/);
 assert.match(html, /id="stadiumQualityValue"/);
@@ -129,6 +131,8 @@ assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
 assert.match(styles, /\.hockey-game-card\s*\{\s*--card-accent:\s*#79d8ef/);
 assert.match(styles, /\.offseason-panel\s*\{/);
+assert.match(styles, /body\.offseason-active #franchiseMainContent/);
+assert.match(styles, /\.runner-card\.injured/);
 assert.match(styles, /\.operations-grid\s*\{/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
 assert.match(styles, /\.game-select-card:hover,\s*\.game-select-card:focus-visible,\s*\.game-select-card\.selected\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--card-accent\) 18%, #14283f\)/s);
@@ -263,6 +267,9 @@ globalThis.__retroRunTest = {
   get runnerNumber() { return currentRunner().appearance.number; },
   get runnerPower() { return currentRunner().power; },
   get runnerUpgrades() { return currentRunner().upgrades; },
+  get activeRunnerId() { return currentRunner().id; },
+  get rosterUnlocked() { return franchise.rosterUnlocked; },
+  get roster() { return franchise.roster.map((runner) => ({ ...runner })); },
   get currentSeasonOpponentNames() { return currentSeasonOpponents().map((team) => team.name); },
   teamNameForLevel(level) { return teamForLevel(level).name; },
   difficultyForLevel,
@@ -326,6 +333,14 @@ globalThis.__retroRunTest = {
     completeLevel();
   },
   chooseOffseason: applyOffseasonChoice,
+  selectRunner,
+  injureActiveRunner(games) {
+    return triggerRunnerInjury("Test tackle", games);
+  },
+  recoverRunners() {
+    recoverInjuredRunners();
+    renderRunnerCards();
+  },
   setManagement(values) { Object.assign(franchise, values); },
   fanChangeForGame,
   activeFeatureCount,
@@ -412,8 +427,25 @@ assert.ok(migratedManagementSave.coach.name);
 assert.equal(migratedManagementSave.morale, 0);
 assert.equal(migratedManagementSave.stadiumQuality, 0);
 assert.equal(migratedManagementSave.frontOfficeCredits, 0);
-assert.equal(game.activeFeatureCount(1), 2);
-assert.equal(game.activeFeatureCount(4), 8);
+assert.equal(migratedManagementSave.roster.length, 1);
+assert.equal(migratedManagementSave.activePlayerId, migratedManagementSave.player.id);
+const migratedOffseasonSave = game.normalizeFranchise({
+  year: 1,
+  offseason: {
+    completedSeason: 1,
+    wins: 12,
+    losses: 6,
+    index: 1,
+    events: [
+      { type: "coach" },
+      { type: "draft", prospects: [{ id: "prospect-0", name: "K. Monroe", speed: 60, power: 58, cut: 62, archetype: "Speed Back" }] },
+    ],
+  },
+});
+assert.deepEqual([...migratedOffseasonSave.offseason.events.map((event) => event.type)], ["roster"]);
+assert.equal(migratedOffseasonSave.offseason.index, 0);
+assert.equal(game.activeFeatureCount(1), 0);
+assert.equal(game.activeFeatureCount(4), 2);
 
 game.selectFranchiseSlot(0);
 elements.get("teamNameInput").value = " BRA-ZIL ";
@@ -816,55 +848,62 @@ assert.ok(storage.has("gridiron-dash-franchise-slots"));
 assert.ok(storage.has("hoop-hustle-franchise-slots"));
 assert.ok(storage.has("rink-rush-franchise-slots"));
 
-const upgradesBeforeOffseason = game.runnerUpgrades;
 game.completeSeasonForTest(1, 11, 6, 2);
 assert.equal(game.seasonYear, 1);
 assert.equal(game.seasonCheckpointLevel, 18);
 assert.equal(game.gameState, "offseason");
-assert.deepEqual([...game.offseasonEventTypes], ["development", "coach", "draft"]);
-game.chooseOffseason(game.offseasonView.choices[0].id);
-assert.equal(game.runnerUpgrades, upgradesBeforeOffseason + 1);
-
-game.beginTestOffseason(1, 12, 6, "L");
-assert.equal(game.gameState, "offseason");
-assert.deepEqual([...game.offseasonEventTypes], ["coach", "draft"]);
+assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
 assert.equal(elements.get("offseasonPanel").hidden, false);
-assert.equal(elements.get("offseasonEventType").textContent, "Coach Room");
-assert.equal(elements.get("offseasonChoices").children.length, 3);
-const moraleBeforeCoachChoice = game.morale;
-game.chooseOffseason("trust");
-assert.equal(game.morale, moraleBeforeCoachChoice + 6);
-assert.equal(game.offseasonView.type, "Draft Night");
-assert.equal(game.offseasonView.choices.length, 4);
-game.chooseOffseason("keep");
+assert.equal(body.classList.contains("offseason-active"), true);
+assert.equal(game.offseasonView.type, "Roster Unlocked");
+assert.equal(game.offseasonView.choices.length, 3);
+const originalRunnerId = game.activeRunnerId;
+const draftedChoice = game.offseasonView.choices[0];
+game.chooseOffseason(draftedChoice.id);
 assert.equal(game.offseason, null);
 assert.equal(game.seasonYear, 2);
 assert.equal(elements.get("startButton").textContent, "Start Season 2");
-assert.equal(elements.get("moraleOperation").hidden, false);
+assert.equal(body.classList.contains("offseason-active"), false);
+assert.equal(game.rosterUnlocked, true);
+assert.equal(game.roster.length, 2);
+assert.equal(game.activeRunnerId, originalRunnerId);
+assert.equal(elements.get("runnerGrid").children.length, 2);
+assert.equal(elements.get("runnerSelectTitle").textContent, "Runner Roster");
+assert.match(elements.get("runnerSelectionStatus").textContent, /2 Healthy/);
+const draftedRunnerId = game.roster.find((runner) => runner.id !== originalRunnerId).id;
+assert.equal(game.selectRunner(draftedRunnerId), true);
+assert.equal(game.activeRunnerId, draftedRunnerId);
+assert.equal(game.injureActiveRunner(2), true);
+assert.equal(game.activeRunnerId, originalRunnerId);
+assert.equal(game.gameState, "gameover");
+assert.equal(elements.get("overlayTitle").textContent, "Player Injured");
+assert.equal(elements.get("startButton").textContent, "Try Again");
+assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 2);
+assert.equal(game.selectRunner(draftedRunnerId), false);
+assert.equal(elements.get("runnerGrid").children.some((card) => card.className.includes("injured")), true);
+game.recoverRunners();
+assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 1);
+game.recoverRunners();
+assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 0);
+assert.equal(game.selectRunner(draftedRunnerId), true);
 
 game.beginTestOffseason(2, 10, 8, "L");
-assert.deepEqual([...game.offseasonEventTypes], ["press", "draft"]);
-const fansBeforePress = Number(elements.get("fanSupportValue").textContent.replace("%", ""));
-game.chooseOffseason("team-first");
-assert.equal(game.offseasonView.type, "Draft Night");
+assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
+assert.equal(game.offseasonView.type, "Roster Review");
 game.chooseOffseason("keep");
 assert.equal(game.seasonYear, 3);
-assert.ok(Number(elements.get("fanSupportValue").textContent.replace("%", "")) >= fansBeforePress);
-assert.equal(elements.get("stadiumOperation").hidden, false);
+assert.equal(elements.get("moraleOperation").hidden, true);
+assert.equal(elements.get("stadiumOperation").hidden, true);
+assert.equal(elements.get("trainingOperation").hidden, true);
+assert.equal(elements.get("scoutingOperation").hidden, true);
+assert.equal(game.activeFeatureCount(1), 0);
+assert.equal(game.activeFeatureCount(2), 2);
+assert.equal(game.activeFeatureCount(12), 2);
 
 game.beginTestOffseason(3, 11, 7, "L");
-assert.deepEqual([...game.offseasonEventTypes], ["scenario", "stadium", "draft"]);
-game.setManagement({ stadiumQuality: 100, morale: 80 });
-const highSupportFanChange = game.fanChangeForGame("W", 2);
-game.setManagement({ stadiumQuality: 50, morale: 50 });
-assert.ok(highSupportFanChange > game.fanChangeForGame("W", 2));
-
-game.beginTestOffseason(4, 13, 5, "L");
-assert.deepEqual([...game.offseasonEventTypes], ["facility", "draft"]);
-game.setManagement({ frontOfficeCredits: 0 });
-assert.equal(game.offseasonView.choices.some((choice) => (choice.cost || 0) === 0), true);
-game.chooseOffseason("fundamentals");
-assert.equal(game.offseasonView.type, "Draft Night");
+assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
+game.chooseOffseason("keep");
+assert.equal(game.seasonYear, 4);
 
 for (let level = 0; level < 18; level += 1) {
   const laneTypes = game.generateLaneTypes(level, 70);
