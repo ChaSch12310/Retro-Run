@@ -863,19 +863,6 @@ body.game-library-open .play-panel {
   rotate: -6deg;
 }
 
-.mini-surf-board {
-  position: absolute;
-  left: 50%;
-  bottom: 10px;
-  width: 46px;
-  height: 9px;
-  translate: -50% 0;
-  rotate: -16deg;
-  background: #f2c84b;
-  border: 3px solid #111016;
-  border-radius: 50%;
-}
-
 .skiing-mini-slope {
   background:
     linear-gradient(165deg, transparent 0 44%, rgba(123, 166, 180, 0.28) 44% 48%, transparent 48%),
@@ -900,17 +887,6 @@ body.game-library-open .play-panel {
   top: 30px;
   background: #2b66b1;
   box-shadow: 18px 0 0 #2b66b1;
-}
-
-.mini-skis {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  width: 5px;
-  height: 30px;
-  background: #26343d;
-  rotate: -14deg;
-  box-shadow: 10px 2px 0 #26343d;
 }
 
 .baseball-mini-diamond {
