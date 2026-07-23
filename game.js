@@ -171,6 +171,7 @@ const CONFIG = {
   progressMilestone: 50,
   endzoneRows: 3,
   startingDowns: 4,
+  venueLogoRow: 27,
   fieldTopInset: 54,
   spriteScale: 2,
 };
@@ -2666,7 +2667,7 @@ function createLanes(start, count) {
 }
 
 function generateLane(index) {
-  if (index < 3) {
+  if (index < 3 || index === CONFIG.venueLogoRow) {
     return safeLane(index);
   }
 
@@ -5281,7 +5282,7 @@ function drawField(time) {
 }
 
 function drawTeamVenueDetails(team) {
-  const midfieldY = laneTop(27) + CONFIG.laneHeight / 2;
+  const midfieldY = laneTop(CONFIG.venueLogoRow) + CONFIG.laneHeight / 2;
   if (midfieldY > -80 && midfieldY < CONFIG.height + 80) {
     const badgeSize = isBasketballMode() ? 82 : isHockeyMode() ? 76 : isWaterPoloMode() ? 74 : isSurfingMode() || isSkiingMode() ? 68 : 72;
     drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, badgeSize);
@@ -5942,7 +5943,7 @@ function drawHockeyLaneBase(y, row, team, lane) {
   if (row === 18 || row === 36) {
     ctx.fillStyle = "#236192";
     ctx.fillRect(rinkLeft + 10, y + 27, rinkWidth - 20, 6);
-  } else if (row === 27) {
+  } else if (row === CONFIG.venueLogoRow) {
     ctx.fillStyle = "#ce1126";
     for (let x = rinkLeft + 10; x < rinkRight - 10; x += 18) {
       ctx.fillRect(x, y + 27, 10, 6);

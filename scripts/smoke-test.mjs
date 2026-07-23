@@ -445,6 +445,7 @@ globalThis.__retroRunTest = {
   fanChangeForGame,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
+  get venueLogoRow() { return CONFIG.venueLogoRow; },
   generateLaneTypes(level, count) {
     currentLevel = level;
     laneSeed = level * 101;
@@ -1319,6 +1320,7 @@ assert.equal(elements.get("startButton").disabled, false);
 
 for (let level = 0; level < 12; level += 1) {
   const laneTypes = game.generateLaneTypes(level, 70);
+  assert.equal(laneTypes[game.venueLogoRow], "safe");
   let defenderStreak = 0;
   laneTypes.forEach((type) => {
     defenderStreak = type === "defenders" ? defenderStreak + 1 : 0;
