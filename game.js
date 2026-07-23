@@ -959,7 +959,8 @@ const FIELD_GOAL_POWER_SWEEP_MS = 1600;
 const FIELD_GOAL_AIM_SWEEP_MS = 2200;
 const FIELD_GOAL_FLIGHT_MS = 900;
 const FIELD_GOAL_RESULT_MS = 650;
-const GAMES_PER_SEASON = 18;
+const GAMES_PER_SEASON = 12;
+const LEGACY_GAMES_PER_SEASON = 18;
 const COACH_POOL = [
   { name: "A. Stone", trait: "Players' Coach", baseRating: 58 },
   { name: "M. Price", trait: "Game Planner", baseRating: 61 },
@@ -1016,6 +1017,7 @@ const DEFAULT_FRANCHISE = {
   creatorAutoScore: false,
   tutorialComplete: false,
   seasonCheckpointLevel: 0,
+  seasonLength: GAMES_PER_SEASON,
   savedAt: 0,
 };
 let activeGameId = null;
@@ -1409,6 +1411,29 @@ function savedNumber(value, fallback) {
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
+function migrateSeasonCheckpoint(rawCheckpoint, rawFranchise = {}, rawSlot = {}) {
+  const checkpoint = Math.max(0, Number(rawCheckpoint) || 0);
+  const savedSeasonLength = Math.max(
+    1,
+    Number(rawSlot.seasonLength || rawFranchise.seasonLength || LEGACY_GAMES_PER_SEASON)
+  );
+  if (savedSeasonLength === GAMES_PER_SEASON) {
+    return checkpoint;
+  }
+
+  const season = Math.max(
+    1,
+    Number(rawFranchise.year) || Math.floor(checkpoint / savedSeasonLength) + 1
+  );
+  if (rawFranchise.offseason) {
+    return season * GAMES_PER_SEASON;
+  }
+
+  const oldSeasonStart = (season - 1) * savedSeasonLength;
+  const oldWeekIndex = clamp(checkpoint - oldSeasonStart, 0, savedSeasonLength - 1);
+  return (season - 1) * GAMES_PER_SEASON + Math.min(oldWeekIndex, GAMES_PER_SEASON - 1);
+}
+
 function createDefaultFranchise(forcedName = null) {
   const defaultTeam = currentGameMode().homeTeam;
   const playerProfile = createFranchisePlayer(forcedName);
@@ -1443,18 +1468,45 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
   const requestedActiveId = String(parsed.activePlayerId || parsed.player?.id || roster[0].id);
   const playerProfile = roster.find((runner) => runner.id === requestedActiveId) || roster[0];
   const teamProfile = parsed.team || { ...defaultTeam };
+  const migratedCheckpoint = migrateSeasonCheckpoint(
+    parsed.seasonCheckpointLevel,
+    parsed
+  );
+  const migratedHistory = (Array.isArray(parsed.history) ? parsed.history : [])
+    .filter((entry) => Number(entry?.week) <= GAMES_PER_SEASON)
+    .slice(-24);
+  const migratedAttempts = Object.entries(
+    parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
+      ? parsed.attemptsByGame
+      : {}
+  ).reduce((attempts, [key, value]) => {
+    const week = Number(String(key).split("-")[1]);
+    if (!Number.isFinite(week) || week <= GAMES_PER_SEASON) {
+      attempts[key] = value;
+    }
+    return attempts;
+  }, {});
+  const currentSeasonHistory = migratedHistory.filter(
+    (entry) => Number(entry.season) === Number(parsed.year || 1)
+  );
+  const migratedWins = currentSeasonHistory.length > 0
+    ? currentSeasonHistory.filter((entry) => entry.result === "W").length
+    : clamp(Number(parsed.wins) || 0, 0, GAMES_PER_SEASON);
+  const migratedLosses = currentSeasonHistory.length > 0
+    ? currentSeasonHistory.filter((entry) => entry.result === "L").length
+    : clamp(Number(parsed.losses) || 0, 0, GAMES_PER_SEASON - migratedWins);
   const normalized = {
     ...DEFAULT_FRANCHISE,
     ...parsed,
-    history: Array.isArray(parsed.history) ? parsed.history.slice(-24) : [],
+    history: migratedHistory,
     seasonArchive: Array.isArray(parsed.seasonArchive) ? parsed.seasonArchive.slice(-20) : [],
-    attemptsByGame: parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
-      ? parsed.attemptsByGame
-      : {},
+    attemptsByGame: migratedAttempts,
     seasonBests: parsed.seasonBests && typeof parsed.seasonBests === "object"
       ? parsed.seasonBests
       : {},
     setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
+    wins: migratedWins,
+    losses: migratedLosses,
     team: teamProfile,
     player: playerProfile,
     roster,
@@ -1472,7 +1524,8 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
     creatorAutoScore: Boolean(parsed.creatorAutoScore),
     tutorialComplete: Boolean(parsed.tutorialComplete),
-    seasonCheckpointLevel: Number(parsed.seasonCheckpointLevel || 0),
+    seasonCheckpointLevel: migratedCheckpoint,
+    seasonLength: GAMES_PER_SEASON,
     savedAt: Number(parsed.savedAt || Date.now()),
   };
 
@@ -1506,14 +1559,17 @@ function normalizeSlot(rawSlot) {
   }
 
   const slotFranchise = normalizeFranchise(rawSlot.franchise || rawSlot, true);
-  const slotCheckpoint = Number(
-    rawSlot.seasonCheckpointLevel ?? slotFranchise.seasonCheckpointLevel ?? 0
+  const slotCheckpoint = migrateSeasonCheckpoint(
+    rawSlot.seasonCheckpointLevel ?? rawSlot.franchise?.seasonCheckpointLevel ?? 0,
+    rawSlot.franchise || rawSlot,
+    rawSlot
   );
   slotFranchise.seasonCheckpointLevel = slotCheckpoint;
 
   return {
     franchise: slotFranchise,
     seasonCheckpointLevel: slotCheckpoint,
+    seasonLength: GAMES_PER_SEASON,
     savedAt: Number(rawSlot.savedAt || slotFranchise.savedAt || Date.now()),
   };
 }
@@ -1549,8 +1605,12 @@ function loadFranchiseSlots() {
   }
 
   try {
-    const legacyFranchise = normalizeFranchise(JSON.parse(legacyRaw), true);
-    const legacyCheckpoint = Number(localStorage.getItem(legacySeasonStorageKey) || legacyFranchise.seasonCheckpointLevel || 0);
+    const parsedLegacyFranchise = JSON.parse(legacyRaw);
+    const legacyFranchise = normalizeFranchise(parsedLegacyFranchise, true);
+    const legacyCheckpoint = migrateSeasonCheckpoint(
+      localStorage.getItem(legacySeasonStorageKey) || parsedLegacyFranchise.seasonCheckpointLevel || 0,
+      parsedLegacyFranchise
+    );
     const legacyBest = Number(localStorage.getItem(legacyStorageKey) || 0);
     legacyFranchise.seasonCheckpointLevel = legacyCheckpoint;
     if (Object.keys(legacyFranchise.seasonBests).length === 0 && legacyBest > 0) {
@@ -1561,6 +1621,7 @@ function loadFranchiseSlots() {
     slots[0] = {
       franchise: legacyFranchise,
       seasonCheckpointLevel: legacyCheckpoint,
+      seasonLength: GAMES_PER_SEASON,
       savedAt: Date.now(),
     };
     localStorage.setItem(currentGameMode().slotsKey, JSON.stringify(slots));
@@ -1583,10 +1644,12 @@ function saveFranchise() {
   }
 
   franchise.seasonCheckpointLevel = seasonCheckpointLevel;
+  franchise.seasonLength = GAMES_PER_SEASON;
   franchise.savedAt = Date.now();
   franchiseSlots[activeSlotIndex] = {
     franchise,
     seasonCheckpointLevel,
+    seasonLength: GAMES_PER_SEASON,
     savedAt: franchise.savedAt,
   };
   saveFranchiseSlots();
@@ -3520,7 +3583,7 @@ function tutorialSlides() {
     {
       badge: "Season",
       title: "Chase the Title",
-      text: `Your ${currentHomeTeam().name} play an 18-game season, beginning against ${teams[0].name}.`,
+      text: `Your ${currentHomeTeam().name} play a 12-game season, beginning against ${teams[0].name}.`,
       items: [
         "Finishing in 10 attempts or fewer records a win; taking more than 10 records a loss.",
         "The schedule shows the previous two, current, and next two matchups.",

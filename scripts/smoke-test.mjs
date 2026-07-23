@@ -112,7 +112,7 @@ assert.doesNotMatch(html, /More games can be added here/);
 assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s*<\/button>\s*<\/h1>/s);
 assert.match(html, /<h2><button[^>]+id="creatorTrigger"[^>]*>How<\/button> To Play<\/h2>/);
 assert.match(html, /id="creatorSeasonInput"[^>]+min="1"[^>]+max="999"/);
-assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="18"/);
+assert.match(html, /id="creatorGameInput"[^>]+min="1"[^>]+max="12"/);
 assert.match(html, /id="creatorPowerInput"[^>]+min="1"[^>]+max="101"/);
 assert.match(html, /101 = Invincible/);
 assert.match(html, /id="creatorStaticKickingInput"[^>]+type="checkbox"[^>]+role="switch"/);
@@ -265,8 +265,10 @@ storage.set("gridiron-dash-franchise-slots", JSON.stringify([{
     seasonBests: { 1: 900 },
     pendingUpgradeChoices: [],
     seasonCheckpointLevel: 21,
+    seasonLength: 12,
   },
   seasonCheckpointLevel: 21,
+  seasonLength: 12,
 }]));
 const body = new FakeElement("body");
 const documentElement = new FakeElement("html");
@@ -436,6 +438,7 @@ globalThis.__retroRunTest = {
     drawSidelineHazard(100, { index: 5, unsafeColumns: [0] });
   },
   basketballRowIsPaint,
+  migrateSeasonCheckpoint,
   normalizeFranchise,
   render,
 };`;
@@ -576,8 +579,8 @@ assert.match(elements.get("creatorKickModeText").textContent, /score automatical
 elements.get("creatorLevelsForm").submit();
 assert.equal(game.seasonYear, 3);
 assert.equal(game.seasonWeek, 7);
-assert.equal(game.seasonCheckpointLevel, 42);
-assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 42);
+assert.equal(game.seasonCheckpointLevel, 30);
+assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 30);
 assert.equal(game.creatorStaticKicking, true);
 assert.equal(game.franchiseSlots[0].franchise.creatorStaticKicking, true);
 assert.equal(game.creatorAutoScore, true);
@@ -587,7 +590,7 @@ assert.equal(game.stiffarmChanceForPower(101), 1);
 assert.ok(Math.abs(game.stiffarmChanceForPower(100) - 0.8) < 0.000001);
 assert.ok(Math.abs(game.stiffarmChanceForPower(50) - 0.1) < 0.000001);
 assert.equal(elements.get("seasonYearValue").textContent, 3);
-assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 18");
+assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 12");
 assert.equal(elements.get("creatorModal").hidden, true);
 elements.get("creatorTrigger").click();
 elements.get("creatorUsernameInput").value = "creator";
@@ -601,16 +604,16 @@ assert.equal(game.creatorAutoScore, false);
 assert.notEqual(game.currentTeamName, "Brazil");
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
-assert.equal(game.teamNameForLevel(6), game.teamNameForLevel(24));
-assert.equal(game.difficultyForLevel(0), game.difficultyForLevel(18));
-assert.equal(game.difficultyForLevel(6), game.difficultyForLevel(24));
-assert.ok(game.difficultyForLevel(17) > game.difficultyForLevel(0));
+assert.equal(game.teamNameForLevel(6), game.teamNameForLevel(18));
+assert.equal(game.difficultyForLevel(0), game.difficultyForLevel(12));
+assert.equal(game.difficultyForLevel(6), game.difficultyForLevel(18));
+assert.ok(game.difficultyForLevel(11) > game.difficultyForLevel(0));
 const firstCowboysDifficulty = game.difficultyForLevel(3);
 assert.ok(game.difficultyForLevel(2) < firstCowboysDifficulty);
 for (let level = 3; level < 180; level += 1) {
   assert.ok(game.difficultyForLevel(level) <= firstCowboysDifficulty);
 }
-assert.equal(game.difficultyForLevel(17), firstCowboysDifficulty);
+assert.equal(game.difficultyForLevel(11), firstCowboysDifficulty);
 assert.equal(game.difficultyForLevel(179), firstCowboysDifficulty);
 assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
 assert.ok(new Set(game.venueIdentities.map((identity) => identity.surfacePattern)).size > 1);
@@ -1148,9 +1151,20 @@ assert.ok(storage.has("slope-sprint-franchise-slots"));
 assert.ok(storage.has("diamond-dash-franchise-slots"));
 assert.ok(storage.has("crosse-clash-franchise-slots"));
 
-game.completeSeasonForTest(1, 11, 6, 2);
+assert.equal(game.migrateSeasonCheckpoint(21, { year: 2 }), 15);
+assert.equal(game.migrateSeasonCheckpoint(17, { year: 1 }), 11);
+assert.equal(game.migrateSeasonCheckpoint(18, {
+  year: 1,
+  offseason: { completedSeason: 1 },
+}), 12);
+assert.equal(game.migrateSeasonCheckpoint(21, {
+  year: 2,
+  seasonLength: 12,
+}), 21);
+
+game.completeSeasonForTest(1, 8, 3, 2);
 assert.equal(game.seasonYear, 1);
-assert.equal(game.seasonCheckpointLevel, 18);
+assert.equal(game.seasonCheckpointLevel, 12);
 assert.equal(game.gameState, "levelComplete");
 assert.equal(game.pendingUpgrade, true);
 assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
@@ -1192,7 +1206,7 @@ game.recoverRunners();
 assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 0);
 assert.equal(game.selectRunner(draftedRunnerId), true);
 
-game.beginTestOffseason(2, 10, 8, "L");
+game.beginTestOffseason(2, 8, 4, "L");
 assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
 assert.equal(game.offseasonView.type, "Roster Review");
 game.chooseOffseason("keep");
@@ -1218,7 +1232,7 @@ assert.equal(game.pendingUpgradeChoices.length, 0);
 assert.equal(elements.get("startButton").textContent, "Next Game");
 assert.equal(elements.get("startButton").disabled, false);
 
-for (let level = 0; level < 18; level += 1) {
+for (let level = 0; level < 12; level += 1) {
   const laneTypes = game.generateLaneTypes(level, 70);
   let defenderStreak = 0;
   laneTypes.forEach((type) => {
