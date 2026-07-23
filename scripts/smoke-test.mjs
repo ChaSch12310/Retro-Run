@@ -90,8 +90,12 @@ const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8"
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);
+assert.match(html, /game-sport-badge hockey-sport-badge/);
 assert.match(html, /id="hoopHustleButton"/);
 assert.match(html, /Hoop Hustle/);
+assert.match(html, /id="rinkRushButton"/);
+assert.match(html, /Rink Rush/);
+assert.match(html, /id="hockeyGoalie"/);
 assert.match(html, /<p>Choose a game to enter the arcade<\/p>/);
 assert.doesNotMatch(html, /More games can be added here/);
 assert.match(html, /<h1>\s*<button[^>]+id="arcadeHomeButton"[^>]*>\s*Retro Run\s*<\/button>\s*<\/h1>/s);
@@ -123,6 +127,7 @@ assert.match(styles, /\.load-save-panel\s*\{\s*--team-accent:\s*var\(--menu-acce
 assert.match(styles, /\.game-select-card\s*\{\s*--card-accent:\s*#c83b42/);
 assert.match(styles, /\.soccer-game-card\s*\{\s*--card-accent:\s*#2f9854/);
 assert.match(styles, /\.basketball-game-card\s*\{\s*--card-accent:\s*#65b7e8/);
+assert.match(styles, /\.hockey-game-card\s*\{\s*--card-accent:\s*#79d8ef/);
 assert.match(styles, /\.offseason-panel\s*\{/);
 assert.match(styles, /\.operations-grid\s*\{/);
 assert.match(styles, /\.game-select-card\.selected\s*\{/);
@@ -133,6 +138,9 @@ assert.match(styles, /body\[data-game="basketball"\] \.kick-ball/);
 assert.match(styles, /body\[data-game="basketball"\] \.basketball-shooter/);
 assert.match(styles, /@keyframes basketball-jump-shot/);
 assert.match(styles, /@keyframes basketball-ball-swish/);
+assert.match(styles, /body\[data-game="hockey"\] \.hockey-goalie/);
+assert.match(styles, /body\[data-game="hockey"\] \.kick-ball/);
+assert.match(styles, /@keyframes hockey-goalie-slide/);
 assert.match(styles, /\.play-game-label\s*\{[^}]*background:\s*var\(--card-accent\)/s);
 assert.doesNotMatch(source, /drawLabel\("THE PAINT"/);
 assert.doesNotMatch(source, /drawLabel\("PENALTY AREA"/);
@@ -142,6 +150,10 @@ assert.match(source, /function drawSoccerPenaltyOverlay\(/);
 assert.match(source, /function drawFootballOutOfBoundsMarker\(/);
 assert.match(source, /function drawSoccerOutOfBoundsMarker\(/);
 assert.match(source, /function drawBasketballOutOfBoundsMarker\(/);
+assert.match(source, /function drawHockeyOutOfBoundsMarker\(/);
+assert.match(source, /function drawHockeyLaneBase\(/);
+assert.match(source, /function drawHockeyPlayerSprite\(/);
+assert.match(source, /function drawHockeyDefenderSprite\(/);
 assert.doesNotMatch(source, /basketballCourtHasEnded/);
 assert.match(source, /const TEAM_ALTERNATE_UNIFORMS = \{/);
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
@@ -269,6 +281,7 @@ globalThis.__retroRunTest = {
   openGridironDash,
   openPitchDash,
   openHoopHustle,
+  openRinkRush,
   openGameLibrary,
   startLevel,
   startFieldGoal,
@@ -350,7 +363,7 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
-assert.equal(game.alternateUniformCount, 36);
+assert.equal(game.alternateUniformCount, 48);
 const brazilClashUniform = game.uniformForTeam("Brazil", {
   primary: "#ffdf00",
   secondary: "#002776",
@@ -669,6 +682,81 @@ assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);
+game.openRinkRush();
+assert.equal(game.activeGameId, "hockey");
+assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
+assert.equal(elements.get("rinkRushButton").classList.contains("selected"), true);
+assert.equal(elements.get("hoopHustleButton").classList.contains("selected"), false);
+assert.equal(elements.get("rinkRushButton").attributes.get("aria-pressed"), "true");
+assert.equal(body.dataset.game, "hockey");
+assert.equal(elements.get("distanceLabel").textContent, "Feet");
+assert.equal(elements.get("downsLabel").textContent, "Shifts Left");
+assert.equal(elements.get("playerNameLabel").textContent, "Winger Name");
+assert.equal(elements.get("creatorCutLabel").textContent, "Agility");
+assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Goal Sliders");
+assert.match(game.tutorial[0].items[0], /50 feet/);
+assert.match(game.tutorial[2].text, /Agility/);
+assert.equal(game.getUpgradeDisplay("cut").title, "Edgework Boost");
+game.selectFranchiseSlot(0);
+elements.get("teamNameInput").value = "Avs";
+elements.get("runnerNameInput").value = "M. Brooks";
+elements.get("playerNumberInput").value = "19";
+game.createFranchiseFromForm();
+assert.ok(storage.has("rink-rush-franchise-slots"));
+assert.equal(game.currentSeasonOpponentNames.includes("Avalanche"), false);
+assert.equal(game.currentSeasonOpponentNames.includes("Bruins"), true);
+assert.match(elements.get("runnerGrid").children.at(-1).innerHTML, /AGI 50/);
+drawnFillColors.length = 0;
+game.drawOutOfBoundsMarkerForTest();
+assert.equal(drawnFillColors.includes("#79d8ef"), true);
+assert.equal(drawnFillColors.includes("#ce1126"), true);
+drawnFillRects.length = 0;
+drawnLabels.length = 0;
+game.drawPlayerSpriteForTest("right", 0);
+assert.equal(drawnFillRects.some(({ width, height, color }) => width === 8 && height === 4 && color === "#111016"), true);
+assert.equal(drawnLabels.some((label) => label.text === "19"), true);
+drawnLabels.length = 0;
+game.drawCurrentDefenderSpriteForTest("left", 0);
+game.drawCurrentDefenderSpriteForTest("right", 3);
+assert.equal(drawnLabels.some((label) => label.text === "2"), true);
+assert.equal(drawnLabels.some((label) => label.text === "6"), true);
+game.startLevel();
+game.setChainRows(20, 23);
+game.setCameraRow(20);
+drawnFillColors.length = 0;
+drawnLabels.length = 0;
+drawnArcs.length = 0;
+game.render(1000);
+assert.equal(drawnFillColors.includes("#e0f0f2"), true);
+assert.equal(drawnFillColors.includes("#236192"), true);
+assert.equal(drawnFillColors.includes("#ce1126"), true);
+assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentity.mark), true);
+drawnFillColors.length = 0;
+game.drawChainMarkers();
+assert.equal(drawnFillColors.includes("#2f8fff"), true);
+assert.equal(drawnFillColors.includes("#f1d24b"), false);
+drawnLabels.length = 0;
+game.drawScoreboardBar();
+assert.equal(drawnLabels.some((label) => label.text.startsWith("FT ")), true);
+assert.equal(drawnLabels.some((label) => label.text.startsWith("SHIFT ")), true);
+assert.equal(drawnLabels.some((label) => label.text === "P3"), true);
+game.startFieldGoal();
+assert.equal(elements.get("kickChallengeTitle").textContent, "Breakaway Shot");
+assert.equal(elements.get("fieldGoalBall").style.bottom, "-18%");
+assert.equal(elements.get("fieldGoalBall").style.scale, "0.82");
+game.launchTestShot(20, 70);
+assert.equal(game.fieldGoalKickMade, true);
+assert.equal(elements.get("hockeyGoalie").classList.contains("diving"), true);
+assert.equal(elements.get("hockeyGoalie").style["--goalie-slide-x"], "-76px");
+game.advanceFieldGoalFlight(2000);
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), true);
+game.advanceFieldGoalFlight(3000);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(elements.get("overlayTitle").textContent, "Goal!");
+assert.equal(elements.get("startButton").textContent, "Next Game");
+
+elements.get("arcadeHomeButton").click();
+assert.equal(game.gameLibraryOpen, true);
 game.openGridironDash();
 assert.equal(game.activeGameId, "gridiron");
 assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
@@ -726,6 +814,7 @@ assert.equal(drawnLabels.some((label) => label.text === game.currentVenueIdentit
 assert.ok(storage.has("pitch-dash-franchise-slots"));
 assert.ok(storage.has("gridiron-dash-franchise-slots"));
 assert.ok(storage.has("hoop-hustle-franchise-slots"));
+assert.ok(storage.has("rink-rush-franchise-slots"));
 
 const upgradesBeforeOffseason = game.runnerUpgrades;
 game.completeSeasonForTest(1, 11, 6, 2);
@@ -786,4 +875,4 @@ for (let level = 0; level < 18; level += 1) {
   });
 }
 assert.ok(game.maxConsecutiveDefenderRows < 12);
-console.log("Retro Run smoke tests passed for Gridiron Dash, Goal Rush, and Hoop Hustle.");
+console.log("Retro Run smoke tests passed for Gridiron Dash, Goal Rush, Hoop Hustle, and Rink Rush.");
