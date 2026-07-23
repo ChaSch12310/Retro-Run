@@ -335,6 +335,11 @@ body.game-library-open .play-panel {
   background: #79d8ef;
 }
 
+.water-polo-sport-badge {
+  --badge-fill: #167fa8;
+  background: #54d2e6;
+}
+
 .game-icon-speed {
   position: absolute;
   z-index: 1;
@@ -459,6 +464,88 @@ body.game-library-open .play-panel {
     linear-gradient(180deg, #314965 0 18%, #141f2e 18% 35%, transparent 35%),
     linear-gradient(90deg, transparent 0 46%, rgba(206, 17, 38, 0.78) 46% 48%, transparent 48% 52%, rgba(206, 17, 38, 0.78) 52% 54%, transparent 54%),
     repeating-linear-gradient(0deg, #dceff3 0 40px, #cbe5eb 40px 80px);
+}
+
+.water-polo-card-art {
+  background:
+    linear-gradient(180deg, #314965 0 18%, #14283f 18% 35%, transparent 35%),
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(216, 245, 247, 0.16) 42px 45px),
+    repeating-linear-gradient(0deg, #2499c2 0 40px, #1d82ad 40px 80px);
+}
+
+.water-polo-mini-pool {
+  border-inline: 5px solid #f6f3de;
+  box-shadow: inset 8px 0 0 #f3d34a, inset -8px 0 0 #cf3545;
+}
+
+.mini-pool-center-line {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 4px;
+  background: rgba(246, 243, 222, 0.84);
+}
+
+.mini-water-polo-goal {
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 68px;
+  height: 28px;
+  translate: -50% 0;
+  border: 5px solid #f6f3de;
+  background: repeating-linear-gradient(45deg, transparent 0 7px, rgba(246, 243, 222, 0.35) 7px 9px);
+}
+
+.mini-water-polo-ball {
+  position: absolute;
+  z-index: 2;
+  left: 57%;
+  top: 51%;
+  width: 36px;
+  height: 36px;
+  translate: -50% -50%;
+  background: #f3d34a;
+  border: 4px solid #111016;
+  border-radius: 50%;
+  box-shadow: inset -5px -4px 0 #d3a927;
+}
+
+.mini-water-polo-ball::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 2px;
+  width: 4px;
+  height: 24px;
+  background: #cf3545;
+  rotate: 28deg;
+}
+
+.mini-water-polo-cap {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  top: 22px;
+  width: 31px;
+  height: 22px;
+  background: #f6f3de;
+  border: 4px solid #111016;
+  border-radius: 50% 50% 35% 35%;
+}
+
+.mini-water-polo-cap::after {
+  content: "7";
+  position: absolute;
+  right: 1px;
+  bottom: -7px;
+  width: 13px;
+  height: 13px;
+  color: #111016;
+  background: #54d2e6;
+  border: 3px solid #111016;
+  font-size: 8px;
+  line-height: 13px;
+  text-align: center;
 }
 
 .hockey-mini-rink {
@@ -654,6 +741,10 @@ body.game-library-open .play-panel {
 
 .hockey-game-card {
   --card-accent: #79d8ef;
+}
+
+.water-polo-game-card {
+  --card-accent: #54d2e6;
 }
 
 .soccer-game-card .play-game-label {
@@ -1252,6 +1343,80 @@ body[data-game="soccer"] .kick-aim-marker {
   top: 46%;
 }
 
+body[data-game="water-polo"] .field-goal-scene {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(216, 245, 247, 0.13) 42px 45px),
+    linear-gradient(180deg, #263d55 0 28%, #2499c2 28% 100%);
+}
+
+body[data-game="water-polo"] .field-goal-scene::before {
+  top: 68%;
+  height: 9px;
+  background: repeating-linear-gradient(90deg, #d8f5f7 0 18px, #1685b0 18px 34px);
+  border-block: 2px solid #0b5a7e;
+}
+
+body[data-game="water-polo"] .field-goal-scene::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 27%;
+  right: 27%;
+  top: 25%;
+  height: 45%;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 13px, rgba(246, 243, 222, 0.34) 13px 15px),
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(246, 243, 222, 0.34) 10px 12px);
+}
+
+body[data-game="water-polo"] .goal-post,
+body[data-game="water-polo"] .goal-crossbar {
+  z-index: 2;
+  background: #f6f3de;
+  box-shadow: 3px 0 0 #637b88;
+}
+
+body[data-game="water-polo"] .goal-post {
+  top: 25%;
+  height: 45%;
+}
+
+body[data-game="water-polo"] .goal-post-left {
+  left: 27%;
+}
+
+body[data-game="water-polo"] .goal-post-right {
+  right: 27%;
+}
+
+body[data-game="water-polo"] .goal-crossbar {
+  left: 27%;
+  right: 27%;
+  top: 25%;
+}
+
+body[data-game="water-polo"] .kick-ball {
+  width: 20px;
+  height: 20px;
+  rotate: 0deg;
+  background: #f3d34a;
+}
+
+body[data-game="water-polo"] .kick-ball::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 1px;
+  width: 3px;
+  height: 12px;
+  background: #cf3545;
+  rotate: 28deg;
+}
+
+body[data-game="water-polo"] .kick-aim-marker {
+  top: 45%;
+}
+
 .basketball-backboard,
 .basketball-rim,
 .basketball-shooter,
@@ -1633,7 +1798,32 @@ body[data-game="soccer"] .soccer-keeper {
   will-change: transform;
 }
 
+body[data-game="water-polo"] .soccer-keeper {
+  --keeper-dive-x: 0px;
+  --keeper-dive-mid-x: 0px;
+  --keeper-dive-y: 0px;
+  --keeper-dive-rotate: 0deg;
+  --keeper-dive-mid-rotate: 0deg;
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 28%;
+  display: block;
+  width: 26px;
+  height: 24px;
+  translate: -50% 0;
+  background: #cf3545;
+  border: 3px solid #111016;
+  box-shadow: -14px 7px 0 -8px #efc79d, 14px 7px 0 -8px #efc79d;
+  transform-origin: 50% 65%;
+  will-change: transform;
+}
+
 body[data-game="soccer"] .soccer-keeper.diving {
+  animation: soccer-keeper-dive 720ms cubic-bezier(0.18, 0.75, 0.24, 1) 70ms forwards;
+}
+
+body[data-game="water-polo"] .soccer-keeper.diving {
   animation: soccer-keeper-dive 720ms cubic-bezier(0.18, 0.75, 0.24, 1) 70ms forwards;
 }
 
@@ -1658,6 +1848,32 @@ body[data-game="soccer"] .soccer-keeper::after {
   background: #183653;
   border-inline: 2px solid #111016;
   box-shadow: 10px 0 0 #183653, 8px 0 0 2px #111016;
+}
+
+body[data-game="water-polo"] .soccer-keeper::before {
+  content: "1";
+  position: absolute;
+  left: 3px;
+  top: -15px;
+  width: 14px;
+  height: 11px;
+  color: #111016;
+  background: #f6f3de;
+  border: 3px solid #111016;
+  font-size: 8px;
+  line-height: 11px;
+  text-align: center;
+}
+
+body[data-game="water-polo"] .soccer-keeper::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -11px;
+  height: 9px;
+  background: repeating-linear-gradient(90deg, #d8f5f7 0 10px, #1685b0 10px 18px);
+  border-top: 3px solid #111016;
 }
 
 @keyframes soccer-keeper-dive {
@@ -2646,7 +2862,8 @@ body.offseason-active .offseason-choices {
 }
 
 body[data-game="soccer"] .preview-helmet,
-body[data-game="basketball"] .preview-helmet {
+body[data-game="basketball"] .preview-helmet,
+body[data-game="water-polo"] .preview-helmet {
   display: none;
 }
 
@@ -2993,6 +3210,25 @@ button:active {
     border-width: 3px;
   }
 
+  .mini-water-polo-ball {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  .mini-water-polo-ball::after {
+    left: 11px;
+    height: 18px;
+  }
+
+  .mini-water-polo-cap {
+    left: 11px;
+    top: 17px;
+    width: 25px;
+    height: 18px;
+    border-width: 3px;
+  }
+
   .mini-basketball::before {
     left: 11px;
     height: 23px;
@@ -3325,6 +3561,11 @@ body[data-device="mobile"][data-orientation="landscape"] .mini-soccer-ball {
 body[data-device="mobile"][data-orientation="landscape"] .mini-basketball {
   width: 25px;
   height: 25px;
+}
+
+body[data-device="mobile"][data-orientation="landscape"] .mini-water-polo-ball {
+  width: 24px;
+  height: 24px;
 }
 
 body[data-device="mobile"][data-orientation="landscape"] .game-card-copy {

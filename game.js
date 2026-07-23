@@ -112,6 +112,7 @@ const gridironDashButtonEl = document.getElementById("gridironDashButton");
 const pitchDashButtonEl = document.getElementById("pitchDashButton");
 const hoopHustleButtonEl = document.getElementById("hoopHustleButton");
 const rinkRushButtonEl = document.getElementById("rinkRushButton");
+const splashStrikeButtonEl = document.getElementById("splashStrikeButton");
 const gameLibraryButtonEl = document.getElementById("gameLibraryButton");
 const fieldGoalPanelEl = document.getElementById("fieldGoalPanel");
 const fieldGoalTimerEl = document.getElementById("fieldGoalTimer");
@@ -351,6 +352,21 @@ const HOCKEY_TEAMS = [
   { name: "Kraken", primary: "#001628", secondary: "#355464", accent: "#99d9d9", fieldTint: "#dfeff2", fieldStripe: "#cce5e9", uiText: "#99d9d9" },
 ];
 
+const WATER_POLO_TEAMS = [
+  { name: "Serbia", primary: "#c6363c", secondary: "#173b78", accent: "#f6f3de", fieldTint: "#269bc4", fieldStripe: "#2087b2", uiText: "#f6f3de" },
+  { name: "Croatia", primary: "#f6f3de", secondary: "#d72d3b", accent: "#2457a5", fieldTint: "#2a9ec5", fieldStripe: "#2188b0", uiText: "#173b67" },
+  { name: "Hungary", primary: "#c83b42", secondary: "#217a52", accent: "#f6f3de", fieldTint: "#2598c1", fieldStripe: "#1f82aa", uiText: "#f6f3de" },
+  { name: "Spain", primary: "#c60b1e", secondary: "#7b101c", accent: "#ffc400", fieldTint: "#2a9dc4", fieldStripe: "#2186ae", uiText: "#f6f3de" },
+  { name: "Italy", primary: "#1764b0", secondary: "#103b72", accent: "#f6f3de", fieldTint: "#2b9fc7", fieldStripe: "#2289b2", uiText: "#f6f3de" },
+  { name: "Greece", primary: "#2b67ad", secondary: "#f6f3de", accent: "#9ed7ef", fieldTint: "#269bc4", fieldStripe: "#2085ae", uiText: "#f6f3de" },
+  { name: "United States", primary: "#1f3c88", secondary: "#bf0a30", accent: "#f6f3de", fieldTint: "#2a9fc8", fieldStripe: "#228ab5", uiText: "#f6f3de" },
+  { name: "Australia", primary: "#156c49", secondary: "#0c4431", accent: "#f4ce3d", fieldTint: "#279cc5", fieldStripe: "#2086af", uiText: "#f6f3de" },
+  { name: "Montenegro", primary: "#c7363f", secondary: "#7f1c25", accent: "#e7b949", fieldTint: "#2a9dc6", fieldStripe: "#2288b1", uiText: "#f6f3de" },
+  { name: "France", primary: "#1d3f8f", secondary: "#142755", accent: "#ed2939", fieldTint: "#289bc3", fieldStripe: "#2084ac", uiText: "#f6f3de" },
+  { name: "Japan", primary: "#f6f3de", secondary: "#bc002d", accent: "#1f4e99", fieldTint: "#2b9fc7", fieldStripe: "#2289b2", uiText: "#173b67" },
+  { name: "Netherlands", primary: "#f36c21", secondary: "#1b365d", accent: "#f6f3de", fieldTint: "#279ac3", fieldStripe: "#2085ad", uiText: "#17151a" },
+];
+
 // Opponent sprites can switch kits without changing their venue or scoreboard branding.
 const TEAM_ALTERNATE_UNIFORMS = {
   "49ers": { primary: "#f6f3de", secondary: "#aa0000", accent: "#d3bc8d" },
@@ -401,6 +417,13 @@ const TEAM_ALTERNATE_UNIFORMS = {
   "Golden Knights": { primary: "#f6f3de", secondary: "#333f42", accent: "#b4975a" },
   Lightning: { primary: "#f6f3de", secondary: "#002868", accent: "#6ca6cf" },
   Kraken: { primary: "#f6f3de", secondary: "#001628", accent: "#99d9d9" },
+  Serbia: { primary: "#f6f3de", secondary: "#173b78", accent: "#c6363c" },
+  Croatia: { primary: "#2457a5", secondary: "#f6f3de", accent: "#d72d3b" },
+  Hungary: { primary: "#f6f3de", secondary: "#217a52", accent: "#c83b42" },
+  Greece: { primary: "#f6f3de", secondary: "#2b67ad", accent: "#9ed7ef" },
+  "United States": { primary: "#f6f3de", secondary: "#1f3c88", accent: "#bf0a30" },
+  Australia: { primary: "#f4ce3d", secondary: "#156c49", accent: "#f6f3de" },
+  Montenegro: { primary: "#f6f3de", secondary: "#c7363f", accent: "#e7b949" },
 };
 
 // These original pixel monograms identify teams without reproducing official logos.
@@ -453,6 +476,13 @@ const TEAM_VENUE_MARKS = {
   "Golden Knights": "VGK",
   Lightning: "TBL",
   Kraken: "SEA",
+  Serbia: "SRB",
+  Croatia: "CRO",
+  Hungary: "HUN",
+  Greece: "GRE",
+  "United States": "USA",
+  Australia: "AUS",
+  Montenegro: "MNE",
 };
 
 function teamVenueIdentity(team) {
@@ -514,6 +544,12 @@ const HOCKEY_HOME_TEAM = {
   secondary: "#102b4e",
 };
 
+const WATER_POLO_HOME_TEAM = {
+  name: "Harbor City Waves",
+  primary: "#f0bf43",
+  secondary: "#12658b",
+};
+
 const TEAM_NAME_ALIASES = {
   "49ers": ["Niners", "San Francisco", "San Francisco 49ers", "SF"],
   Chiefs: ["Kansas City", "Kansas City Chiefs", "KC"],
@@ -563,6 +599,13 @@ const TEAM_NAME_ALIASES = {
   "Golden Knights": ["Vegas", "Vegas Golden Knights", "VGK", "Knights"],
   Lightning: ["Tampa Bay", "Tampa Bay Lightning", "Bolts"],
   Kraken: ["Seattle", "Seattle Kraken"],
+  Serbia: ["Serbian Water Polo", "The Dolphins"],
+  Croatia: ["Croatian Barracudas", "Barracudas"],
+  Hungary: ["Magyars", "Hungarian Water Polo"],
+  Greece: ["Hellas", "Greek Water Polo"],
+  "United States": ["USA", "US", "Team USA", "American Water Polo"],
+  Australia: ["Aussie Sharks", "Sharks"],
+  Montenegro: ["Montenegrin Sharks"],
 };
 
 const GAME_MODES = {
@@ -613,6 +656,18 @@ const GAME_MODES = {
     chancesLabel: "Shifts Left",
     distanceAbbr: "FT",
     chanceAbbr: "SHIFT",
+  },
+  waterPolo: {
+    id: "waterPolo",
+    kind: "water-polo",
+    title: "Splash Strike",
+    teams: WATER_POLO_TEAMS,
+    homeTeam: WATER_POLO_HOME_TEAM,
+    slotsKey: "splash-strike-franchise-slots",
+    distanceLabel: "Meters",
+    chancesLabel: "Possessions Left",
+    distanceAbbr: "MTR",
+    chanceAbbr: "POSS",
   },
 };
 
@@ -772,12 +827,16 @@ function isHockeyMode() {
   return currentGameMode().kind === "hockey";
 }
 
+function isWaterPoloMode() {
+  return currentGameMode().kind === "water-polo";
+}
+
 function usesShotChallenge() {
   return usesRoundBall() || isHockeyMode();
 }
 
 function usesRoundBall() {
-  return isSoccerMode() || isBasketballMode();
+  return isSoccerMode() || isBasketballMode() || isWaterPoloMode();
 }
 
 const PLAYER_RATING_MAX = 100;
@@ -909,6 +968,8 @@ function restartSeason() {
       ? `Season ${franchise.year} has been reset. Supporters want a stronger campaign this time.`
       : isHockeyMode()
         ? `Season ${franchise.year} has been reset. Fans are ready for another run at the Cup.`
+        : isWaterPoloMode()
+          ? `Season ${franchise.year} has been reset. Supporters are ready for another run through the pool.`
         : `Season ${franchise.year} has been reset. Fans want a cleaner run this time.`;
   franchise.history = franchise.history.filter((entry) => entry.season !== franchise.year);
   for (const key of Object.keys(franchise.attemptsByGame)) {
@@ -953,6 +1014,8 @@ function createFranchiseFromForm() {
       ? "National team created. Time to start your campaign."
       : isHockeyMode()
         ? "Hockey franchise created. Time for puck drop."
+        : isWaterPoloMode()
+          ? "Water polo club created. Time for the opening sprint."
         : "Franchise created. Time to start your career.";
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
@@ -1491,7 +1554,9 @@ function createFranchisePlayer(forcedName = null) {
   return {
     id: "starter",
     name,
-    archetype: isHockeyMode()
+    archetype: isWaterPoloMode()
+      ? "Featured Driver"
+      : isHockeyMode()
       ? "Featured Winger"
       : isSoccerMode()
       ? "Featured Forward"
@@ -1619,6 +1684,7 @@ function injuryRoleName() {
   if (isBasketballMode()) return "guard";
   if (isSoccerMode()) return "forward";
   if (isHockeyMode()) return "winger";
+  if (isWaterPoloMode()) return "driver";
   return "runner";
 }
 
@@ -1840,12 +1906,12 @@ function moraleChangeForGame(result, tries) {
 
 function draftArchetype(speed, power, cut) {
   if (speed >= power && speed >= cut) {
-    return isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : isHockeyMode() ? "Speed Winger" : "Speed Back";
+    return isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : isHockeyMode() ? "Speed Winger" : isWaterPoloMode() ? "Counter Driver" : "Speed Back";
   }
   if (power >= speed && power >= cut) {
-    return isBasketballMode() ? "Power Finisher" : isSoccerMode() ? "Target Forward" : isHockeyMode() ? "Power Forward" : "Power Back";
+    return isBasketballMode() ? "Power Finisher" : isSoccerMode() ? "Target Forward" : isHockeyMode() ? "Power Forward" : isWaterPoloMode() ? "Center Forward" : "Power Back";
   }
-  return isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : isHockeyMode() ? "Playmaking Winger" : "Cutback Back";
+  return isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : isHockeyMode() ? "Playmaking Winger" : isWaterPoloMode() ? "Utility Driver" : "Cutback Back";
 }
 
 function buildDraftProspects(
@@ -1893,7 +1959,7 @@ function beginOffseason(completedSeason, wins, losses, finalResult) {
 }
 
 function offseasonEventView(event) {
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() ? "AGI" : "CUT";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() ? "AGI" : "CUT";
   if (event.type === "development") {
     return {
       type: "Player Development",
@@ -2445,6 +2511,18 @@ function updateDistance() {
 }
 
 function kickChallengeCopy() {
+  if (isWaterPoloMode()) {
+    return {
+      staticInstructions: "Set both sliders inside the green zones, then shoot before the shot clock expires.",
+      staticButton: "Shoot Ball",
+      timingInstructions: "Tap once to lock power, then tap again to lock aim and shoot.",
+      aimStatus: "Stop the aim needle inside the floating goal.",
+      launchStatus: "Ball is away!",
+      launchingButton: "Shooting...",
+      madeStatus: "Goal!",
+      missedStatus: "Saved!",
+    };
+  }
   if (isHockeyMode()) {
     return {
       staticInstructions: "Set both sliders inside the green zones, then shoot before the shot clock expires.",
@@ -2517,6 +2595,8 @@ function startFieldGoal() {
       ? "Goal Challenge"
       : isHockeyMode()
         ? "Breakaway Challenge"
+        : isWaterPoloMode()
+          ? "Power Shot Challenge"
         : "Field Goal Challenge";
   kickChallengeTitleEl.textContent = isBasketballMode()
     ? "Shot for the Win"
@@ -2524,6 +2604,8 @@ function startFieldGoal() {
       ? "Shot on Goal"
       : isHockeyMode()
         ? "Breakaway Shot"
+        : isWaterPoloMode()
+          ? "Shot on Goal"
         : "Field Goal";
 
   if (fieldGoalMode === "static") {
@@ -2664,7 +2746,7 @@ function launchFieldGoal(forceMade = false) {
 }
 
 function startSoccerKeeperDive() {
-  if (!isSoccerMode()) {
+  if (!isSoccerMode() && !isWaterPoloMode()) {
     return;
   }
 
@@ -2711,9 +2793,9 @@ function updateFieldGoalFlight(time) {
 
   const progress = clamp((time - fieldGoalPhaseStarted) / FIELD_GOAL_FLIGHT_MS, 0, 1);
   const eased = 1 - (1 - progress) ** 2;
-  const targetLeft = 50 + fieldGoalAim * (isBasketballMode() ? 0.32 : isSoccerMode() ? 0.45 : isHockeyMode() ? 0.42 : 0.5);
+  const targetLeft = 50 + fieldGoalAim * (isBasketballMode() ? 0.32 : isSoccerMode() || isWaterPoloMode() ? 0.45 : isHockeyMode() ? 0.42 : 0.5);
   const heightGain = fieldGoalPower >= FIELD_GOAL_POWER_MIN
-    ? (isBasketballMode() ? 35 : isSoccerMode() ? 44 : isHockeyMode() ? 24 : 74)
+    ? (isBasketballMode() ? 35 : isSoccerMode() ? 44 : isWaterPoloMode() ? 38 : isHockeyMode() ? 24 : 74)
     : Math.min(usesShotChallenge() ? 24 : 27, fieldGoalPower * 0.45);
   const launchShapeProgress = clamp(progress / 0.14, 0, 1);
   const distanceScale = 1 - progress * 0.32;
@@ -2724,11 +2806,13 @@ function updateFieldGoalFlight(time) {
   fieldGoalBallEl.style.bottom = `${-18 + Math.sin(progress * Math.PI * 0.5) * (heightGain + 26)}%`;
   fieldGoalBallEl.style.scale = isBasketballMode()
     ? `${(0.72 + launchShapeProgress * 0.28) * distanceScale}`
+    : isWaterPoloMode()
+      ? `${(0.78 + launchShapeProgress * 0.22) * distanceScale}`
     : isHockeyMode()
       ? `${(0.82 + launchShapeProgress * 0.12) * distanceScale}`
       : `${ballScaleX} ${ballScaleY}`;
   const initialRotation = usesShotChallenge() ? 0 : -15;
-  const flightRotation = isBasketballMode() ? 300 : isSoccerMode() ? 180 : isHockeyMode() ? 40 : 260;
+  const flightRotation = isBasketballMode() ? 300 : isSoccerMode() ? 180 : isWaterPoloMode() ? 220 : isHockeyMode() ? 40 : 260;
   fieldGoalBallEl.style.rotate = `${initialRotation + progress * flightRotation}deg`;
 
   if (progress >= 1) {
@@ -2746,7 +2830,7 @@ function resetFieldGoalBall() {
   fieldGoalBallEl.classList.remove("in-flight");
   fieldGoalBallEl.style.left = isBasketballMode() ? "28%" : "50%";
   fieldGoalBallEl.style.bottom = "-18%";
-  fieldGoalBallEl.style.scale = isBasketballMode() ? "0.72" : isHockeyMode() ? "0.82" : "0.72 1.18";
+  fieldGoalBallEl.style.scale = isBasketballMode() ? "0.72" : isHockeyMode() ? "0.82" : isWaterPoloMode() ? "0.78" : "0.72 1.18";
   fieldGoalBallEl.style.rotate = usesShotChallenge() ? "0deg" : "-15deg";
   soccerKeeperEl.classList.remove("diving");
   soccerKeeperEl.style.setProperty("--keeper-dive-x", "0px");
@@ -2767,6 +2851,7 @@ function tutorialSlides() {
   const soccer = isSoccerMode();
   const basketball = isBasketballMode();
   const hockey = isHockeyMode();
+  const waterPolo = isWaterPoloMode();
   const teams = currentOpponentTeams();
   const movementText = usesTouchControls()
     ? "Swipe up, down, left, or right anywhere on the play screen to move one row at a time."
@@ -2778,8 +2863,18 @@ function tutorialSlides() {
     : (usesShotChallenge()
       ? "This save uses arcade shooting: stop the power meter, then stop the aim needle to shoot."
       : "This save uses arcade kicking: stop the power meter, then stop the aim needle to launch the ball.");
-  const athlete = soccer ? "forward" : basketball ? "guard" : hockey ? "winger" : "runner";
-  const firstSlide = hockey
+  const athlete = soccer ? "forward" : basketball ? "guard" : hockey ? "winger" : waterPolo ? "driver" : "runner";
+  const firstSlide = waterPolo
+    ? {
+      badge: "Swim",
+      title: "Attack the Pool",
+      items: [
+        "Advance 50 meters to reach the attacking zone and unlock a shot on goal.",
+        "Dodge pressing defenders and the striped lane-rope hazard tiles.",
+        "The camera scrolls forward as your swimmer reaches new rows.",
+      ],
+    }
+    : hockey
     ? {
       badge: "Skate",
       title: "Attack the Rink",
@@ -2818,7 +2913,19 @@ function tutorialSlides() {
           "The camera scrolls forward as your runner reaches new rows.",
         ],
       };
-  const possessionSlide = hockey
+  const possessionSlide = waterPolo
+    ? {
+      badge: "Possession",
+      title: "Protect Four Possessions",
+      text: "You have four possessions to reach the attacking zone.",
+      items: [
+        "A defensive hold costs one possession and returns you to the nearest row that never contains defenders.",
+        "The blue line marks the checkpoint start; your next target is tracked in the sidebar.",
+        "Crossing the target before a foul refreshes all four possessions.",
+        "The opening checkpoint is 10 meters and becomes slightly shorter every four games.",
+      ],
+    }
+    : hockey
     ? {
       badge: "Shifts",
       title: "Protect Four Shifts",
@@ -2877,10 +2984,12 @@ function tutorialSlides() {
     {
       badge: "Power",
       title: `Build Your ${athlete[0].toUpperCase()}${athlete.slice(1)}`,
-      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : hockey ? "Agility" : "Cut"} ratings.`,
+      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : hockey || waterPolo ? "Agility" : "Cut"} ratings.`,
       items: [
-        `Speed and ${basketball ? "Handles" : hockey ? "Agility" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
-        hockey
+        `Speed and ${basketball ? "Handles" : hockey || waterPolo ? "Agility" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
+        waterPolo
+          ? "Power controls broken holds: 50 Power gives a 10% chance and 100 Power gives an 80% chance."
+          : hockey
           ? "Power controls broken checks: 50 Power gives a 10% chance and 100 Power gives an 80% chance."
           : basketball
           ? "Power controls strong finishes: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
@@ -2892,11 +3001,13 @@ function tutorialSlides() {
     },
     {
       badge: usesShotChallenge() ? "Shoot" : "Kick",
-      title: basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : "Finish the Game",
+      title: basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : waterPolo ? "Beat the Goalkeeper" : "Finish the Game",
       text: fieldGoalText,
       items: [
         "You have 30 seconds to choose power and aim before an automatic miss.",
-        hockey
+        waterPolo
+          ? "Scoring completes the game and unlocks the next international opponent."
+          : hockey
           ? "Scoring completes the game and unlocks the next NHL opponent."
           : basketball
           ? "Making the basket completes the game and unlocks the next NBA opponent."
@@ -3020,6 +3131,8 @@ function missFieldGoal(reason) {
       ? `Missed the deciding shot against ${currentTeam().name}.`
       : isHockeyMode()
         ? `The deciding breakaway was stopped by the ${currentTeam().name}.`
+        : isWaterPoloMode()
+          ? `The deciding power shot was stopped by ${currentTeam().name}.`
         : `Missed field goal against the ${currentTeam().name}.`;
   saveFranchise();
   overlayTitleEl.textContent = isBasketballMode()
@@ -3028,6 +3141,8 @@ function missFieldGoal(reason) {
       ? "Shot Missed"
       : isHockeyMode()
         ? "Shot Saved"
+        : isWaterPoloMode()
+          ? "Shot Saved"
         : "Field Goal Missed";
   overlayTextEl.textContent = `${reason} Restart week ${currentSeasonWeek()} from the beginning and try again.`;
   startButton.textContent = "Try Again";
@@ -3044,7 +3159,7 @@ function checkCollisions(time) {
   }
 
   if (lane.type === "sideline" && lane.unsafeColumns.includes(currentPlayerColumn())) {
-    registerHit(time, isSoccerMode() ? "Ball out of play" : isHockeyMode() ? "Through the boards" : "Out of bounds");
+    registerHit(time, isSoccerMode() ? "Ball out of play" : isHockeyMode() ? "Through the boards" : isWaterPoloMode() ? "Into the lane rope" : "Out of bounds");
     return;
   }
 
@@ -3076,7 +3191,7 @@ function checkCollisions(time) {
         hitEffect = null;
         return;
       }
-      registerHit(time, isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : "Big hit", {
+      registerHit(time, isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : isWaterPoloMode() ? "Defensive hold" : "Big hit", {
         impactX: player.worldX,
         impactY: screenYFromWorldRow(player.worldRow),
         defenderX: x + 5,
@@ -3167,7 +3282,7 @@ function gameOver(reason) {
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale - 1, 0, 100);
   }
-  franchise.lastResult = isSoccerMode()
+  franchise.lastResult = isSoccerMode() || isWaterPoloMode()
     ? `${reason} against ${currentTeam().name}. Supporters want a better response.`
     : `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
   saveFranchise();
@@ -3176,9 +3291,11 @@ function gameOver(reason) {
     ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
     : isSoccerMode()
       ? `${reason}. You reached ${player.distance} meters in week ${currentSeasonWeek()}. Reset and try ${currentTeam().name} again.`
-      : isHockeyMode()
-        ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
-        : `${reason}. You reached ${player.distance} yards in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`;
+    : isHockeyMode()
+      ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
+      : isWaterPoloMode()
+        ? `${reason}. You reached ${player.distance} meters in week ${currentSeasonWeek()}. Reset and try ${currentTeam().name} again.`
+      : `${reason}. You reached ${player.distance} yards in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`;
   startButton.textContent = "Try Again";
   showOverlay();
 }
@@ -3241,15 +3358,17 @@ function completeLevel() {
           ? `Huge goal-scoring win over ${beatenTeam.name}. Supporters are roaring.`
           : isHockeyMode()
             ? `Huge breakaway win over the ${beatenTeam.name}. Fans are roaring.`
+            : isWaterPoloMode()
+              ? `Huge power-shot win over ${beatenTeam.name}. Supporters are roaring.`
             : `Huge field-goal win over the ${beatenTeam.name}. Fans are roaring.`)
       : isBasketballMode()
         ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
-        : `You escaped ${isSoccerMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
+        : `You escaped ${isSoccerMode() || isWaterPoloMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
     franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${fanChange}.`;
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
-  overlayTitleEl.textContent = isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() ? "Goal!" : "Field Goal Good";
+  overlayTitleEl.textContent = isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
     ? (isBasketballMode()
       ? `You hit the winner, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next tipoff.`
@@ -3257,6 +3376,8 @@ function completeLevel() {
         ? `You scored, beat ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next match.`
         : isHockeyMode()
           ? `You scored, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next puck drop.`
+          : isWaterPoloMode()
+            ? `You scored, beat ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next opening sprint.`
           : `You made the kick, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before kickoff.`)
     : (isBasketballMode()
       ? `The jumper drops and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
@@ -3264,6 +3385,8 @@ function completeLevel() {
         ? `The shot is in and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
         : isHockeyMode()
           ? `The puck is in and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
+          : isWaterPoloMode()
+            ? `The ball hits the net and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
           : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
   pendingUpgrade = result === "W" && !runnerHasMaxRating(currentRunner());
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
@@ -3311,40 +3434,47 @@ function applyGameModeUi() {
   const soccer = isSoccerMode();
   const basketball = isBasketballMode();
   const hockey = isHockeyMode();
+  const waterPolo = isWaterPoloMode();
   document.body.dataset.game = mode.kind;
   canvas.setAttribute("aria-label", `${mode.title} game`);
   distanceLabelEl.textContent = mode.distanceLabel;
   downsLabelEl.textContent = mode.chancesLabel;
-  keyboardInstructionsEl.textContent = hockey
+  keyboardInstructionsEl.textContent = waterPolo
+    ? "Use WASD or the arrow keys to swim up the pool and dodge pressing defenders."
+    : hockey
     ? "Use WASD or the arrow keys to skate up the rink and dodge checking defenders."
     : basketball
     ? "Use WASD or the arrow keys to dribble up the court and dodge on-ball defenders."
     : soccer
       ? "Use WASD or the arrow keys to dribble up the pitch and dodge pressing defenders."
       : "Use WASD or the arrow keys to move the ball carrier up the field and dodge defenders.";
-  touchInstructionsEl.textContent = hockey
+  touchInstructionsEl.textContent = waterPolo
+    ? "Swipe anywhere on the screen to swim up the pool and dodge pressing defenders."
+    : hockey
     ? "Swipe anywhere on the screen to skate up the rink and dodge checking defenders."
     : basketball
     ? "Swipe anywhere on the screen to dribble up the court and dodge on-ball defenders."
     : soccer
       ? "Swipe anywhere on the screen to dribble up the pitch and dodge pressing defenders."
       : "Swipe anywhere on the screen to move the ball carrier up the field and dodge defenders.";
-  progressInstructionsEl.textContent = hockey
+  progressInstructionsEl.textContent = waterPolo
+    ? "Advance 50 meters to reach the attacking zone, then score past the goalkeeper. Fouls cost one possession."
+    : hockey
     ? "Advance 50 feet to reach the slot, then score on a breakaway to win. Body checks cost one shift."
     : basketball
     ? "Advance 50 feet to reach the paint, then hit a clutch basket to win. Steals cost one possession."
     : soccer
       ? "Advance 50 meters to reach the penalty area, then score a goal to win the match. Tackles cost one possession."
       : "Reach the end zone at 50 yards to move to the next NFL matchup. Earn first downs after tackles beyond the marker.";
-  kickChallengeKickerEl.textContent = basketball ? "Clutch Shot Challenge" : soccer ? "Goal Challenge" : hockey ? "Breakaway Challenge" : "Field Goal Challenge";
-  kickChallengeTitleEl.textContent = basketball ? "Shot for the Win" : soccer ? "Shot on Goal" : hockey ? "Breakaway Shot" : "Field Goal";
+  kickChallengeKickerEl.textContent = basketball ? "Clutch Shot Challenge" : soccer ? "Goal Challenge" : hockey ? "Breakaway Challenge" : waterPolo ? "Power Shot Challenge" : "Field Goal Challenge";
+  kickChallengeTitleEl.textContent = basketball ? "Shot for the Win" : soccer ? "Shot on Goal" : hockey ? "Breakaway Shot" : waterPolo ? "Shot on Goal" : "Field Goal";
   updateCreatorSliderModeUi();
-  loadCareerTitleEl.textContent = soccer ? "Load National Team" : "Load Franchise";
-  careerHubLabelEl.textContent = soccer ? "National Team Hub" : "Franchise Hub";
-  createCareerTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
-  createFranchiseButton.textContent = soccer ? "Create National Team" : "Create Franchise";
-  playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : hockey ? "Winger Name" : "Runner Name";
-  creatorCutLabelEl.textContent = basketball ? "Handles" : hockey ? "Agility" : "Cut";
+  loadCareerTitleEl.textContent = soccer ? "Load National Team" : waterPolo ? "Load Water Polo Club" : "Load Franchise";
+  careerHubLabelEl.textContent = soccer ? "National Team Hub" : waterPolo ? "Water Polo Club Hub" : "Franchise Hub";
+  createCareerTitleEl.textContent = soccer ? "Create National Team" : waterPolo ? "Create Water Polo Club" : "Create Franchise";
+  createFranchiseButton.textContent = soccer ? "Create National Team" : waterPolo ? "Create Water Polo Club" : "Create Franchise";
+  playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : hockey ? "Winger Name" : waterPolo ? "Driver Name" : "Runner Name";
+  creatorCutLabelEl.textContent = basketball ? "Handles" : hockey || waterPolo ? "Agility" : "Cut";
 }
 
 function updateCreatorSliderModeUi() {
@@ -3353,7 +3483,7 @@ function updateCreatorSliderModeUi() {
     ? "Shot"
     : isSoccerMode()
       ? "Goal"
-      : isHockeyMode()
+      : isHockeyMode() || isWaterPoloMode()
         ? "Goal"
         : "Field-Goal";
   creatorSliderModeLabelEl.textContent = `Static ${challengeName} Sliders`;
@@ -3380,6 +3510,7 @@ function updateGameLibrarySelection() {
     soccer: pitchDashButtonEl,
     basketball: hoopHustleButtonEl,
     hockey: rinkRushButtonEl,
+    waterPolo: splashStrikeButtonEl,
   };
 
   Object.entries(gameButtons).forEach(([gameId, button]) => {
@@ -3431,6 +3562,10 @@ function openRinkRush() {
   selectArcadeGame("hockey");
 }
 
+function openSplashStrike() {
+  selectArcadeGame("waterPolo");
+}
+
 function openGameLibrary() {
   if (activeSlotIndex !== null) {
     saveFranchise();
@@ -3463,6 +3598,7 @@ function updateStartOverlay() {
   const soccer = isSoccerMode();
   const basketball = isBasketballMode();
   const hockey = isHockeyMode();
+  const waterPolo = isWaterPoloMode();
   const setupReady = franchise.setupComplete;
   loadSavePanelEl.hidden = true;
   homepageHeroEl.hidden = !setupReady;
@@ -3488,8 +3624,10 @@ function updateStartOverlay() {
   renderOffseasonPanel();
 
   if (!franchise.setupComplete) {
-    overlayTitleEl.textContent = soccer ? "Create National Team" : "Create Franchise";
-    overlayTextEl.textContent = hockey
+    overlayTitleEl.textContent = soccer ? "Create National Team" : waterPolo ? "Create Water Polo Club" : "Create Franchise";
+    overlayTextEl.textContent = waterPolo
+      ? "Name your club, design your driver, and set your cap colors before the opening sprint."
+      : hockey
       ? "Name your franchise, design your winger, and set your sweater colors before puck drop."
       : basketball
       ? "Name your franchise, design your guard, and set your uniform colors before tipoff."
@@ -3509,12 +3647,14 @@ function updateStartOverlay() {
   } else if (seasonCheckpointLevel > currentSeasonStartLevel()) {
     overlayTitleEl.textContent = "Resume Season";
     overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
-    startButton.textContent = basketball || hockey ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
+    startButton.textContent = basketball || hockey || waterPolo ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
     overlayTitleEl.textContent = franchise.year > 1
-      ? `Season ${franchise.year} ${basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : "Kickoff"}`
-      : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : "Kickoff";
-    overlayTextEl.textContent = hockey
+      ? `Season ${franchise.year} ${basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff"}`
+      : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff";
+    overlayTextEl.textContent = waterPolo
+      ? "Set your driver, build fan support, and begin your first season in the pool."
+      : hockey
       ? "Set your winger, build fan support, and begin your first season."
       : basketball
       ? "Set your guard, build fan support, and begin your first season."
@@ -3523,7 +3663,7 @@ function updateStartOverlay() {
         : "Set your runner, build fan support, and start your first season.";
     startButton.textContent = franchise.year > 1
       ? `Start Season ${franchise.year}`
-      : basketball || hockey ? "Start Game" : soccer ? "Start Match" : "Start Run";
+      : basketball || hockey || waterPolo ? "Start Game" : soccer ? "Start Match" : "Start Run";
   }
 }
 
@@ -3615,7 +3755,11 @@ function renderTeamOperations() {
   stadiumOperationEl.hidden = true;
   trainingOperationEl.hidden = true;
   scoutingOperationEl.hidden = true;
-  venueQualityLabelEl.textContent = isBasketballMode() || isHockeyMode() ? "Arena Quality" : "Stadium Quality";
+  venueQualityLabelEl.textContent = isWaterPoloMode()
+    ? "Aquatic Center Quality"
+    : isBasketballMode() || isHockeyMode()
+      ? "Arena Quality"
+      : "Stadium Quality";
   teamMoraleValueEl.textContent = `${franchise.morale}%`;
   teamMoraleSummaryEl.textContent = moraleMood();
   stadiumQualityValueEl.textContent = `${franchise.stadiumQuality}%`;
@@ -3680,14 +3824,14 @@ function renderFranchiseDashboard() {
 }
 
 function runnerFeatureSummary(runner) {
-  const role = isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : "back";
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() ? "AGI" : "CUT";
+  const role = isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : isWaterPoloMode() ? "driver" : "back";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() ? "AGI" : "CUT";
   const health = runner.injuredGames > 0 ? ` Injured for ${runner.injuredGames} more game${runner.injuredGames === 1 ? "" : "s"}.` : " Healthy and ready.";
   return `${runner.name} is your active ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.${health}`;
 }
 
 function upgradeDisplayCopy(upgrade) {
-  if (!isBasketballMode() && !isHockeyMode()) {
+  if (!isBasketballMode() && !isHockeyMode() && !isWaterPoloMode()) {
     return { title: upgrade.title, description: upgrade.description };
   }
 
@@ -3698,6 +3842,18 @@ function upgradeDisplayCopy(upgrade) {
     };
     return {
       title: hockeyTitles[upgrade.key] || upgrade.title,
+      description: upgrade.description.replace(/cut/gi, "agility"),
+    };
+  }
+
+  if (isWaterPoloMode()) {
+    const waterPoloTitles = {
+      speed: "Swim Speed Boost",
+      cut: "Agility Boost",
+      balance: "Ball Control Drill",
+    };
+    return {
+      title: waterPoloTitles[upgrade.key] || upgrade.title,
       description: upgrade.description.replace(/cut/gi, "agility"),
     };
   }
@@ -3799,7 +3955,7 @@ function drawHitEffect(time) {
 }
 
 function drawStadiumBackdrop() {
-  if (isBasketballMode() || isHockeyMode()) {
+  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode()) {
     drawBasketballArenaBackdrop();
     return;
   }
@@ -3923,7 +4079,7 @@ function drawSidelineAprons() {
 }
 
 function drawStadiumOverlay() {
-  if (isBasketballMode() || isHockeyMode()) {
+  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode()) {
     drawBasketballArenaOverlay();
     return;
   }
@@ -4021,7 +4177,7 @@ function drawField(time) {
 function drawTeamVenueDetails(team) {
   const midfieldY = laneTop(27) + CONFIG.laneHeight / 2;
   if (midfieldY > -80 && midfieldY < CONFIG.height + 80) {
-    const badgeSize = isBasketballMode() ? 82 : isHockeyMode() ? 76 : 72;
+    const badgeSize = isBasketballMode() ? 82 : isHockeyMode() ? 76 : isWaterPoloMode() ? 74 : 72;
     drawTeamPixelBadge(team, CONFIG.width / 2, midfieldY, badgeSize);
     if (usesRoundBall() || isHockeyMode()) {
       drawCenterVenueRing(midfieldY, badgeSize);
@@ -4034,6 +4190,8 @@ function drawTeamVenueDetails(team) {
     drawSoccerPenaltyOverlay(team);
   } else if (isHockeyMode()) {
     drawHockeyGoalCreaseOverlay(team);
+  } else if (isWaterPoloMode()) {
+    drawWaterPoloGoalOverlay(team);
   } else {
     drawFootballEndzoneOverlay(team);
   }
@@ -4042,7 +4200,7 @@ function drawTeamVenueDetails(team) {
 function drawCenterVenueRing(centerY, badgeSize) {
   const fieldLeft = 52;
   const fieldRight = CONFIG.width - 52;
-  const radius = isBasketballMode() ? 48 : isHockeyMode() ? 44 : 52;
+  const radius = isBasketballMode() ? 48 : isHockeyMode() ? 44 : isWaterPoloMode() ? 46 : 52;
   const logoGap = badgeSize / 2 + 4;
   const centerX = CONFIG.width / 2;
 
@@ -4292,6 +4450,11 @@ function drawChainLine(worldRow, color) {
 }
 
 function drawLaneBase(y, row, team, lane) {
+  if (isWaterPoloMode()) {
+    drawWaterPoloLaneBase(y, row, team, lane);
+    return;
+  }
+
   if (isHockeyMode()) {
     drawHockeyLaneBase(y, row, team, lane);
     return;
@@ -4357,6 +4520,37 @@ function drawLaneBase(y, row, team, lane) {
   for (let x = fieldLeft + 14; x < fieldRight - 14; x += 30) {
     ctx.fillStyle = PALETTE.turfShadow;
     ctx.fillRect(x, y + CONFIG.laneHeight - 7, 10, 3);
+  }
+}
+
+function drawWaterPoloLaneBase(y, row, team) {
+  const poolLeft = 38;
+  const poolRight = CONFIG.width - 38;
+  const poolWidth = poolRight - poolLeft;
+  const water = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
+
+  ctx.fillStyle = "#e9f3f0";
+  ctx.fillRect(poolLeft, y, 8, CONFIG.laneHeight);
+  ctx.fillRect(poolRight - 8, y, 8, CONFIG.laneHeight);
+  ctx.fillStyle = water;
+  ctx.fillRect(poolLeft + 8, y, poolWidth - 16, CONFIG.laneHeight);
+  drawTeamSurfacePattern(y, row, team, poolLeft + 12, poolRight - 12, "water");
+
+  ctx.fillStyle = "rgba(220, 247, 250, 0.30)";
+  for (let x = poolLeft + 12 + (row % 2) * 18; x < poolRight - 16; x += 44) {
+    ctx.fillRect(x, y + 8, 26, 3);
+    ctx.fillRect(x + 12, y + 34, 26, 3);
+  }
+
+  ctx.fillStyle = row % 6 < 3 ? "#f3d34a" : "#cf3545";
+  for (let markerY = y + 3; markerY < y + CONFIG.laneHeight; markerY += 12) {
+    ctx.fillRect(poolLeft + 2, markerY, 8, 7);
+    ctx.fillRect(poolRight - 10, markerY, 8, 7);
+  }
+
+  if (row % 10 === 0) {
+    ctx.fillStyle = "rgba(246, 243, 222, 0.72)";
+    ctx.fillRect(poolLeft + 12, y + 2, poolWidth - 24, 3);
   }
 }
 
@@ -4460,6 +4654,22 @@ function drawHockeyGoalCreaseOverlay(team) {
   ctx.fillRect(centerX - 52, top + 3, 104, 4);
 }
 
+function drawWaterPoloGoalOverlay(team) {
+  const { top, bottom } = endAreaBounds();
+  if (bottom < 0 || top > CONFIG.height) {
+    return;
+  }
+
+  const centerX = CONFIG.width / 2;
+  ctx.strokeStyle = "rgba(246, 243, 222, 0.82)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(centerX - 94, top + 4, 188, Math.min(92, bottom - top - 8));
+  ctx.fillStyle = "#f3d34a";
+  ctx.fillRect(centerX - 64, top + 8, 128, 5);
+  ctx.fillStyle = team.accent;
+  ctx.fillRect(centerX - 4, top + 72, 8, 8);
+}
+
 function drawSoccerLaneBase(y, row, team, lane) {
   const fieldLeft = 38;
   const fieldRight = CONFIG.width - 38;
@@ -4499,9 +4709,26 @@ function drawSidelineHazard(y, lane) {
       drawSoccerOutOfBoundsMarker(x, y, width, lane.index);
     } else if (isHockeyMode()) {
       drawHockeyOutOfBoundsMarker(x, y, width, lane.index);
+    } else if (isWaterPoloMode()) {
+      drawWaterPoloOutOfBoundsMarker(x, y, width, lane.index);
     } else {
       drawFootballOutOfBoundsMarker(x, y, width, lane.index);
     }
+  }
+}
+
+function drawWaterPoloOutOfBoundsMarker(x, y, width, row) {
+  ctx.fillStyle = row % 2 === 0 ? "#147ba7" : "#116d98";
+  ctx.fillRect(x, y, width, CONFIG.laneHeight);
+  ctx.fillStyle = "#f6f3de";
+  ctx.fillRect(x, y + 2, width, 4);
+  ctx.fillRect(x, y + CONFIG.laneHeight - 6, width, 4);
+  for (let markerX = x + 4; markerX < x + width; markerX += 14) {
+    ctx.fillStyle = (Math.floor(markerX / 14) + row) % 2 === 0 ? "#f3d34a" : "#cf3545";
+    ctx.fillRect(markerX, y + 12, 10, 10);
+    ctx.fillRect(markerX, y + 38, 10, 10);
+    ctx.fillStyle = "rgba(220, 247, 250, 0.42)";
+    ctx.fillRect(markerX + 2, y + 25, 8, 3);
   }
 }
 
@@ -4637,6 +4864,11 @@ function drawDefenderLane(y, lane, team, time) {
 }
 
 function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
+  if (isWaterPoloMode()) {
+    drawWaterPoloDefenderSprite(x, y, team, time, facing, variant, tackleLean);
+    return;
+  }
+
   if (isHockeyMode()) {
     drawHockeyDefenderSprite(x, y, team, time, facing, variant, tackleLean);
     return;
@@ -4683,6 +4915,32 @@ function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
   pixelRect(x + trailLegX * s + tackleShift, y + (12 + bob) * s + tackleDrop, 3, legHeight, PALETTE.white, s);
   pixelRect(x + leadLegX * s + tackleShift, y + (12 + bob + legHeight) * s + tackleDrop, 3, 1, PALETTE.outline, s);
   pixelRect(x + trailLegX * s + tackleShift, y + (12 + bob + legHeight) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+}
+
+function drawWaterPoloDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
+  const s = CONFIG.spriteScale;
+  const frame = Math.floor(time / 130 + x / 30) % 2;
+  const bob = frame;
+  const direction = facing === "right" ? 1 : -1;
+  const tackleShift = (tackleLean - 1) * 8 * direction;
+  const tackleDrop = (tackleLean - 1) * 3;
+  const skinTones = [PALETTE.skinLight, PALETTE.skinDark, "#b8764e", "#6f442f"];
+  const skin = skinTones[variant % skinTones.length];
+  const cap = variant % 2 === 0 ? team.primary : team.secondary;
+  const number = [2, 4, 6, 8][variant % 4];
+
+  pixelRect(x + 3 * s + tackleShift, y + bob * s + tackleDrop, 10, 5, PALETTE.outline, s);
+  pixelRect(x + 4 * s + tackleShift, y + bob * s + tackleDrop, 8, 3, cap, s);
+  pixelRect(x + (facing === "left" ? 2 : 11) * s + tackleShift, y + (2 + bob) * s + tackleDrop, 3, 3, team.accent, s);
+  pixelRect(x + 4 * s + tackleShift, y + (3 + bob) * s + tackleDrop, 8, 3, skin, s);
+  pixelRect(x + 2 * s + tackleShift, y + (6 + bob) * s + tackleDrop, 12, 7, PALETTE.outline, s);
+  pixelRect(x + 3 * s + tackleShift, y + (6 + bob) * s + tackleDrop, 10, 6, team.primary, s);
+  pixelRect(x - s + tackleShift + direction * 4, y + (7 + frame) * s + tackleDrop, 6, 3, skin, s);
+  pixelRect(x + 12 * s + tackleShift + direction * 4, y + (8 - frame) * s + tackleDrop, 6, 3, skin, s);
+  pixelRect(x + tackleShift, y + (12 + bob) * s + tackleDrop, 16, 3, "#d8f5f7", s);
+  pixelRect(x + 2 * s + tackleShift, y + (15 + bob) * s + tackleDrop, 12, 2, "#1685b0", s);
+  pixelRect(x + (frame === 0 ? 1 : 9) * s + tackleShift, y + (17 + bob) * s + tackleDrop, 6, 2, "rgba(216,245,247,0.8)", s);
+  drawSpriteNumber(number, x + 8 * s + tackleShift, y + (11 + bob) * s + tackleDrop, team.accent);
 }
 
 function drawHockeyDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
@@ -4815,6 +5073,11 @@ function drawPlayer(time) {
 }
 
 function drawPlayerSprite(x, y, facing, flash, frame) {
+  if (isWaterPoloMode()) {
+    drawWaterPoloPlayerSprite(x, y, facing, flash, frame);
+    return;
+  }
+
   if (isHockeyMode()) {
     drawHockeyPlayerSprite(x, y, facing, flash, frame);
     return;
@@ -4902,6 +5165,33 @@ function drawPlayerSprite(x, y, facing, flash, frame) {
   }
 
   pixelRect(x + 9 * s, y + 7 * s, 4, 2, PALETTE.ball, s);
+}
+
+function drawWaterPoloPlayerSprite(x, y, facing, flash, frame) {
+  const s = CONFIG.spriteScale;
+  const homeTeam = currentHomeTeam();
+  const appearance = normalizePlayerAppearance(currentRunner().appearance);
+  const skin = flash ? PALETTE.white : appearance.skin;
+  const cap = flash ? PALETTE.cream : homeTeam.secondary;
+  const suit = flash ? PALETTE.cream : homeTeam.primary;
+  const direction = facing === "left" ? -1 : 1;
+  const ballX = direction > 0 ? 14 : -3;
+
+  pixelRect(x + 3 * s, y + frame * s, 10, 5, PALETTE.outline, s);
+  pixelRect(x + 4 * s, y + frame * s, 8, 3, cap, s);
+  pixelRect(x + (facing === "left" ? 2 : 11) * s, y + (2 + frame) * s, 3, 3, homeTeam.primary, s);
+  pixelRect(x + 4 * s, y + (3 + frame) * s, 8, 3, skin, s);
+  pixelRect(x + 2 * s, y + (6 + frame) * s, 12, 7, PALETTE.outline, s);
+  pixelRect(x + 3 * s, y + (6 + frame) * s, 10, 6, suit, s);
+  pixelRect(x - s + direction * 3, y + (7 + frame) * s, 6, 3, skin, s);
+  pixelRect(x + 12 * s + direction * 3, y + (8 - frame) * s, 6, 3, skin, s);
+  pixelRect(x, y + (12 + frame) * s, 16, 3, "#d8f5f7", s);
+  pixelRect(x + 2 * s, y + (15 + frame) * s, 12, 2, "#1685b0", s);
+  pixelRect(x + (frame === 0 ? 2 : 8) * s, y + (17 + frame) * s, 6, 2, "rgba(216,245,247,0.8)", s);
+  drawSpriteNumber(appearance.number, x + 8 * s, y + (11 + frame) * s, homeTeam.secondary);
+  pixelRect(x + ballX * s, y + (5 + frame) * s, 6, 6, PALETTE.outline, s);
+  pixelRect(x + (ballX + 1) * s, y + (6 + frame) * s, 4, 4, "#f3d34a", s);
+  pixelRect(x + (ballX + 2) * s, y + (7 + frame) * s, 1, 3, "#cf3545", s);
 }
 
 function drawHockeyPlayerSprite(x, y, facing, flash, frame) {
@@ -5058,6 +5348,8 @@ function drawScoreboardBar() {
     drawLabel("Q4", 260, barY + 17, "#65b7e8", 8);
   } else if (isHockeyMode()) {
     drawLabel("P3", 260, barY + 17, "#79d8ef", 8);
+  } else if (isWaterPoloMode()) {
+    drawLabel("Q4", 260, barY + 17, "#54d2e6", 8);
   }
   drawTeamChip(302, barY + 13, 194, 31, opponent, "OPPONENT", false);
 
@@ -5191,7 +5483,7 @@ function hideOverlay() {
 
 function renderRunnerCards() {
   const runner = currentRunner();
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() ? "AGI" : "CUT";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() ? "AGI" : "CUT";
   const roster = franchise.rosterUnlocked ? franchise.roster : [runner];
   const healthyCount = roster.filter((candidate) => candidate.injuredGames <= 0).length;
   runnerSelectTitleEl.textContent = franchise.rosterUnlocked ? "Runner Roster" : "Featured Player";
@@ -5343,6 +5635,7 @@ gridironDashButtonEl.addEventListener("click", openGridironDash);
 pitchDashButtonEl.addEventListener("click", openPitchDash);
 hoopHustleButtonEl.addEventListener("click", openHoopHustle);
 rinkRushButtonEl.addEventListener("click", openRinkRush);
+splashStrikeButtonEl.addEventListener("click", openSplashStrike);
 gameLibraryButtonEl.addEventListener("click", openGameLibrary);
 fieldGoalActionButtonEl.addEventListener("click", handleFieldGoalAction);
 fieldGoalStaticAimInputEl.addEventListener("input", chooseStaticFieldGoalAim);
