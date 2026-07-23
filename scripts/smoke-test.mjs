@@ -106,6 +106,8 @@ assert.match(html, /id="diamondDashButton"/);
 assert.match(html, /Diamond Dash/);
 assert.match(html, /id="crosseClashButton"/);
 assert.match(html, /Crosse Clash/);
+assert.match(html, /id="dodgeballDashButton"/);
+assert.match(html, /Dodgeball Dash/);
 assert.match(html, /id="hockeyGoalie"/);
 assert.match(html, /<p>Choose a game to enter the arcade<\/p>/);
 assert.doesNotMatch(html, /More games can be added here/);
@@ -146,6 +148,7 @@ assert.match(styles, /\.surfing-game-card\s*\{\s*--card-accent:\s*#46c6d3/);
 assert.match(styles, /\.skiing-game-card\s*\{\s*--card-accent:\s*#d7edf2/);
 assert.match(styles, /\.baseball-game-card\s*\{\s*--card-accent:\s*#e65d45/);
 assert.match(styles, /\.lacrosse-game-card\s*\{\s*--card-accent:\s*#55b982/);
+assert.match(styles, /\.dodgeball-game-card\s*\{\s*--card-accent:\s*#e65d45/);
 assert.match(styles, /\.offseason-panel\s*\{/);
 assert.match(styles, /body\.offseason-active #franchiseMainContent/);
 assert.match(styles, /\.game-library\s*\{[^}]*overflow-y:\s*auto/s);
@@ -171,10 +174,14 @@ assert.match(styles, /body\[data-game="surfing"\] \.field-goal-scene/);
 assert.match(styles, /body\[data-game="skiing"\] \.field-goal-scene/);
 assert.match(styles, /body\[data-game="baseball"\] \.field-goal-scene/);
 assert.match(styles, /body\[data-game="lacrosse"\] \.field-goal-scene/);
+assert.match(styles, /body\[data-game="dodgeball"\] \.field-goal-scene/);
+assert.match(styles, /body\[data-game="dodgeball"\] \.soccer-keeper/);
+assert.match(styles, /@keyframes dodgeball-throw-arm/);
 assert.match(styles, /\.mini-surf-board/);
 assert.match(styles, /\.mini-skis/);
 assert.match(styles, /\.mini-baseball/);
 assert.match(styles, /\.mini-lacrosse-stick/);
+assert.match(styles, /\.mini-dodgeball/);
 assert.match(styles, /\.play-game-label\s*\{[^}]*background:\s*var\(--card-accent\)/s);
 assert.doesNotMatch(source, /drawLabel\("THE PAINT"/);
 assert.doesNotMatch(source, /drawLabel\("PENALTY AREA"/);
@@ -200,6 +207,9 @@ assert.match(source, /function drawSurfingOutOfBoundsMarker\(/);
 assert.match(source, /function drawSkiingOutOfBoundsMarker\(/);
 assert.match(source, /function drawBaseballOutOfBoundsMarker\(/);
 assert.match(source, /function drawLacrosseOutOfBoundsMarker\(/);
+assert.match(source, /function drawDodgeballLaneBase\(/);
+assert.match(source, /function drawDodgeballOutOfBoundsMarker\(/);
+assert.match(source, /function drawDodgeballCourtOverlay\(/);
 assert.match(source, /function drawNewSportAthleteSprite\(/);
 assert.doesNotMatch(source, /basketballCourtHasEnded/);
 assert.match(source, /const TEAM_ALTERNATE_UNIFORMS = \{/);
@@ -341,6 +351,7 @@ globalThis.__retroRunTest = {
   openSlopeSprint,
   openDiamondDash,
   openCrosseClash,
+  openDodgeballDash,
   openGameLibrary,
   startLevel,
   startFieldGoal,
@@ -445,7 +456,7 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
-assert.equal(game.alternateUniformCount, 98);
+assert.equal(game.alternateUniformCount, 99);
 const brazilClashUniform = game.uniformForTeam("Brazil", {
   primary: "#ffdf00",
   secondary: "#002776",
@@ -1086,6 +1097,56 @@ assert.equal(game.fieldGoalKickMade, true);
 assert.equal(elements.get("soccerKeeper").classList.contains("diving"), true);
 
 elements.get("arcadeHomeButton").click();
+game.openDodgeballDash();
+assert.equal(game.activeGameId, "dodgeball");
+assert.equal(body.dataset.game, "dodgeball");
+assert.equal(elements.get("dodgeballDashButton").classList.contains("selected"), true);
+assert.equal(elements.get("distanceLabel").textContent, "Feet");
+assert.equal(elements.get("downsLabel").textContent, "Players Left");
+assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Throw Sliders");
+assert.match(game.tutorial[0].items[0], /50 feet/);
+assert.equal(new Set(game.venueIdentities.map((identity) => identity.mark)).size, 12);
+game.selectFranchiseSlot(0);
+elements.get("teamNameInput").value = "Aotearoa";
+elements.get("runnerNameInput").value = "D. Rocket";
+elements.get("playerNumberInput").value = "12";
+game.createFranchiseFromForm();
+assert.ok(storage.has("dodgeball-dash-franchise-slots"));
+assert.equal(game.currentSeasonOpponentNames.includes("New Zealand"), false);
+assert.equal(game.currentSeasonOpponentNames.length, 12);
+drawnFillColors.length = 0;
+game.drawOutOfBoundsMarkerForTest();
+assert.equal(drawnFillColors.includes("#d94c45"), true);
+assert.equal(drawnFillColors.includes("#f0c84f"), true);
+drawnFillColors.length = 0;
+drawnLabels.length = 0;
+game.drawPlayerSpriteForTest("right", 1);
+assert.equal(drawnFillColors.includes("#e65d45"), true);
+assert.equal(drawnFillColors.includes("#173b67"), true);
+assert.equal(drawnLabels.some((label) => label.text === "12"), true);
+drawnFillColors.length = 0;
+game.startLevel();
+game.render(1000);
+assert.equal(drawnFillColors.includes("#d6a764"), true);
+drawnLabels.length = 0;
+game.drawScoreboardBar();
+assert.equal(drawnLabels.some((label) => label.text === "SET3"), true);
+game.startFieldGoal();
+assert.equal(elements.get("kickChallengeTitle").textContent, "Make the Final Hit");
+assert.equal(elements.get("fieldGoalBall").style.scale, "0.74");
+game.launchTestShot(15, 70);
+assert.equal(game.fieldGoalKickMade, true);
+assert.equal(elements.get("soccerKeeper").classList.contains("diving"), true);
+game.advanceFieldGoalFlight(2000);
+assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), true);
+game.advanceFieldGoalFlight(3000);
+assert.equal(game.gameState, "levelComplete");
+assert.equal(elements.get("overlayTitle").textContent, "Knockout!");
+assert.equal(game.pendingUpgrade, true);
+game.applyPendingUpgrade();
+assert.equal(elements.get("startButton").textContent, "Next Game");
+
+elements.get("arcadeHomeButton").click();
 assert.equal(game.gameLibraryOpen, true);
 game.openGridironDash();
 assert.equal(game.activeGameId, "gridiron");
@@ -1150,6 +1211,7 @@ assert.ok(storage.has("wave-rider-franchise-slots"));
 assert.ok(storage.has("slope-sprint-franchise-slots"));
 assert.ok(storage.has("diamond-dash-franchise-slots"));
 assert.ok(storage.has("crosse-clash-franchise-slots"));
+assert.ok(storage.has("dodgeball-dash-franchise-slots"));
 
 assert.equal(game.migrateSeasonCheckpoint(21, { year: 2 }), 15);
 assert.equal(game.migrateSeasonCheckpoint(17, { year: 1 }), 11);
@@ -1241,4 +1303,4 @@ for (let level = 0; level < 12; level += 1) {
   });
 }
 assert.ok(game.maxConsecutiveDefenderRows < 12);
-console.log("Retro Run smoke tests passed for all nine arcade games.");
+console.log("Retro Run smoke tests passed for all ten arcade games.");

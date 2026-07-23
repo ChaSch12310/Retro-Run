@@ -6,12 +6,12 @@
     <title>Retro Run</title>
     <meta
       name="description"
-      content="Retro Run is a browser-based retro sports arcade with football, soccer, basketball, hockey, water polo, surfing, skiing, baseball, and lacrosse games."
+      content="Retro Run is a browser-based retro sports arcade with football, soccer, basketball, hockey, water polo, surfing, skiing, baseball, lacrosse, and dodgeball games."
     />
     <meta property="og:title" content="Retro Run" />
     <meta
       property="og:description"
-      content="Choose from nine retro sports games, build a franchise, dodge defenders and hazards, and chase a 12-game season."
+      content="Choose from ten retro sports games, build a franchise, dodge defenders and hazards, and chase a 12-game season."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://retrorun.win" />
@@ -24,12 +24,12 @@
     <meta name="twitter:title" content="Retro Run" />
     <meta
       name="twitter:description"
-      content="A nine-game retro sports arcade with franchise saves, upgrades, seasons, and mobile swipe controls."
+      content="A ten-game retro sports arcade with franchise saves, upgrades, seasons, and mobile swipe controls."
     />
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260723-12-game-seasons" />
+    <link rel="stylesheet" href="styles.css?v=20260723-dodgeball" />
   </head>
   <body>
     <main class="game-shell">
@@ -242,6 +242,27 @@
               <span class="game-card-tag">Lacrosse Arcade</span>
               <strong>Crosse Clash</strong>
               <span>Carry through international defenses and fire a final shot past the goalie.</span>
+            </span>
+            <span class="play-game-label">Play Game</span>
+          </button>
+
+          <button class="game-select-card dodgeball-game-card" id="dodgeballDashButton" type="button">
+            <span class="game-card-art dodgeball-card-art" aria-hidden="true">
+              <span class="stadium-lights"></span>
+              <span class="mini-scoreboard">SET 3</span>
+              <span class="mini-field dodgeball-mini-court">
+                <span class="mini-dodgeball-center"></span>
+                <span class="mini-dodgeball-line"></span>
+              </span>
+              <span class="game-sport-badge dodgeball-sport-badge">
+                <span class="game-icon-speed"></span>
+                <span class="mini-dodgeball"></span>
+              </span>
+            </span>
+            <span class="game-card-copy">
+              <span class="game-card-tag">Dodgeball Arcade</span>
+              <strong>Dodgeball Dash</strong>
+              <span>Dodge international squads, cross the gym, and finish with a knockout throw.</span>
             </span>
             <span class="play-game-label">Play Game</span>
           </button>
@@ -702,6 +723,6 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260723-12-game-seasons"></script>
+    <script src="game.js?v=20260723-dodgeball"></script>
   </body>
 </html>

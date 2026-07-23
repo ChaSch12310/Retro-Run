@@ -117,6 +117,7 @@ const waveRiderButtonEl = document.getElementById("waveRiderButton");
 const slopeSprintButtonEl = document.getElementById("slopeSprintButton");
 const diamondDashButtonEl = document.getElementById("diamondDashButton");
 const crosseClashButtonEl = document.getElementById("crosseClashButton");
+const dodgeballDashButtonEl = document.getElementById("dodgeballDashButton");
 const gameLibraryButtonEl = document.getElementById("gameLibraryButton");
 const fieldGoalPanelEl = document.getElementById("fieldGoalPanel");
 const fieldGoalTimerEl = document.getElementById("fieldGoalTimer");
@@ -431,6 +432,21 @@ const LACROSSE_TEAMS = [
   { name: "Puerto Rico", primary: "#ef3340", secondary: "#153d7a", accent: "#f6f3de", fieldTint: "#49894c", fieldStripe: "#34733a", uiText: "#f6f3de" },
 ];
 
+const DODGEBALL_TEAMS = [
+  { name: "United States", primary: "#1f3c88", secondary: "#bf0a30", accent: "#f6f3de", fieldTint: "#d6a764", fieldStripe: "#c6924e", uiText: "#f6f3de" },
+  { name: "Canada", primary: "#d52b3f", secondary: "#821a28", accent: "#f6f3de", fieldTint: "#d8aa66", fieldStripe: "#c89450", uiText: "#f6f3de" },
+  { name: "England", primary: "#f6f3de", secondary: "#173b67", accent: "#ce1126", fieldTint: "#d5a662", fieldStripe: "#c5904c", uiText: "#173b67" },
+  { name: "Australia", primary: "#126b4c", secondary: "#0b4431", accent: "#f2ce43", fieldTint: "#d8aa65", fieldStripe: "#c7934e", uiText: "#f6f3de" },
+  { name: "Japan", primary: "#f6f3de", secondary: "#bc002d", accent: "#1f4e99", fieldTint: "#d6a864", fieldStripe: "#c5914d", uiText: "#173b67" },
+  { name: "Mexico", primary: "#006847", secondary: "#173c32", accent: "#ce1126", fieldTint: "#d7a965", fieldStripe: "#c6924e", uiText: "#f6f3de" },
+  { name: "Germany", primary: "#17151a", secondary: "#b51d2a", accent: "#f1c644", fieldTint: "#d5a661", fieldStripe: "#c48f4b", uiText: "#f6f3de" },
+  { name: "France", primary: "#1d3f8f", secondary: "#142755", accent: "#ed2939", fieldTint: "#d8aa66", fieldStripe: "#c79350", uiText: "#f6f3de" },
+  { name: "Italy", primary: "#1764b0", secondary: "#103b72", accent: "#f6f3de", fieldTint: "#d6a763", fieldStripe: "#c5904d", uiText: "#f6f3de" },
+  { name: "Spain", primary: "#c60b1e", secondary: "#7b101c", accent: "#ffc400", fieldTint: "#d7a964", fieldStripe: "#c6924e", uiText: "#f6f3de" },
+  { name: "Brazil", primary: "#ffdf00", secondary: "#002776", accent: "#009c3b", fieldTint: "#d5a661", fieldStripe: "#c48f4b", uiText: "#172c56" },
+  { name: "New Zealand", primary: "#17151a", secondary: "#31343a", accent: "#f6f3de", fieldTint: "#d8aa66", fieldStripe: "#c79350", uiText: "#f6f3de" },
+];
+
 // Opponent sprites can switch kits without changing their venue or scoreboard branding.
 const TEAM_ALTERNATE_UNIFORMS = {
   "49ers": { primary: "#f6f3de", secondary: "#aa0000", accent: "#d3bc8d" },
@@ -531,6 +547,7 @@ const TEAM_ALTERNATE_UNIFORMS = {
   Scotland: { primary: "#f6f3de", secondary: "#2456a4", accent: "#173565" },
   Jamaica: { primary: "#f4cf3d", secondary: "#17151a", accent: "#138047" },
   "Puerto Rico": { primary: "#f6f3de", secondary: "#153d7a", accent: "#ef3340" },
+  "New Zealand": { primary: "#f6f3de", secondary: "#17151a", accent: "#8a939b" },
 };
 
 // These original pixel monograms identify teams without reproducing official logos.
@@ -633,6 +650,7 @@ const TEAM_VENUE_MARKS = {
   Scotland: "SCO",
   Jamaica: "JAM",
   "Puerto Rico": "PUR",
+  "New Zealand": "NZL",
 };
 
 function teamVenueIdentity(team) {
@@ -722,6 +740,12 @@ const LACROSSE_HOME_TEAM = {
   name: "Metro City Arrows",
   primary: "#55b982",
   secondary: "#19365a",
+};
+
+const DODGEBALL_HOME_TEAM = {
+  name: "Metro City Meteors",
+  primary: "#e65d45",
+  secondary: "#173b67",
 };
 
 const TEAM_NAME_ALIASES = {
@@ -823,6 +847,7 @@ const TEAM_NAME_ALIASES = {
   Scotland: ["Scottish Lacrosse"],
   Jamaica: ["Jamaican Lacrosse"],
   "Puerto Rico": ["Puerto Rico Lacrosse", "PUR"],
+  "New Zealand": ["NZ", "Aotearoa", "Kiwi Dodgeball"],
 };
 
 const GAME_MODES = {
@@ -933,6 +958,18 @@ const GAME_MODES = {
     chancesLabel: "Possessions Left",
     distanceAbbr: "YDS",
     chanceAbbr: "POSS",
+  },
+  dodgeball: {
+    id: "dodgeball",
+    kind: "dodgeball",
+    title: "Dodgeball Dash",
+    teams: DODGEBALL_TEAMS,
+    homeTeam: DODGEBALL_HOME_TEAM,
+    slotsKey: "dodgeball-dash-franchise-slots",
+    distanceLabel: "Feet",
+    chancesLabel: "Players Left",
+    distanceAbbr: "FT",
+    chanceAbbr: "LEFT",
   },
 };
 
@@ -1114,12 +1151,16 @@ function isLacrosseMode() {
   return currentGameMode().kind === "lacrosse";
 }
 
+function isDodgeballMode() {
+  return currentGameMode().kind === "dodgeball";
+}
+
 function usesShotChallenge() {
   return usesRoundBall() || isHockeyMode() || isBaseballMode() || isSurfingMode() || isSkiingMode();
 }
 
 function usesRoundBall() {
-  return isSoccerMode() || isBasketballMode() || isWaterPoloMode() || isLacrosseMode();
+  return isSoccerMode() || isBasketballMode() || isWaterPoloMode() || isLacrosseMode() || isDodgeballMode();
 }
 
 const PLAYER_RATING_MAX = 100;
@@ -1904,7 +1945,9 @@ function createFranchisePlayer(forcedName = null) {
         ? "Featured Skier"
         : isBaseballMode()
           ? "Featured Baserunner"
-          : isLacrosseMode()
+          : isDodgeballMode()
+            ? "Featured Thrower"
+            : isLacrosseMode()
             ? "Featured Attacker"
             : isWaterPoloMode()
       ? "Featured Driver"
@@ -2037,6 +2080,7 @@ function injuryRoleName() {
   if (isSkiingMode()) return "skier";
   if (isBaseballMode()) return "baserunner";
   if (isLacrosseMode()) return "attacker";
+  if (isDodgeballMode()) return "thrower";
   if (isBasketballMode()) return "guard";
   if (isSoccerMode()) return "forward";
   if (isHockeyMode()) return "winger";
@@ -2262,12 +2306,12 @@ function moraleChangeForGame(result, tries) {
 
 function draftArchetype(speed, power, cut) {
   if (speed >= power && speed >= cut) {
-    return isSurfingMode() ? "Speed Surfer" : isSkiingMode() ? "Downhill Racer" : isBaseballMode() ? "Leadoff Runner" : isLacrosseMode() ? "Dodging Attack" : isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : isHockeyMode() ? "Speed Winger" : isWaterPoloMode() ? "Counter Driver" : "Speed Back";
+    return isSurfingMode() ? "Speed Surfer" : isSkiingMode() ? "Downhill Racer" : isBaseballMode() ? "Leadoff Runner" : isDodgeballMode() ? "Quick Thrower" : isLacrosseMode() ? "Dodging Attack" : isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : isHockeyMode() ? "Speed Winger" : isWaterPoloMode() ? "Counter Driver" : "Speed Back";
   }
   if (power >= speed && power >= cut) {
-    return isSurfingMode() ? "Power Surfer" : isSkiingMode() ? "Power Racer" : isBaseballMode() ? "Power Runner" : isLacrosseMode() ? "Power Attack" : isBasketballMode() ? "Power Finisher" : isSoccerMode() ? "Target Forward" : isHockeyMode() ? "Power Forward" : isWaterPoloMode() ? "Center Forward" : "Power Back";
+    return isSurfingMode() ? "Power Surfer" : isSkiingMode() ? "Power Racer" : isBaseballMode() ? "Power Runner" : isDodgeballMode() ? "Power Thrower" : isLacrosseMode() ? "Power Attack" : isBasketballMode() ? "Power Finisher" : isSoccerMode() ? "Target Forward" : isHockeyMode() ? "Power Forward" : isWaterPoloMode() ? "Center Forward" : "Power Back";
   }
-  return isSurfingMode() ? "Technical Surfer" : isSkiingMode() ? "Slalom Racer" : isBaseballMode() ? "Base Stealer" : isLacrosseMode() ? "Playmaking Attack" : isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : isHockeyMode() ? "Playmaking Winger" : isWaterPoloMode() ? "Utility Driver" : "Cutback Back";
+  return isSurfingMode() ? "Technical Surfer" : isSkiingMode() ? "Slalom Racer" : isBaseballMode() ? "Base Stealer" : isDodgeballMode() ? "Control Thrower" : isLacrosseMode() ? "Playmaking Attack" : isBasketballMode() ? "Shot Creator" : isSoccerMode() ? "Technical Forward" : isHockeyMode() ? "Playmaking Winger" : isWaterPoloMode() ? "Utility Driver" : "Cutback Back";
 }
 
 function buildDraftProspects(
@@ -2315,7 +2359,7 @@ function beginOffseason(completedSeason, wins, losses, finalResult) {
 }
 
 function offseasonEventView(event) {
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
   if (event.type === "development") {
     return {
       type: "Player Development",
@@ -2867,6 +2911,18 @@ function updateDistance() {
 }
 
 function kickChallengeCopy() {
+  if (isDodgeballMode()) {
+    return {
+      staticInstructions: "Set both sliders inside the green zones, then throw before time expires.",
+      staticButton: "Throw",
+      timingInstructions: "Tap once to lock throw power, then tap again to lock aim and fire.",
+      aimStatus: "Stop the aim needle over the target player.",
+      launchStatus: "Ball is flying!",
+      launchingButton: "Throwing...",
+      madeStatus: "Knockout!",
+      missedStatus: "Dodged!",
+    };
+  }
   if (isSurfingMode()) {
     return {
       staticInstructions: "Set both sliders inside the green zones, then launch before time expires.",
@@ -2993,7 +3049,9 @@ function startFieldGoal() {
   fieldGoalPowerMeterEl.classList.remove("locked");
   fieldGoalAimMeterEl.classList.remove("active", "locked");
   fieldGoalAimMarkerEl.hidden = false;
-  kickChallengeKickerEl.textContent = isSurfingMode()
+  kickChallengeKickerEl.textContent = isDodgeballMode()
+    ? "Knockout Throw"
+    : isSurfingMode()
     ? "Aerial Challenge"
     : isSkiingMode()
       ? "Final Jump Challenge"
@@ -3010,7 +3068,9 @@ function startFieldGoal() {
         : isWaterPoloMode()
           ? "Power Shot Challenge"
         : "Field Goal Challenge";
-  kickChallengeTitleEl.textContent = isSurfingMode()
+  kickChallengeTitleEl.textContent = isDodgeballMode()
+    ? "Make the Final Hit"
+    : isSurfingMode()
     ? "Land the Aerial"
     : isSkiingMode()
       ? "Stick the Landing"
@@ -3166,7 +3226,7 @@ function launchFieldGoal(forceMade = false) {
 }
 
 function startSoccerKeeperDive() {
-  if (!isSoccerMode() && !isWaterPoloMode() && !isLacrosseMode()) {
+  if (!isSoccerMode() && !isWaterPoloMode() && !isLacrosseMode() && !isDodgeballMode()) {
     return;
   }
 
@@ -3215,13 +3275,14 @@ function updateFieldGoalFlight(time) {
   const eased = 1 - (1 - progress) ** 2;
   const targetLeft = 50 + fieldGoalAim * (
     isBasketballMode() ? 0.32
-      : isSoccerMode() || isWaterPoloMode() || isLacrosseMode() ? 0.45
+      : isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isDodgeballMode() ? 0.45
         : isHockeyMode() || isBaseballMode() ? 0.42
           : isSurfingMode() || isSkiingMode() ? 0.38
             : 0.5
   );
   const heightGain = fieldGoalPower >= FIELD_GOAL_POWER_MIN
     ? (isBasketballMode() ? 35
+      : isDodgeballMode() ? 34
       : isSoccerMode() || isLacrosseMode() ? 44
         : isWaterPoloMode() ? 38
           : isHockeyMode() ? 24
@@ -3241,6 +3302,8 @@ function updateFieldGoalFlight(time) {
     ? `${(0.72 + launchShapeProgress * 0.28) * distanceScale}`
     : isWaterPoloMode()
       ? `${(0.78 + launchShapeProgress * 0.22) * distanceScale}`
+    : isDodgeballMode()
+      ? `${(0.74 + launchShapeProgress * 0.2) * distanceScale}`
     : isLacrosseMode() || isBaseballMode()
       ? `${(0.68 + launchShapeProgress * 0.22) * distanceScale}`
     : isSurfingMode() || isSkiingMode()
@@ -3250,7 +3313,8 @@ function updateFieldGoalFlight(time) {
       : `${ballScaleX} ${ballScaleY}`;
   const initialRotation = usesShotChallenge() ? 0 : -15;
   const flightRotation = isBasketballMode() ? 300
-    : isSoccerMode() || isLacrosseMode() ? 180
+    : isDodgeballMode() ? 360
+      : isSoccerMode() || isLacrosseMode() ? 180
       : isWaterPoloMode() ? 220
         : isHockeyMode() ? 40
           : isBaseballMode() ? 520
@@ -3277,7 +3341,8 @@ function resetFieldGoalBall() {
   fieldGoalBallEl.style.scale = isBasketballMode() ? "0.72"
     : isHockeyMode() ? "0.82"
       : isWaterPoloMode() ? "0.78"
-        : isLacrosseMode() || isBaseballMode() ? "0.68"
+        : isDodgeballMode() ? "0.74"
+          : isLacrosseMode() || isBaseballMode() ? "0.68"
           : isSurfingMode() || isSkiingMode() ? "0.9"
             : "0.72 1.18";
   fieldGoalBallEl.style.rotate = usesShotChallenge() ? "0deg" : "-15deg";
@@ -3305,6 +3370,7 @@ function tutorialSlides() {
   const skiing = isSkiingMode();
   const baseball = isBaseballMode();
   const lacrosse = isLacrosseMode();
+  const dodgeball = isDodgeballMode();
   const teams = currentOpponentTeams();
   const movementText = usesTouchControls()
     ? "Swipe up, down, left, or right anywhere on the play screen to move one row at a time."
@@ -3322,8 +3388,18 @@ function tutorialSlides() {
     : (usesShotChallenge()
       ? "This save uses arcade shooting: stop the power meter, then stop the aim needle to shoot."
       : "This save uses arcade kicking: stop the power meter, then stop the aim needle to launch the ball.");
-  const athlete = surfing ? "surfer" : skiing ? "skier" : baseball ? "baserunner" : lacrosse ? "attacker" : soccer ? "forward" : basketball ? "guard" : hockey ? "winger" : waterPolo ? "driver" : "runner";
-  const firstSlide = surfing
+  const athlete = dodgeball ? "thrower" : surfing ? "surfer" : skiing ? "skier" : baseball ? "baserunner" : lacrosse ? "attacker" : soccer ? "forward" : basketball ? "guard" : hockey ? "winger" : waterPolo ? "driver" : "runner";
+  const firstSlide = dodgeball
+    ? {
+      badge: "Dodge",
+      title: "Cross the Court",
+      items: [
+        "Advance 50 feet to reach the attack line and unlock the knockout throw.",
+        "Dodge moving throwers and the ball-rack hazard tiles along the court.",
+        "The camera scrolls forward as your thrower reaches new rows.",
+      ],
+    }
+    : surfing
     ? {
       badge: "Carve",
       title: "Ride the Break",
@@ -3412,7 +3488,19 @@ function tutorialSlides() {
           "The camera scrolls forward as your runner reaches new rows.",
         ],
       };
-  const possessionSlide = surfing
+  const possessionSlide = dodgeball
+    ? {
+      badge: "Players",
+      title: "Protect Four Players",
+      text: "You have four players left to reach the attack line.",
+      items: [
+        "Getting hit costs one player and returns you to the nearest row that never contains opponents.",
+        "The blue line marks the checkpoint start; your next target is tracked in the sidebar.",
+        "Crossing the target before a hit refreshes all four players.",
+        "The opening checkpoint is 10 feet and becomes slightly shorter every four games.",
+      ],
+    }
+    : surfing
     ? {
       badge: "Lives",
       title: "Protect Four Lives",
@@ -3531,10 +3619,12 @@ function tutorialSlides() {
     {
       badge: "Power",
       title: `Build Your ${athlete[0].toUpperCase()}${athlete.slice(1)}`,
-      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse ? "Agility" : baseball ? "Baserunning" : "Cut"} ratings.`,
+      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut"} ratings.`,
       items: [
-        `Speed and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse ? "Agility" : baseball ? "Baserunning" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
-        surfing
+        `Speed and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
+        dodgeball
+          ? "Power controls catches and deflections: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
+          : surfing
           ? "Power controls recovery from collisions: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
           : skiing
           ? "Power controls recovery from contact: 50 Power gives a 10% escape chance and 100 Power gives an 80% chance."
@@ -3556,11 +3646,13 @@ function tutorialSlides() {
     },
     {
       badge: usesShotChallenge() ? "Shoot" : "Kick",
-      title: surfing ? "Land the Aerial" : skiing ? "Stick the Final Jump" : baseball ? "Deliver the Walk-Off Hit" : lacrosse ? "Beat the Goalie" : basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : waterPolo ? "Beat the Goalkeeper" : "Finish the Game",
+      title: dodgeball ? "Make the Knockout Throw" : surfing ? "Land the Aerial" : skiing ? "Stick the Final Jump" : baseball ? "Deliver the Walk-Off Hit" : lacrosse ? "Beat the Goalie" : basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : waterPolo ? "Beat the Goalkeeper" : "Finish the Game",
       text: fieldGoalText,
       items: [
         "You have 30 seconds to choose power and aim before an automatic miss.",
-        surfing
+        dodgeball
+          ? "A clean hit completes the game and unlocks the next international opponent."
+          : surfing
           ? "Landing the aerial completes the heat and unlocks the next surf break."
           : skiing
           ? "Sticking the jump completes the run and unlocks the next mountain."
@@ -3690,6 +3782,8 @@ function missFieldGoal(reason) {
   franchise.fans = clamp(franchise.fans - 4, 15, 99);
   franchise.lastResult = isBasketballMode()
     ? `Missed the deciding basket against the ${currentTeam().name}.`
+    : isDodgeballMode()
+      ? `The deciding throw missed against ${currentTeam().name}.`
     : isSurfingMode()
       ? `Wiped out on the deciding aerial at ${currentTeam().name}.`
       : isSkiingMode()
@@ -3708,6 +3802,8 @@ function missFieldGoal(reason) {
   saveFranchise();
   overlayTitleEl.textContent = isBasketballMode()
     ? "Shot Missed"
+    : isDodgeballMode()
+      ? "Throw Dodged"
     : isSurfingMode()
       ? "Wipeout"
       : isSkiingMode()
@@ -3738,7 +3834,7 @@ function checkCollisions(time) {
   }
 
   if (lane.type === "sideline" && lane.unsafeColumns.includes(currentPlayerColumn())) {
-    registerHit(time, isSurfingMode() ? "Hit the rocks" : isSkiingMode() ? "Missed the gate" : isBaseballMode() ? "Ran into the dugout" : isLacrosseMode() ? "Stepped out of bounds" : isSoccerMode() ? "Ball out of play" : isHockeyMode() ? "Through the boards" : isWaterPoloMode() ? "Into the lane rope" : "Out of bounds");
+    registerHit(time, isDodgeballMode() ? "Stepped off the court" : isSurfingMode() ? "Hit the rocks" : isSkiingMode() ? "Missed the gate" : isBaseballMode() ? "Ran into the dugout" : isLacrosseMode() ? "Stepped out of bounds" : isSoccerMode() ? "Ball out of play" : isHockeyMode() ? "Through the boards" : isWaterPoloMode() ? "Into the lane rope" : "Out of bounds");
     return;
   }
 
@@ -3770,7 +3866,7 @@ function checkCollisions(time) {
         hitEffect = null;
         return;
       }
-      registerHit(time, isSurfingMode() ? "Board collision" : isSkiingMode() ? "Skier collision" : isBaseballMode() ? "Tagged out" : isLacrosseMode() ? "Stick check" : isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : isWaterPoloMode() ? "Defensive hold" : "Big hit", {
+      registerHit(time, isDodgeballMode() ? "Hit by a throw" : isSurfingMode() ? "Board collision" : isSkiingMode() ? "Skier collision" : isBaseballMode() ? "Tagged out" : isLacrosseMode() ? "Stick check" : isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : isWaterPoloMode() ? "Defensive hold" : "Big hit", {
         impactX: player.worldX,
         impactY: screenYFromWorldRow(player.worldRow),
         defenderX: x + 5,
@@ -3861,11 +3957,11 @@ function gameOver(reason) {
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale - 1, 0, 100);
   }
-  franchise.lastResult = isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode()
+  franchise.lastResult = isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() || isDodgeballMode()
     ? `${reason} against ${currentTeam().name}. Supporters want a better response.`
     : `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
   saveFranchise();
-  overlayTitleEl.textContent = isSurfingMode() ? "Heat Over" : isSkiingMode() ? "Run Over" : isBaseballMode() ? "Three Outs" : usesShotChallenge() ? (isHockeyMode() ? "Shift Over" : "Possession Lost") : "Turnover on Downs";
+  overlayTitleEl.textContent = isDodgeballMode() ? "Team Eliminated" : isSurfingMode() ? "Heat Over" : isSkiingMode() ? "Run Over" : isBaseballMode() ? "Three Outs" : usesShotChallenge() ? (isHockeyMode() ? "Shift Over" : "Possession Lost") : "Turnover on Downs";
   overlayTextEl.textContent = isBasketballMode()
     ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
     : isSoccerMode()
@@ -3878,6 +3974,8 @@ function gameOver(reason) {
       ? `${reason}. You advanced ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
     : isLacrosseMode()
       ? `${reason}. You reached ${player.distance} yards in week ${currentSeasonWeek()}. Reset and try ${currentTeam().name} again.`
+    : isDodgeballMode()
+      ? `${reason}. You crossed ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try ${currentTeam().name} again.`
     : isHockeyMode()
       ? `${reason}. You reached ${player.distance} feet in week ${currentSeasonWeek()}. Reset and try the ${currentTeam().name} again.`
       : isWaterPoloMode()
@@ -3945,7 +4043,9 @@ function completeLevel() {
           ? `Perfect final jump at ${beatenTeam.name}. Fans are roaring.`
           : isBaseballMode()
             ? `Huge walk-off win over the ${beatenTeam.name}. Fans are roaring.`
-            : isLacrosseMode()
+            : isDodgeballMode()
+              ? `Huge knockout win over ${beatenTeam.name}. Fans are roaring.`
+              : isLacrosseMode()
               ? `Huge goal-scoring win over ${beatenTeam.name}. Supporters are roaring.`
               : isBasketballMode()
         ? `Huge clutch-shot win over the ${beatenTeam.name}. Fans are roaring.`
@@ -3958,14 +4058,16 @@ function completeLevel() {
             : `Huge field-goal win over the ${beatenTeam.name}. Fans are roaring.`)
       : isBasketballMode()
         ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
-        : `You escaped ${isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
+        : `You escaped ${isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() || isDodgeballMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
     franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${fanChange}.`;
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
-  overlayTitleEl.textContent = isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Walk-Off Hit!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
+  overlayTitleEl.textContent = isDodgeballMode() ? "Knockout!" : isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Walk-Off Hit!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
-    ? (isSurfingMode()
+      ? (isDodgeballMode()
+      ? `You landed the final hit against ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before the next opening throw.`
+      : isSurfingMode()
       ? `You landed the aerial at ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before the next heat.`
       : isSkiingMode()
         ? `You stuck the jump at ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before the next run.`
@@ -3982,7 +4084,9 @@ function completeLevel() {
           : isWaterPoloMode()
             ? `You scored, beat ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next opening sprint.`
           : `You made the kick, beat the ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before kickoff.`)
-    : (isSurfingMode()
+    : (isDodgeballMode()
+      ? `The final throw lands and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
+      : isSurfingMode()
       ? `You land the aerial at ${beatenTeam.name}. Next up: ${nextTeam.name}.`
       : isSkiingMode()
         ? `You stick the final jump at ${beatenTeam.name}. Next up: ${nextTeam.name}.`
@@ -4050,11 +4154,14 @@ function applyGameModeUi() {
   const skiing = isSkiingMode();
   const baseball = isBaseballMode();
   const lacrosse = isLacrosseMode();
+  const dodgeball = isDodgeballMode();
   document.body.dataset.game = mode.kind;
   canvas.setAttribute("aria-label", `${mode.title} game`);
   distanceLabelEl.textContent = mode.distanceLabel;
   downsLabelEl.textContent = mode.chancesLabel;
-  keyboardInstructionsEl.textContent = surfing
+  keyboardInstructionsEl.textContent = dodgeball
+    ? "Use WASD or the arrow keys to cross the gym and dodge incoming throwers."
+    : surfing
     ? "Use WASD or the arrow keys to carve up the wave and avoid rocks and rival surfers."
     : skiing
     ? "Use WASD or the arrow keys to race down the course and avoid gates and rival skiers."
@@ -4071,7 +4178,9 @@ function applyGameModeUi() {
     : soccer
       ? "Use WASD or the arrow keys to dribble up the pitch and dodge pressing defenders."
       : "Use WASD or the arrow keys to move the ball carrier up the field and dodge defenders.";
-  touchInstructionsEl.textContent = surfing
+  touchInstructionsEl.textContent = dodgeball
+    ? "Swipe anywhere on the screen to cross the gym and dodge incoming throwers."
+    : surfing
     ? "Swipe anywhere on the screen to carve up the wave and avoid rocks and rival surfers."
     : skiing
     ? "Swipe anywhere on the screen to race down the course and avoid gates and rival skiers."
@@ -4088,7 +4197,9 @@ function applyGameModeUi() {
     : soccer
       ? "Swipe anywhere on the screen to dribble up the pitch and dodge pressing defenders."
       : "Swipe anywhere on the screen to move the ball carrier up the field and dodge defenders.";
-  progressInstructionsEl.textContent = surfing
+  progressInstructionsEl.textContent = dodgeball
+    ? "Cross 50 feet to reach the attack line, then hit the final opponent. Getting hit costs one player."
+    : surfing
     ? "Ride 50 meters through the break, then land an aerial to win. Wipeouts cost one life."
     : skiing
     ? "Clear 50 gates, then stick the final jump to win. Crashes cost one life."
@@ -4105,20 +4216,22 @@ function applyGameModeUi() {
     : soccer
       ? "Advance 50 meters to reach the penalty area, then score a goal to win the match. Tackles cost one possession."
       : "Reach the end zone at 50 yards to move to the next NFL matchup. Earn first downs after tackles beyond the marker.";
-  kickChallengeKickerEl.textContent = surfing ? "Aerial Challenge" : skiing ? "Final Jump Challenge" : baseball ? "Clutch At-Bat" : basketball ? "Clutch Shot Challenge" : soccer || lacrosse ? "Goal Challenge" : hockey ? "Breakaway Challenge" : waterPolo ? "Power Shot Challenge" : "Field Goal Challenge";
-  kickChallengeTitleEl.textContent = surfing ? "Land the Aerial" : skiing ? "Stick the Landing" : baseball ? "Swing for the Win" : basketball ? "Shot for the Win" : soccer || lacrosse ? "Shot on Goal" : hockey ? "Breakaway Shot" : waterPolo ? "Shot on Goal" : "Field Goal";
+  kickChallengeKickerEl.textContent = dodgeball ? "Knockout Throw" : surfing ? "Aerial Challenge" : skiing ? "Final Jump Challenge" : baseball ? "Clutch At-Bat" : basketball ? "Clutch Shot Challenge" : soccer || lacrosse ? "Goal Challenge" : hockey ? "Breakaway Challenge" : waterPolo ? "Power Shot Challenge" : "Field Goal Challenge";
+  kickChallengeTitleEl.textContent = dodgeball ? "Make the Final Hit" : surfing ? "Land the Aerial" : skiing ? "Stick the Landing" : baseball ? "Swing for the Win" : basketball ? "Shot for the Win" : soccer || lacrosse ? "Shot on Goal" : hockey ? "Breakaway Shot" : waterPolo ? "Shot on Goal" : "Field Goal";
   updateCreatorSliderModeUi();
-  loadCareerTitleEl.textContent = soccer || lacrosse ? "Load National Team" : waterPolo ? "Load Water Polo Club" : surfing || skiing ? "Load Tour" : "Load Franchise";
-  careerHubLabelEl.textContent = soccer || lacrosse ? "National Team Hub" : waterPolo ? "Water Polo Club Hub" : surfing ? "Surf Tour Hub" : skiing ? "Ski Tour Hub" : "Franchise Hub";
-  createCareerTitleEl.textContent = soccer || lacrosse ? "Create National Team" : waterPolo ? "Create Water Polo Club" : surfing ? "Create Surf Team" : skiing ? "Create Ski Team" : "Create Franchise";
+  loadCareerTitleEl.textContent = soccer || lacrosse ? "Load National Team" : dodgeball ? "Load Dodgeball Team" : waterPolo ? "Load Water Polo Club" : surfing || skiing ? "Load Tour" : "Load Franchise";
+  careerHubLabelEl.textContent = soccer || lacrosse ? "National Team Hub" : dodgeball ? "Dodgeball Team Hub" : waterPolo ? "Water Polo Club Hub" : surfing ? "Surf Tour Hub" : skiing ? "Ski Tour Hub" : "Franchise Hub";
+  createCareerTitleEl.textContent = soccer || lacrosse ? "Create National Team" : dodgeball ? "Create Dodgeball Team" : waterPolo ? "Create Water Polo Club" : surfing ? "Create Surf Team" : skiing ? "Create Ski Team" : "Create Franchise";
   createFranchiseButton.textContent = createCareerTitleEl.textContent;
-  playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : hockey ? "Winger Name" : waterPolo ? "Driver Name" : surfing ? "Surfer Name" : skiing ? "Skier Name" : baseball ? "Baserunner Name" : lacrosse ? "Attacker Name" : "Runner Name";
-  creatorCutLabelEl.textContent = basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse ? "Agility" : baseball ? "Baserunning" : "Cut";
+  playerNameLabelEl.textContent = basketball ? "Guard Name" : soccer ? "Forward Name" : hockey ? "Winger Name" : waterPolo ? "Driver Name" : surfing ? "Surfer Name" : skiing ? "Skier Name" : baseball ? "Baserunner Name" : lacrosse ? "Attacker Name" : dodgeball ? "Thrower Name" : "Runner Name";
+  creatorCutLabelEl.textContent = basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut";
 }
 
 function updateCreatorSliderModeUi() {
   const staticMode = creatorStaticKickingInputEl.checked;
-  const challengeName = isBasketballMode()
+  const challengeName = isDodgeballMode()
+    ? "Throw"
+    : isBasketballMode()
     ? "Shot"
     : isSoccerMode() || isLacrosseMode()
       ? "Goal"
@@ -4160,6 +4273,7 @@ function updateGameLibrarySelection() {
     skiing: slopeSprintButtonEl,
     baseball: diamondDashButtonEl,
     lacrosse: crosseClashButtonEl,
+    dodgeball: dodgeballDashButtonEl,
   };
 
   Object.entries(gameButtons).forEach(([gameId, button]) => {
@@ -4231,6 +4345,10 @@ function openCrosseClash() {
   selectArcadeGame("lacrosse");
 }
 
+function openDodgeballDash() {
+  selectArcadeGame("dodgeball");
+}
+
 function openGameLibrary() {
   if (activeSlotIndex !== null) {
     saveFranchise();
@@ -4268,6 +4386,7 @@ function updateStartOverlay() {
   const skiing = isSkiingMode();
   const baseball = isBaseballMode();
   const lacrosse = isLacrosseMode();
+  const dodgeball = isDodgeballMode();
   const setupReady = franchise.setupComplete;
   loadSavePanelEl.hidden = true;
   homepageHeroEl.hidden = !setupReady;
@@ -4293,8 +4412,10 @@ function updateStartOverlay() {
   renderOffseasonPanel();
 
   if (!franchise.setupComplete) {
-    overlayTitleEl.textContent = soccer || lacrosse ? "Create National Team" : waterPolo ? "Create Water Polo Club" : surfing ? "Create Surf Team" : skiing ? "Create Ski Team" : "Create Franchise";
-    overlayTextEl.textContent = surfing
+    overlayTitleEl.textContent = soccer || lacrosse ? "Create National Team" : dodgeball ? "Create Dodgeball Team" : waterPolo ? "Create Water Polo Club" : surfing ? "Create Surf Team" : skiing ? "Create Ski Team" : "Create Franchise";
+    overlayTextEl.textContent = dodgeball
+      ? "Name your team, design your thrower, and set your uniform colors before the opening throw."
+      : surfing
       ? "Name your team, design your surfer, and set your colors before the first heat."
       : skiing
       ? "Name your team, design your skier, and set your suit colors before the first run."
@@ -4324,12 +4445,14 @@ function updateStartOverlay() {
   } else if (seasonCheckpointLevel > currentSeasonStartLevel()) {
     overlayTitleEl.textContent = "Resume Season";
     overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
-    startButton.textContent = surfing ? "Resume Heat" : skiing ? "Resume Run" : basketball || hockey || waterPolo || baseball || lacrosse ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
+    startButton.textContent = surfing ? "Resume Heat" : skiing ? "Resume Run" : basketball || hockey || waterPolo || baseball || lacrosse || dodgeball ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
     overlayTitleEl.textContent = franchise.year > 1
-      ? `Season ${franchise.year} ${surfing ? "First Heat" : skiing ? "First Run" : baseball ? "First Pitch" : lacrosse ? "Opening Faceoff" : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff"}`
-      : surfing ? "First Heat" : skiing ? "First Run" : baseball ? "First Pitch" : lacrosse ? "Opening Faceoff" : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff";
-    overlayTextEl.textContent = surfing
+      ? `Season ${franchise.year} ${dodgeball ? "Opening Throw" : surfing ? "First Heat" : skiing ? "First Run" : baseball ? "First Pitch" : lacrosse ? "Opening Faceoff" : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff"}`
+      : dodgeball ? "Opening Throw" : surfing ? "First Heat" : skiing ? "First Run" : baseball ? "First Pitch" : lacrosse ? "Opening Faceoff" : basketball ? "Tipoff" : soccer ? "Opening Match" : hockey ? "Puck Drop" : waterPolo ? "Opening Sprint" : "Kickoff";
+    overlayTextEl.textContent = dodgeball
+      ? "Set your thrower, build fan support, and begin your first international season."
+      : surfing
       ? "Set your surfer, build fan support, and begin your first world tour."
       : skiing
       ? "Set your skier, build fan support, and begin your first mountain tour."
@@ -4348,7 +4471,7 @@ function updateStartOverlay() {
         : "Set your runner, build fan support, and start your first season.";
     startButton.textContent = franchise.year > 1
       ? `Start Season ${franchise.year}`
-      : surfing ? "Start Heat" : skiing ? "Start Run" : basketball || hockey || waterPolo || baseball || lacrosse ? "Start Game" : soccer ? "Start Match" : "Start Run";
+      : surfing ? "Start Heat" : skiing ? "Start Run" : basketball || hockey || waterPolo || baseball || lacrosse || dodgeball ? "Start Game" : soccer ? "Start Match" : "Start Run";
   }
 }
 
@@ -4442,6 +4565,8 @@ function renderTeamOperations() {
   scoutingOperationEl.hidden = true;
   venueQualityLabelEl.textContent = isWaterPoloMode()
     ? "Aquatic Center Quality"
+    : isDodgeballMode()
+      ? "Gym Quality"
     : isSurfingMode()
       ? "Beach Base Quality"
       : isSkiingMode()
@@ -4515,14 +4640,14 @@ function renderFranchiseDashboard() {
 }
 
 function runnerFeatureSummary(runner) {
-  const role = isSurfingMode() ? "surfer" : isSkiingMode() ? "skier" : isBaseballMode() ? "baserunner" : isLacrosseMode() ? "attacker" : isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : isWaterPoloMode() ? "driver" : "back";
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
+  const role = isDodgeballMode() ? "thrower" : isSurfingMode() ? "surfer" : isSkiingMode() ? "skier" : isBaseballMode() ? "baserunner" : isLacrosseMode() ? "attacker" : isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : isWaterPoloMode() ? "driver" : "back";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
   const health = runner.injuredGames > 0 ? ` Injured for ${runner.injuredGames} more game${runner.injuredGames === 1 ? "" : "s"}.` : " Healthy and ready.";
   return `${runner.name} is your active ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.${health}`;
 }
 
 function upgradeDisplayCopy(upgrade) {
-  if (!isBasketballMode() && !isHockeyMode() && !isWaterPoloMode() && !isSurfingMode() && !isSkiingMode() && !isBaseballMode() && !isLacrosseMode()) {
+  if (!isBasketballMode() && !isHockeyMode() && !isWaterPoloMode() && !isSurfingMode() && !isSkiingMode() && !isBaseballMode() && !isLacrosseMode() && !isDodgeballMode()) {
     return { title: upgrade.title, description: upgrade.description };
   }
 
@@ -4569,6 +4694,18 @@ function upgradeDisplayCopy(upgrade) {
     return {
       title: titles[upgrade.key] || upgrade.title,
       description: upgrade.description.replace(/cut/gi, "baserunning"),
+    };
+  }
+
+  if (isDodgeballMode()) {
+    const titles = {
+      speed: "Dodge Speed Boost",
+      cut: "Agility Boost",
+      balance: "Catching Drill",
+    };
+    return {
+      title: titles[upgrade.key] || upgrade.title,
+      description: upgrade.description.replace(/cut/gi, "agility"),
     };
   }
 
@@ -4677,7 +4814,7 @@ function drawStadiumBackdrop() {
     drawMountainBackdrop();
     return;
   }
-  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode()) {
+  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode() || isDodgeballMode()) {
     drawBasketballArenaBackdrop();
     return;
   }
@@ -4847,7 +4984,7 @@ function drawSidelineAprons() {
 }
 
 function drawStadiumOverlay() {
-  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode()) {
+  if (isBasketballMode() || isHockeyMode() || isWaterPoloMode() || isDodgeballMode()) {
     drawBasketballArenaOverlay();
     return;
   }
@@ -4954,6 +5091,8 @@ function drawTeamVenueDetails(team) {
 
   if (isBasketballMode()) {
     drawBasketballCourtOverlay(team);
+  } else if (isDodgeballMode()) {
+    drawDodgeballCourtOverlay(team);
   } else if (isSurfingMode()) {
     drawSurfLaunchOverlay(team);
   } else if (isSkiingMode()) {
@@ -4970,6 +5109,26 @@ function drawTeamVenueDetails(team) {
     drawWaterPoloGoalOverlay(team);
   } else {
     drawFootballEndzoneOverlay(team);
+  }
+}
+
+function drawDodgeballCourtOverlay(team) {
+  const { top, bottom } = endAreaBounds();
+  if (bottom < 0 || top > CONFIG.height) return;
+  const centerX = CONFIG.width / 2;
+  ctx.strokeStyle = PALETTE.line;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(64, top + 6, CONFIG.width - 128, Math.max(20, bottom - top - 12));
+  ctx.beginPath();
+  ctx.arc(centerX, (top + bottom) / 2, 48, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = team.accent;
+  ctx.fillRect(70, top + 14, CONFIG.width - 140, 5);
+  ctx.fillStyle = "#d94c45";
+  for (let x = centerX - 54; x <= centerX + 54; x += 27) {
+    ctx.beginPath();
+    ctx.arc(x, (top + bottom) / 2, 7, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
@@ -5290,6 +5449,10 @@ function drawChainLine(worldRow, color) {
 }
 
 function drawLaneBase(y, row, team, lane) {
+  if (isDodgeballMode()) {
+    drawDodgeballLaneBase(y, row, team);
+    return;
+  }
   if (isSurfingMode()) {
     drawSurfingLaneBase(y, row, team);
     return;
@@ -5376,6 +5539,28 @@ function drawLaneBase(y, row, team, lane) {
   for (let x = fieldLeft + 14; x < fieldRight - 14; x += 30) {
     ctx.fillStyle = PALETTE.turfShadow;
     ctx.fillRect(x, y + CONFIG.laneHeight - 7, 10, 3);
+  }
+}
+
+function drawDodgeballLaneBase(y, row, team) {
+  const left = 38;
+  const right = CONFIG.width - 38;
+  const width = right - left;
+  ctx.fillStyle = "#5d3825";
+  ctx.fillRect(left, y, 8, CONFIG.laneHeight);
+  ctx.fillRect(right - 8, y, 8, CONFIG.laneHeight);
+  ctx.fillStyle = row % 2 === 0 ? team.fieldTint : team.fieldStripe;
+  ctx.fillRect(left + 8, y, width - 16, CONFIG.laneHeight);
+  ctx.fillStyle = "rgba(78,43,24,0.18)";
+  for (let x = left + 14 + (row % 2) * 18; x < right - 14; x += 38) {
+    ctx.fillRect(x, y, 2, CONFIG.laneHeight);
+  }
+  ctx.fillStyle = PALETTE.line;
+  ctx.fillRect(left + 10, y, 4, CONFIG.laneHeight);
+  ctx.fillRect(right - 14, y, 4, CONFIG.laneHeight);
+  if (row % 5 === 0) {
+    ctx.fillStyle = row % 10 === 0 ? "#d94c45" : "#2767a4";
+    ctx.fillRect(left + 14, y + 1, width - 28, 4);
   }
 }
 
@@ -5637,7 +5822,9 @@ function drawSidelineHazard(y, lane) {
     const x = col * columnWidth();
     const width = columnWidth();
 
-    if (isSurfingMode()) {
+    if (isDodgeballMode()) {
+      drawDodgeballOutOfBoundsMarker(x, y, width, lane.index);
+    } else if (isSurfingMode()) {
       drawSurfingOutOfBoundsMarker(x, y, width, lane.index);
     } else if (isSkiingMode()) {
       drawSkiingOutOfBoundsMarker(x, y, width, lane.index);
@@ -5656,6 +5843,22 @@ function drawSidelineHazard(y, lane) {
     } else {
       drawFootballOutOfBoundsMarker(x, y, width, lane.index);
     }
+  }
+}
+
+function drawDodgeballOutOfBoundsMarker(x, y, width, row) {
+  ctx.fillStyle = row % 2 === 0 ? "#26384a" : "#1d2c3c";
+  ctx.fillRect(x, y, width, CONFIG.laneHeight);
+  ctx.fillStyle = "#aeb8bb";
+  ctx.fillRect(x, y + 3, width, 4);
+  ctx.fillRect(x, y + 51, width, 4);
+  for (let markerX = x + 4; markerX < x + width; markerX += 18) {
+    ctx.fillStyle = "#111016";
+    ctx.fillRect(markerX, y + 13, 14, 34);
+    ctx.fillStyle = "#d94c45";
+    ctx.fillRect(markerX + 3, y + 16, 8, 8);
+    ctx.fillStyle = "#f0c84f";
+    ctx.fillRect(markerX + 3, y + 29, 8, 8);
   }
 }
 
@@ -5860,7 +6063,7 @@ function drawDefenderLane(y, lane, team, time) {
 }
 
 function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
-  if (isSurfingMode() || isSkiingMode() || isBaseballMode() || isLacrosseMode()) {
+  if (isSurfingMode() || isSkiingMode() || isBaseballMode() || isLacrosseMode() || isDodgeballMode()) {
     drawNewSportAthleteSprite(x, y, team, facing, Math.floor(time / 120 + x / 28) % 2, {
       variant,
       number: [2, 4, 6, 8][variant % 4],
@@ -5936,6 +6139,31 @@ function drawNewSportAthleteSprite(x, y, team, facing, frame, options = {}) {
   const accent = options.flash ? PALETTE.cream : (team.accent || PALETTE.cream);
   const number = options.number ?? appearance.number ?? 7;
   const bob = frame;
+
+  if (isDodgeballMode()) {
+    const hair = options.opponent
+      ? ["#111016", "#5a321d", "#d2a24a", "#302218"][variant % 4]
+      : appearance.hair;
+    const shorts = variant % 2 === 0 ? secondary : accent;
+    pixelRect(x + 4 * s + shift, y + bob * s + drop, 9, 5, PALETTE.outline, s);
+    pixelRect(x + 5 * s + shift, y + bob * s + drop, 7, 2, hair, s);
+    pixelRect(x + 5 * s + shift, y + (2 + bob) * s + drop, 7, 4, skin, s);
+    pixelRect(x + 4 * s + shift, y + (2 + bob) * s + drop, 9, 1, accent, s);
+    pixelRect(x + 2 * s + shift, y + (6 + bob) * s + drop, 13, 8, PALETTE.outline, s);
+    pixelRect(x + 3 * s + shift, y + (6 + bob) * s + drop, 11, 7, primary, s);
+    pixelRect(x + 3 * s + shift, y + (6 + bob) * s + drop, 11, 2, accent, s);
+    pixelRect(x + 3 * s + shift, y + (13 + bob) * s + drop, 11, 4, shorts, s);
+    pixelRect(x + 4 * s + shift, y + (17 + bob) * s + drop, 3, 4, skin, s);
+    pixelRect(x + 10 * s + shift, y + (17 + bob) * s + drop, 3, 4, skin, s);
+    pixelRect(x + 3 * s + shift, y + (21 + bob) * s + drop, 5, 1, secondary, s);
+    pixelRect(x + 10 * s + shift, y + (21 + bob) * s + drop, 5, 1, secondary, s);
+    const ballX = direction > 0 ? 15 : -4;
+    pixelRect(x + ballX * s + shift, y + (7 + bob) * s + drop, 7, 7, PALETTE.outline, s);
+    pixelRect(x + (ballX + 1) * s + shift, y + (8 + bob) * s + drop, 5, 5, "#d94c45", s);
+    pixelRect(x + (direction > 0 ? 13 : 0) * s + shift, y + (8 + bob) * s + drop, 4, 3, skin, s);
+    drawSpriteNumber(number, x + 8 * s + shift, y + (13 + bob) * s + drop, secondary);
+    return;
+  }
 
   if (isSurfingMode()) {
     pixelRect(x - s + shift, y + (17 + bob) * s + drop, 19, 3, PALETTE.outline, s);
@@ -6153,7 +6381,7 @@ function drawPlayer(time) {
 }
 
 function drawPlayerSprite(x, y, facing, flash, frame) {
-  if (isSurfingMode() || isSkiingMode() || isBaseballMode() || isLacrosseMode()) {
+  if (isSurfingMode() || isSkiingMode() || isBaseballMode() || isLacrosseMode() || isDodgeballMode()) {
     const appearance = normalizePlayerAppearance(currentRunner().appearance);
     drawNewSportAthleteSprite(x, y, currentHomeTeam(), facing, frame, {
       appearance,
@@ -6436,6 +6664,8 @@ function drawScoreboardBar() {
   drawLabel("VS", 259, barY + 34, PALETTE.cream, 12);
   if (isBasketballMode()) {
     drawLabel("Q4", 260, barY + 17, "#65b7e8", 8);
+  } else if (isDodgeballMode()) {
+    drawLabel("SET3", 254, barY + 17, "#e65d45", 8);
   } else if (isSurfingMode()) {
     drawLabel("HEAT", 254, barY + 17, "#61d4df", 8);
   } else if (isSkiingMode()) {
@@ -6581,7 +6811,7 @@ function hideOverlay() {
 
 function renderRunnerCards() {
   const runner = currentRunner();
-  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
+  const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
   const roster = franchise.rosterUnlocked ? franchise.roster : [runner];
   const healthyCount = roster.filter((candidate) => candidate.injuredGames <= 0).length;
   runnerSelectTitleEl.textContent = franchise.rosterUnlocked ? "Runner Roster" : "Featured Player";
@@ -6738,6 +6968,7 @@ waveRiderButtonEl.addEventListener("click", openWaveRider);
 slopeSprintButtonEl.addEventListener("click", openSlopeSprint);
 diamondDashButtonEl.addEventListener("click", openDiamondDash);
 crosseClashButtonEl.addEventListener("click", openCrosseClash);
+dodgeballDashButtonEl.addEventListener("click", openDodgeballDash);
 gameLibraryButtonEl.addEventListener("click", openGameLibrary);
 fieldGoalActionButtonEl.addEventListener("click", handleFieldGoalAction);
 fieldGoalStaticAimInputEl.addEventListener("input", chooseStaticFieldGoalAim);
