@@ -160,7 +160,9 @@ assert.match(styles, /\.surfing-sport-badge \.game-icon-speed,[\s\S]*?\.dodgebal
 assert.match(styles, /\.mini-surf-fin,\s*\.mini-mountain,\s*\.mini-baseball,\s*\.mini-lacrosse-stick,\s*\.mini-dodgeball\s*\{[^}]*position:\s*absolute[^}]*translate:\s*-50% -50%/s);
 assert.match(styles, /\.mini-surf-fin\s*\{[^}]*width:\s*56px[^}]*height:\s*22px[^}]*rotate:\s*-14deg/s);
 assert.match(styles, /\.mini-surf-fin::before/);
+assert.match(styles, /\.mini-mountain\s*\{[^}]*width:\s*50px[^}]*height:\s*44px/s);
 assert.match(styles, /\.mini-mountain::before/);
+assert.match(styles, /\.mini-mountain::after\s*\{[^}]*background:\s*#2b66b1[^}]*rotate:\s*18deg/s);
 assert.match(styles, /\.mini-baseball::before,\s*\.mini-baseball::after/);
 assert.match(styles, /\.mini-lacrosse-stick::after/);
 assert.match(styles, /\.mini-dodgeball::before/);
