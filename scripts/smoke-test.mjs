@@ -158,6 +158,7 @@ assert.match(styles, /\.lacrosse-game-card\s*\{\s*--card-accent:\s*#55b982/);
 assert.match(styles, /\.dodgeball-game-card\s*\{\s*--card-accent:\s*#e65d45/);
 assert.match(styles, /\.surfing-sport-badge \.game-icon-speed,[\s\S]*?\.dodgeball-sport-badge \.game-icon-speed\s*\{\s*display:\s*none/);
 assert.match(styles, /\.mini-surf-fin,\s*\.mini-mountain,\s*\.mini-baseball,\s*\.mini-lacrosse-stick,\s*\.mini-dodgeball\s*\{[^}]*position:\s*absolute[^}]*translate:\s*-50% -50%/s);
+assert.match(styles, /\.mini-surf-fin\s*\{[^}]*width:\s*56px[^}]*height:\s*22px[^}]*rotate:\s*-14deg/s);
 assert.match(styles, /\.mini-surf-fin::before/);
 assert.match(styles, /\.mini-mountain::before/);
 assert.match(styles, /\.mini-baseball::before,\s*\.mini-baseball::after/);

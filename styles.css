@@ -986,35 +986,37 @@ body.game-library-open .play-panel {
 }
 
 .mini-surf-fin {
-  width: 54px;
-  height: 36px;
+  width: 56px;
+  height: 22px;
+  background: #f2c84b;
+  border: 4px solid #111016;
+  border-radius: 50% 46% 46% 50%;
+  rotate: -14deg;
+  box-shadow: inset -7px -3px 0 #d99b31;
 }
 
 .mini-surf-fin::before {
   content: "";
   position: absolute;
-  left: 5px;
-  bottom: 3px;
-  width: 44px;
-  height: 12px;
-  background: #f2c84b;
-  border: 3px solid #111016;
-  border-radius: 50%;
-  rotate: -12deg;
+  left: 19px;
+  top: 3px;
+  width: 5px;
+  height: 8px;
+  background: #f6f3de;
+  box-shadow:
+    8px 0 0 #146684,
+    16px 0 0 #f6f3de;
 }
 
 .mini-surf-fin::after {
   content: "";
   position: absolute;
-  left: 1px;
-  top: 0;
-  width: 34px;
-  height: 24px;
-  border: 5px solid #dff7f2;
-  border-left-color: transparent;
-  border-bottom-color: transparent;
-  border-radius: 50%;
-  rotate: -14deg;
+  right: 8px;
+  bottom: -9px;
+  width: 10px;
+  height: 10px;
+  background: #111016;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 .mini-mountain {
