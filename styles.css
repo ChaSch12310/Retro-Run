@@ -3972,6 +3972,27 @@ button:active {
     filter: drop-shadow(4px 4px 0 rgba(6, 13, 20, 0.48));
   }
 
+  .hockey-sport-badge .mini-hockey-stick {
+    left: 23px;
+    top: 8px;
+    width: 6px;
+    height: 35px;
+  }
+
+  .hockey-sport-badge .mini-hockey-stick::after {
+    bottom: -3px;
+    width: 16px;
+    height: 6px;
+  }
+
+  .hockey-sport-badge .mini-hockey-puck {
+    left: 61%;
+    top: 65%;
+    width: 18px;
+    height: 7px;
+    border-width: 2px;
+  }
+
   .game-icon-speed {
     left: 9px;
     top: 20px;
@@ -4112,6 +4133,27 @@ button:active {
   .homepage-actions {
     grid-template-columns: 1fr;
   }
+}
+
+body[data-device="mobile"] .hockey-sport-badge .mini-hockey-stick {
+  left: 23px;
+  top: 8px;
+  width: 6px;
+  height: 35px;
+}
+
+body[data-device="mobile"] .hockey-sport-badge .mini-hockey-stick::after {
+  bottom: -3px;
+  width: 16px;
+  height: 6px;
+}
+
+body[data-device="mobile"] .hockey-sport-badge .mini-hockey-puck {
+  left: 61%;
+  top: 65%;
+  width: 18px;
+  height: 7px;
+  border-width: 2px;
 }
 
 body[data-device="tablet"] .game-shell {

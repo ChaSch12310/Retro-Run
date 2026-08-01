@@ -166,6 +166,8 @@ assert.match(styles, /\.mini-mountain\s*\{[^}]*width:\s*50px[^}]*height:\s*44px/
 assert.match(styles, /\.mini-mountain::before/);
 assert.match(styles, /\.mini-mountain::after\s*\{[^}]*background:\s*#2b66b1[^}]*rotate:\s*18deg/s);
 assert.match(styles, /\.mini-baseball::before,\s*\.mini-baseball::after/);
+assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.hockey-sport-badge \.mini-hockey-stick\s*\{[^}]*height:\s*35px/);
+assert.match(styles, /body\[data-device="mobile"\] \.hockey-sport-badge \.mini-hockey-stick\s*\{[^}]*height:\s*35px/);
 assert.match(styles, /\.mini-lacrosse-stick::after/);
 assert.match(styles, /\.mini-dodgeball::before/);
 assert.match(styles, /\.offseason-panel\s*\{/);
@@ -397,6 +399,19 @@ globalThis.__retroRunTest = {
   },
   advanceFieldGoalFlight(time) { updateFieldGoalFlight(time); },
   get fieldGoalKickMade() { return fieldGoalKickMade; },
+  get fieldGoalPurpose() { return fieldGoalPurpose; },
+  get displayedChanceCount() { return displayedChanceCount(); },
+  get swipeThreshold() { return SWIPE_THRESHOLD; },
+  get movementSpeedMultiplier() { return movementSpeedMultiplier(); },
+  get playerTargetRow() { return player.targetRow; },
+  setDownsLeft(value) {
+    player.downsLeft = value;
+    updateHud();
+  },
+  finishCurrentRunForTest() {
+    player.furthestRow = CONFIG.progressMilestone + 2;
+    updateDistance();
+  },
   get gameState() { return gameState; },
   get seasonYear() { return franchise.year; },
   get seasonWeek() { return currentSeasonWeek(); },
@@ -493,6 +508,12 @@ vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
 assert.equal(game.alternateUniformCount, 99);
+assert.equal(game.swipeThreshold, 14);
+assert.equal(game.movementSpeedMultiplier, 1);
+body.dataset.device = "mobile";
+assert.equal(game.movementSpeedMultiplier, 1.4);
+body.dataset.device = "desktop";
+assert.ok(windowListeners.has("pointermove"));
 const brazilClashUniform = game.uniformForTeam("Brazil", {
   primary: "#ffdf00",
   secondary: "#002776",
@@ -681,6 +702,24 @@ assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
 game.startLevel();
 assert.equal(body.classList.contains("menu-scroll-enabled"), false);
+body.dataset.device = "mobile";
+const touchStartRow = game.playerTargetRow;
+let touchMovePrevented = false;
+windowListeners.get("pointerdown")({
+  pointerId: 7,
+  clientX: 120,
+  clientY: 140,
+  preventDefault() {},
+});
+windowListeners.get("pointermove")({
+  pointerId: 7,
+  clientX: 120,
+  clientY: 126,
+  preventDefault() { touchMovePrevented = true; },
+});
+assert.equal(touchMovePrevented, true);
+assert.equal(game.playerTargetRow, touchStartRow + 1);
+body.dataset.device = "laptop";
 game.setChainRows(20, 23);
 game.setCameraRow(20);
 drawnFillColors.length = 0;
@@ -1078,7 +1117,8 @@ assert.equal(elements.get("diamondDashButton").classList.contains("selected"), t
 assert.equal(elements.get("distanceLabel").textContent, "Feet");
 assert.equal(elements.get("downsLabel").textContent, "Outs Left");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Swing Sliders");
-assert.match(game.tutorial[0].items[0], /50 feet/);
+assert.equal(game.tutorial[0].title, "Hit, Then Run");
+assert.match(game.tutorial[0].items[1], /50 feet/);
 game.selectFranchiseSlot(0);
 elements.get("teamNameInput").value = "LA Dodgers";
 elements.get("runnerNameInput").value = "J. Slugger";
@@ -1096,13 +1136,23 @@ assert.equal(drawnFillColors.includes("#f0bf43"), true);
 assert.equal(drawnLabels.some((label) => label.text === "24"), true);
 drawnFillColors.length = 0;
 game.startLevel();
+assert.equal(game.gameState, "fieldGoal");
+assert.equal(game.fieldGoalPurpose, "opening");
+assert.equal(elements.get("kickChallengeTitle").textContent, "Get a Hit to Start");
 game.render(1000);
 assert.equal(drawnFillColors.includes("#4b8a4e"), true);
-game.startFieldGoal();
-assert.equal(elements.get("kickChallengeTitle").textContent, "Swing for the Win");
 assert.equal(elements.get("fieldGoalBall").style.scale, "0.68");
 game.launchTestShot(12, 70);
 assert.equal(game.fieldGoalKickMade, true);
+game.advanceFieldGoalFlight(2000);
+assert.equal(elements.get("fieldGoalStatus").textContent, "Base Hit!");
+game.advanceFieldGoalFlight(3000);
+assert.equal(game.gameState, "playing");
+assert.equal(elements.get("fieldGoalPanel").hidden, true);
+game.finishCurrentRunForTest();
+assert.equal(game.gameState, "levelComplete");
+assert.equal(elements.get("overlayTitle").textContent, "Run Scored!");
+assert.equal(game.pendingUpgrade, true);
 
 elements.get("arcadeHomeButton").click();
 game.openCrosseClash();
@@ -1180,6 +1230,7 @@ assert.equal(elements.get("fieldGoalBall").style.scale, "0.74");
 game.launchTestShot(15, 70);
 assert.equal(game.fieldGoalKickMade, true);
 assert.equal(elements.get("soccerKeeper").classList.contains("diving"), true);
+assert.equal(elements.get("soccerKeeper").style["--keeper-dive-x"], "82px");
 game.advanceFieldGoalFlight(2000);
 assert.equal(elements.get("fieldGoalScene").classList.contains("shot-made"), true);
 game.advanceFieldGoalFlight(3000);
@@ -1199,6 +1250,7 @@ assert.equal(elements.get("gridironDashButton").classList.contains("selected"), 
 assert.equal(elements.get("hoopHustleButton").classList.contains("selected"), false);
 assert.equal(body.dataset.game, "football");
 assert.equal(elements.get("distanceLabel").textContent, "Yards");
+assert.equal(elements.get("downsLabel").textContent, "Down");
 assert.equal(elements.get("creatorSliderModeLabel").textContent, "Static Field-Goal Sliders");
 assert.equal(game.franchiseSlots[0].franchise.team.name, "Test Falcons");
 assert.equal(game.franchiseSlots[0].seasonCheckpointLevel, 21);
@@ -1215,6 +1267,14 @@ game.createFranchiseFromForm();
 assert.notEqual(game.currentTeamName, "49ers");
 assert.equal(game.currentSeasonOpponentNames.includes("49ers"), false);
 game.startLevel();
+assert.equal(game.displayedChanceCount, 1);
+assert.equal(elements.get("downsValue").textContent, 1);
+game.setDownsLeft(3);
+assert.equal(game.displayedChanceCount, 2);
+assert.equal(elements.get("downsValue").textContent, 2);
+game.setDownsLeft(1);
+assert.equal(game.displayedChanceCount, 4);
+assert.equal(elements.get("downsValue").textContent, 4);
 game.setChainRows(20, 23);
 game.setCameraRow(20);
 drawnFillColors.length = 0;

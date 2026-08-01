@@ -860,7 +860,7 @@ const GAME_MODES = {
     homeTeam: HOME_TEAM,
     slotsKey: "gridiron-dash-franchise-slots",
     distanceLabel: "Yards",
-    chancesLabel: "Downs Left",
+    chancesLabel: "Down",
     distanceAbbr: "YDS",
     chanceAbbr: "DOWN",
   },
@@ -1085,6 +1085,7 @@ let gameLibraryOpen = true;
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
 let fieldGoalPhaseStarted = 0;
+let fieldGoalPurpose = "finish";
 let fieldGoalPower = 25;
 let fieldGoalAim = 0;
 let fieldGoalKickMade = false;
@@ -1092,7 +1093,8 @@ let fieldGoalMode = "timing";
 let fieldGoalStaticAimChosen = false;
 let fieldGoalStaticPowerChosen = false;
 let tutorialIndex = 0;
-const SWIPE_THRESHOLD = 28;
+const SWIPE_THRESHOLD = 14;
+const TOUCH_MOVEMENT_MULTIPLIER = 1.4;
 
 function currentGameMode() {
   return GAME_MODES[activeGameId] || GAME_MODES.gridiron;
@@ -1122,6 +1124,10 @@ function currentOpponentTeams() {
 
 function isSoccerMode() {
   return currentGameMode().kind === "soccer";
+}
+
+function isFootballMode() {
+  return currentGameMode().kind === "football";
 }
 
 function isBasketballMode() {
@@ -1272,6 +1278,10 @@ function usesTouchControls() {
   return document.body.dataset.device === "tablet" || document.body.dataset.device === "mobile";
 }
 
+function movementSpeedMultiplier() {
+  return usesTouchControls() ? TOUCH_MOVEMENT_MULTIPLIER : 1;
+}
+
 function creatorAccessUsesRunnerPower() {
   return document.body.dataset.device === "mobile";
 }
@@ -1398,6 +1408,9 @@ function startLevel() {
   gameState = "playing";
   hideOverlay();
   updateHud();
+  if (isBaseballMode()) {
+    startFieldGoal("opening");
+  }
 }
 
 function textSeed(value) {
@@ -2857,7 +2870,7 @@ function handleMovement(dt) {
   const runner = currentRunner();
   const dx = player.targetX - player.worldX;
   const dy = player.targetRow - player.worldRow;
-  const step = (CONFIG.playerSpeed + runner.speedBonus) * dt;
+  const step = (CONFIG.playerSpeed + runner.speedBonus) * movementSpeedMultiplier() * dt;
   const rowStep = step / CONFIG.laneHeight;
 
   if (Math.abs(dx) > 0.5) {
@@ -2923,7 +2936,11 @@ function updateDistance() {
   }
 
   if (player.distance >= CONFIG.progressMilestone) {
-    startFieldGoal();
+    if (isBaseballMode()) {
+      completeLevel();
+    } else {
+      startFieldGoal();
+    }
   }
 }
 
@@ -2972,7 +2989,7 @@ function kickChallengeCopy() {
       aimStatus: "Stop the aim needle over the strike zone.",
       launchStatus: "Ball is hit!",
       launchingButton: "Swinging...",
-      madeStatus: "Walk-Off Hit!",
+      madeStatus: fieldGoalPurpose === "opening" ? "Base Hit!" : "Walk-Off Hit!",
       missedStatus: "Strikeout!",
     };
   }
@@ -3048,7 +3065,8 @@ function kickChallengeCopy() {
   };
 }
 
-function startFieldGoal() {
+function startFieldGoal(purpose = "finish") {
+  fieldGoalPurpose = purpose;
   const copy = kickChallengeCopy();
   gameState = "fieldGoal";
   fieldGoalPhaseStarted = performance.now();
@@ -3073,7 +3091,7 @@ function startFieldGoal() {
     : isSkiingMode()
       ? "Final Jump Challenge"
       : isBaseballMode()
-        ? "Clutch At-Bat"
+        ? fieldGoalPurpose === "opening" ? "Opening At-Bat" : "Clutch At-Bat"
         : isLacrosseMode()
           ? "Goal Challenge"
           : isBasketballMode()
@@ -3092,7 +3110,7 @@ function startFieldGoal() {
     : isSkiingMode()
       ? "Stick the Landing"
       : isBaseballMode()
-        ? "Swing for the Win"
+        ? fieldGoalPurpose === "opening" ? "Get a Hit to Start" : "Swing for the Win"
         : isLacrosseMode()
           ? "Shot on Goal"
           : isBasketballMode()
@@ -3248,8 +3266,12 @@ function startSoccerKeeperDive() {
   }
 
   const aimDeadZone = 6;
-  const diveRight = fieldGoalAim < -aimDeadZone ||
-    (Math.abs(fieldGoalAim) <= aimDeadZone && Math.round(fieldGoalPower) % 2 === 0);
+  const centeredDiveRight = Math.round(fieldGoalPower) % 2 === 0;
+  const diveRight = isDodgeballMode()
+    ? fieldGoalAim > aimDeadZone ||
+      (Math.abs(fieldGoalAim) <= aimDeadZone && centeredDiveRight)
+    : fieldGoalAim < -aimDeadZone ||
+      (Math.abs(fieldGoalAim) <= aimDeadZone && centeredDiveRight);
   soccerKeeperEl.style.setProperty("--keeper-dive-x", diveRight ? "82px" : "-82px");
   soccerKeeperEl.style.setProperty("--keeper-dive-mid-x", diveRight ? "20px" : "-20px");
   soccerKeeperEl.style.setProperty("--keeper-dive-y", fieldGoalPower >= 70 ? "-18px" : "-8px");
@@ -3274,7 +3296,14 @@ function updateFieldGoalFlight(time) {
     if (time - fieldGoalPhaseStarted >= FIELD_GOAL_RESULT_MS) {
       fieldGoalPanelEl.hidden = true;
       if (fieldGoalKickMade) {
-        completeLevel();
+        if (isBaseballMode() && fieldGoalPurpose === "opening") {
+          fieldGoalDeadline = 0;
+          fieldGoalPhase = "idle";
+          gameState = "playing";
+          updateHud();
+        } else {
+          completeLevel();
+        }
       } else {
         const attemptName = usesShotChallenge() ? "shot" : "kick";
         const missReason = Math.abs(fieldGoalAim) > FIELD_GOAL_AIM_LIMIT
@@ -3438,12 +3467,12 @@ function tutorialSlides() {
     }
     : baseball
     ? {
-      badge: "Run",
-      title: "Charge the Diamond",
+      badge: "Hit",
+      title: "Hit, Then Run",
       items: [
-        "Advance 50 feet through the defense to unlock the deciding at-bat.",
+        "Win the opening at-bat before your baserunner can leave the batter's box.",
+        "After the hit lands, advance 50 feet through the defense to reach home.",
         "Dodge moving fielders and foul-territory hazard tiles.",
-        "The camera scrolls forward as your baserunner advances.",
       ],
     }
     : lacrosse
@@ -3545,7 +3574,7 @@ function tutorialSlides() {
     ? {
       badge: "Outs",
       title: "Protect Four Outs",
-      text: "You have four outs to reach the deciding at-bat.",
+      text: "After your opening hit, you have four outs to reach home.",
       items: [
         "A tag costs one out and returns you to the nearest row that never contains fielders.",
         "The blue line marks the checkpoint start; your next target is tracked in the sidebar.",
@@ -3663,7 +3692,7 @@ function tutorialSlides() {
     },
     {
       badge: usesShotChallenge() ? "Shoot" : "Kick",
-      title: dodgeball ? "Make the Knockout Throw" : surfing ? "Land the Aerial" : skiing ? "Stick the Final Jump" : baseball ? "Deliver the Walk-Off Hit" : lacrosse ? "Beat the Goalie" : basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : waterPolo ? "Beat the Goalkeeper" : "Finish the Game",
+      title: dodgeball ? "Make the Knockout Throw" : surfing ? "Land the Aerial" : skiing ? "Stick the Final Jump" : baseball ? "Reach Base First" : lacrosse ? "Beat the Goalie" : basketball ? "Hit the Clutch Shot" : soccer ? "Score the Winner" : hockey ? "Beat the Goalie" : waterPolo ? "Beat the Goalkeeper" : "Finish the Game",
       text: fieldGoalText,
       items: [
         "You have 30 seconds to choose power and aim before an automatic miss.",
@@ -3674,7 +3703,7 @@ function tutorialSlides() {
           : skiing
           ? "Sticking the jump completes the run and unlocks the next mountain."
           : baseball
-          ? "A clean hit completes the game and unlocks the next MLB opponent."
+          ? "A clean hit starts the run. Reaching home completes the game and unlocks the next MLB opponent."
           : lacrosse
           ? "Scoring completes the game and unlocks the next international opponent."
           : waterPolo
@@ -3806,7 +3835,9 @@ function missFieldGoal(reason) {
       : isSkiingMode()
         ? `Crashed on the deciding jump at ${currentTeam().name}.`
         : isBaseballMode()
-          ? `Struck out in the deciding at-bat against the ${currentTeam().name}.`
+          ? fieldGoalPurpose === "opening"
+            ? `Struck out before reaching base against the ${currentTeam().name}.`
+            : `Struck out in the deciding at-bat against the ${currentTeam().name}.`
           : isLacrosseMode()
             ? `The deciding shot was saved by ${currentTeam().name}.`
     : isSoccerMode()
@@ -4059,7 +4090,7 @@ function completeLevel() {
         : isSkiingMode()
           ? `Perfect final jump at ${beatenTeam.name}. Fans are roaring.`
           : isBaseballMode()
-            ? `Huge walk-off win over the ${beatenTeam.name}. Fans are roaring.`
+            ? `Huge run-scoring win over the ${beatenTeam.name}. Fans are roaring.`
             : isDodgeballMode()
               ? `Huge knockout win over ${beatenTeam.name}. Fans are roaring.`
               : isLacrosseMode()
@@ -4080,7 +4111,7 @@ function completeLevel() {
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
-  overlayTitleEl.textContent = isDodgeballMode() ? "Knockout!" : isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Walk-Off Hit!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
+  overlayTitleEl.textContent = isDodgeballMode() ? "Knockout!" : isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Run Scored!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
       ? (isDodgeballMode()
       ? `You landed the final hit against ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before the next opening throw.`
@@ -4089,7 +4120,7 @@ function completeLevel() {
       : isSkiingMode()
         ? `You stuck the jump at ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before the next run.`
         : isBaseballMode()
-          ? `You delivered the winning hit against the ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before first pitch.`
+          ? `You reached home against the ${beatenTeam.name} and closed out Season ${seasonYear}. Complete the offseason before first pitch.`
           : isLacrosseMode()
             ? `You scored, beat ${beatenTeam.name}, and closed out Season ${seasonYear}. Complete the offseason before the next faceoff.`
             : isBasketballMode()
@@ -4108,7 +4139,7 @@ function completeLevel() {
       : isSkiingMode()
         ? `You stick the final jump at ${beatenTeam.name}. Next up: ${nextTeam.name}.`
         : isBaseballMode()
-          ? `The hit drops and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
+          ? `Your baserunner reaches home and beats the ${beatenTeam.name}. Next up: ${nextTeam.name}.`
           : isLacrosseMode()
             ? `The shot is in and you beat ${beatenTeam.name}. Next up: ${nextTeam.name}.`
             : isBasketballMode()
@@ -4503,7 +4534,7 @@ function updateHud() {
   bestEl.textContent = bestDistance;
   seasonBestEl.textContent = currentSeasonBest();
   gameNumberEl.textContent = `${currentSeasonWeek()} / ${GAMES_PER_SEASON}`;
-  downsEl.textContent = player.downsLeft;
+  downsEl.textContent = displayedChanceCount();
   attemptsEl.textContent = attempts;
   stageEl.textContent = `S${franchise.year} W${currentSeasonWeek()} - ${runner.name}`;
   milestoneEl.textContent = usesShotChallenge()
@@ -4515,6 +4546,13 @@ function updateHud() {
   document.documentElement.style.setProperty("--team-accent", team.accent);
   document.documentElement.style.setProperty("--team-text", team.uiText);
   applyHomeTeamPalette(homeTeam);
+}
+
+function displayedChanceCount() {
+  if (!isFootballMode()) {
+    return player.downsLeft;
+  }
+  return clamp(CONFIG.startingDowns - player.downsLeft + 1, 1, CONFIG.startingDowns);
 }
 
 function applyHomeTeamPalette(homeTeam = currentHomeTeam()) {
@@ -6900,7 +6938,7 @@ function drawScoreboardBar() {
   drawTeamChip(302, barY + 13, 194, 31, opponent, "OPPONENT", false);
 
   drawHudChip(44, barY + 50, 142, 24, `${mode.distanceAbbr} ${String(player.distance).padStart(3, "0")}`);
-  drawHudChip(195, barY + 50, 142, 24, `${mode.chanceAbbr} ${player.downsLeft}`);
+  drawHudChip(195, barY + 50, 142, 24, `${mode.chanceAbbr} ${displayedChanceCount()}`);
   drawHudChip(346, barY + 50, 150, 24, `BEST ${String(bestDistance).padStart(3, "0")}`);
 }
 
@@ -7127,6 +7165,35 @@ window.addEventListener("pointerdown", (event) => {
   };
 });
 
+function trySwipeMove(event) {
+  if (!swipeStart || event.pointerId !== swipeStart.id) {
+    return false;
+  }
+
+  const dx = event.clientX - swipeStart.x;
+  const dy = event.clientY - swipeStart.y;
+  if (Math.hypot(dx, dy) < SWIPE_THRESHOLD) {
+    return false;
+  }
+
+  swipeStart = null;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    queueMove(dx > 0 ? 1 : -1, 0);
+  } else {
+    queueMove(0, dy < 0 ? 1 : -1);
+  }
+  return true;
+}
+
+window.addEventListener("pointermove", (event) => {
+  if (!touchInputReady() || !swipeStart || event.pointerId !== swipeStart.id) {
+    return;
+  }
+
+  event.preventDefault();
+  trySwipeMove(event);
+});
+
 window.addEventListener("pointerup", (event) => {
   if (!touchInputReady() || !swipeStart || event.pointerId !== swipeStart.id) {
     swipeStart = null;
@@ -7134,19 +7201,8 @@ window.addEventListener("pointerup", (event) => {
   }
 
   event.preventDefault();
-  const dx = event.clientX - swipeStart.x;
-  const dy = event.clientY - swipeStart.y;
+  trySwipeMove(event);
   swipeStart = null;
-
-  if (Math.hypot(dx, dy) < SWIPE_THRESHOLD) {
-    return;
-  }
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    queueMove(dx > 0 ? 1 : -1, 0);
-  } else {
-    queueMove(0, dy < 0 ? 1 : -1);
-  }
 });
 
 window.addEventListener("pointercancel", (event) => {
