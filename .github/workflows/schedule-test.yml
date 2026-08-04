@@ -1,0 +1,87 @@
+name: Schedule Test
+
+on:
+  schedule:
+    # Midnight CDT on August 5, 2026. The date guard makes this a one-time run.
+    - cron: "0 5 5 8 *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check one-time schedule
+        id: schedule
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "$(date -u +%Y-%m-%d)" == "2026-08-05" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out Retro Run
+        if: steps.schedule.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        if: steps.schedule.outputs.should_run == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.schedule.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.schedule.outputs.should_run == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Test and build
+        if: steps.schedule.outputs.should_run == 'true'
+        run: |
+          pnpm test
+          pnpm run build
+
+      - name: Apply yellow-text preview theme
+        if: steps.schedule.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          cat >> dist/styles.css <<'EOF'
+
+          /* Scheduled preview: Schedule Test */
+          html body,
+          html body * {
+            color: #f0bf43 !important;
+          }
+          EOF
+
+          cat >> dist/game.js <<'EOF'
+
+          // Scheduled preview: force canvas-rendered text to the same yellow.
+          const scheduledOriginalFillText = ctx.fillText.bind(ctx);
+          ctx.fillText = function (...args) {
+            const previousFill = this.fillStyle;
+            this.fillStyle = "#f0bf43";
+            scheduledOriginalFillText(...args);
+            this.fillStyle = previousFill;
+          };
+          EOF
+
+      - name: Upload named Cloudflare preview
+        if: steps.schedule.outputs.should_run == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm exec wrangler versions upload
+          --preview-alias preview
+          --strict
+          --message "schedule test"
