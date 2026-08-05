@@ -17,6 +17,7 @@ await Promise.all([
   cp(`${projectRoot}styles.css`, `${distDirectory}styles.css`),
   cp(`${projectRoot}game.js`, `${distDirectory}game.js`),
   cp(`${projectRoot}seasonal-games.js`, `${distDirectory}seasonal-games.js`),
+  cp(`${projectRoot}seasonal-parity.js`, `${distDirectory}seasonal-parity.js`),
   writeFile(
     `${distDirectory}seasonal-profile.js`,
     `globalThis.RETRO_RUN_SEASONAL_PROFILE = ${JSON.stringify(seasonalProfile)};\n`

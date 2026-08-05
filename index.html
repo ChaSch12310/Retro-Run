@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260805-challenge-ready-window" />
+    <link rel="stylesheet" href="styles.css?v=20260805-seasonal-gameplay-parity" />
   </head>
   <body>
     <main class="game-shell">
@@ -271,51 +271,92 @@
 
       <section class="seasonal-game-screen" id="seasonalGameScreen" aria-labelledby="seasonalGameTitle" hidden>
         <div class="seasonal-game-body">
-          <aside class="seasonal-run-panel" aria-label="Holiday game progress">
-            <div class="seasonal-sidebar-title">
-              <p class="library-kicker" id="seasonalGameHoliday">Seasonal Arcade</p>
-              <h2 id="seasonalGameTitle">Seasonal Game</h2>
-            </div>
+          <aside class="info-panel seasonal-run-panel" aria-label="Holiday game progress">
+            <h2 class="visually-hidden" id="seasonalGameTitle">Seasonal Game</h2>
             <div class="scoreboard seasonal-scoreboard" aria-live="polite">
+              <div class="score-card">
+                <span class="label">Opponent</span>
+                <strong id="seasonalOpponentValue">Obstacle</strong>
+              </div>
               <div class="score-card">
                 <span class="label">Stage</span>
                 <strong id="seasonalStageNameValue">Level 1</strong>
               </div>
               <div class="score-card">
-                <span class="label">Progress</span>
-                <strong id="seasonalObjectiveValue">Level 1 / 4</strong>
+                <span class="label">Game</span>
+                <strong id="seasonalGameNumberValue">1 / 4</strong>
               </div>
               <div class="score-card">
-                <span class="label">Score</span>
-                <strong id="seasonalScoreValue">0</strong>
+                <span class="label">Yards</span>
+                <strong><span id="seasonalDistanceValue">0</span> / <span id="seasonalMilestoneValue">50 yds</span></strong>
               </div>
               <div class="score-card">
                 <span class="label">Best</span>
                 <strong id="seasonalBestValue">0</strong>
               </div>
+              <div class="score-card">
+                <span class="label">Season Best</span>
+                <strong id="seasonalSeasonBestValue">0</strong>
+              </div>
             </div>
             <div class="status-row seasonal-status-row">
               <div class="status-pill">
-                <span class="label">Time</span>
-                <strong id="seasonalTimeValue">60</strong>
+                <span class="label">Down</span>
+                <strong id="seasonalDownsValue">1</strong>
               </div>
               <div class="status-pill">
-                <span class="label">Lives</span>
-                <strong id="seasonalLivesValue">3</strong>
+                <span class="label">Attempts</span>
+                <strong id="seasonalAttemptsValue">1</strong>
               </div>
             </div>
             <div class="instructions seasonal-instructions">
               <h2>How To Play</h2>
-              <p class="seasonal-control-note">Cross every moving lane. At the finale, line up with left/right and confirm with up, space, or a tap.</p>
-              <p id="seasonalFinaleValue">Finale: Holiday Challenge</p>
-              <div class="seasonal-route-track" id="seasonalRouteTrack" aria-label="Four-level route"></div>
+              <p class="keyboard-instructions">Use `WASD` or the arrow keys to move up the field and dodge obstacles.</p>
+              <p class="touch-instructions">Swipe anywhere on the screen to move up the field and dodge obstacles.</p>
+              <p id="seasonalProgressInstructions">Reach 50 yards, then complete the power-and-aim challenge to advance.</p>
             </div>
-            <button class="secondary-button seasonal-back-button" id="seasonalBackButton" type="button">Back to Arcade</button>
           </aside>
           <div class="seasonal-stage play-panel" id="seasonalStage">
             <div class="canvas-frame">
               <canvas id="seasonalCanvas" width="540" height="720" aria-label="Seasonal arcade game"></canvas>
+              <div class="field-goal-panel seasonal-challenge-panel" id="seasonalChallengePanel" hidden>
+                <div class="field-goal-card">
+                  <div class="field-goal-header">
+                    <div>
+                      <p class="homepage-kicker" id="seasonalChallengeKicker">Final Challenge</p>
+                      <h2 id="seasonalChallengeTitle">Holiday Finish</h2>
+                    </div>
+                    <div class="field-goal-clock" id="seasonalChallengeClock" aria-label="Time remaining">
+                      <span>Time</span>
+                      <strong id="seasonalChallengeTimer">30</strong>
+                    </div>
+                  </div>
+                  <div class="field-goal-scene seasonal-challenge-scene" id="seasonalChallengeScene" aria-hidden="true">
+                    <span class="seasonal-challenge-target" id="seasonalChallengeTarget">Target</span>
+                    <span class="kick-aim-marker" id="seasonalChallengeAimMarker"></span>
+                    <span class="kick-ball seasonal-challenge-token" id="seasonalChallengeToken"></span>
+                  </div>
+                  <p class="field-goal-instructions" id="seasonalChallengeInstructions">Tap once to lock power, then tap again to lock aim.</p>
+                  <div class="kick-meter active" id="seasonalPowerMeter">
+                    <span><strong>Power</strong><output id="seasonalPowerValue">25%</output></span>
+                    <span class="timing-track power-timing-track">
+                      <span class="timing-needle" id="seasonalPowerNeedle"></span>
+                    </span>
+                    <span class="range-labels"><small>Low</small><small>Good</small><small>Max</small></span>
+                  </div>
+                  <div class="kick-meter" id="seasonalAimMeter">
+                    <span><strong>Aim</strong><output id="seasonalAimValue">Center</output></span>
+                    <span class="timing-track aim-timing-track">
+                      <span class="timing-needle" id="seasonalAimNeedle"></span>
+                    </span>
+                    <span class="range-labels"><small>Left</small><small>Center</small><small>Right</small></span>
+                  </div>
+                  <p class="field-goal-status" id="seasonalChallengeStatus" aria-live="polite">Stop the power needle in the green.</p>
+                  <button id="seasonalChallengeActionButton" type="button">Set Power</button>
+                </div>
+              </div>
               <div class="seasonal-overlay" id="seasonalOverlay">
+                <button class="library-return-button secondary-button seasonal-back-button" id="seasonalBackButton" type="button">Back to Arcade</button>
                 <p class="seasonal-overlay-kicker" id="seasonalOverlayKicker">Holiday Challenge</p>
                 <h3 id="seasonalOverlayTitle">Ready?</h3>
                 <p id="seasonalOverlayText">Move with arrow keys, WASD, or swipe anywhere on the game.</p>
@@ -780,7 +821,9 @@
     </div>
 
     <script src="game.js?v=20260805-restore-original-colors"></script>
-    <script src="seasonal-profile.js?v=20260805-challenge-ready-window"></script>
-    <script src="seasonal-games.js?v=20260805-challenge-ready-window"></script>
+    <script src="seasonal-profile.js?v=20260805-seasonal-gameplay-parity"></script>
+    <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
+    <script src="seasonal-games.js?v=20260805-seasonal-gameplay-parity"></script>
+    <script src="seasonal-parity.js?v=20260805-seasonal-gameplay-parity"></script>
   </body>
 </html>

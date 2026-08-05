@@ -5346,6 +5346,10 @@ body.seasonal-game-open .seasonal-stage.play-panel {
   display: flex !important;
 }
 
+body.seasonal-game-open .seasonal-run-panel {
+  display: block !important;
+}
+
 .seasonal-stage.play-panel::before {
   position: absolute;
   inset: 0 0 auto;
@@ -5388,7 +5392,7 @@ body[data-device="mobile"] .seasonal-game-body {
 }
 
 body[data-device="mobile"] .seasonal-run-panel {
-  display: none;
+  display: none !important;
 }
 
 body[data-device="mobile"] .seasonal-stage.play-panel {
@@ -5413,7 +5417,7 @@ body[data-device="mobile"] #seasonalCanvas {
   }
 
   .seasonal-run-panel {
-    display: none;
+    display: none !important;
   }
 
   .seasonal-stage.play-panel {
@@ -5423,4 +5427,61 @@ body[data-device="mobile"] #seasonalCanvas {
   #seasonalCanvas {
     height: min(100%, calc(100dvh - 120px));
   }
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.seasonal-scoreboard .score-card strong {
+  font-size: 1.12rem;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+
+.seasonal-overlay .seasonal-back-button {
+  width: auto;
+  margin: 0 0 14px;
+  justify-self: start;
+}
+
+.seasonal-challenge-panel {
+  --team-accent: var(--seasonal-accent);
+}
+
+.seasonal-challenge-scene {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(246, 243, 222, 0.08) 46px 49px),
+    linear-gradient(180deg, #557fa6 0 42%, #2c6736 42% 100%);
+}
+
+.seasonal-challenge-target {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 18%;
+  width: 42%;
+  height: 48%;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  color: #0b1520;
+  background: var(--seasonal-secondary);
+  border: 6px solid var(--seasonal-accent);
+  box-shadow: inset 0 0 0 4px #f6f3de;
+  font-size: clamp(0.7rem, 2vw, 1rem);
+  text-transform: uppercase;
+}
+
+.seasonal-challenge-token {
+  background: var(--seasonal-accent);
+  border-radius: 0;
 }

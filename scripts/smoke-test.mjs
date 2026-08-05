@@ -96,6 +96,7 @@ const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const seasonalSource = fs.readFileSync(new URL("../seasonal-games.js", import.meta.url), "utf8");
+const seasonalParitySource = fs.readFileSync(new URL("../seasonal-parity.js", import.meta.url), "utf8");
 const seasonalProfile = fs.readFileSync(new URL("../seasonal-profile.js", import.meta.url), "utf8");
 const seasonalDeploymentSource = fs.readFileSync(
   new URL("./deploy-seasonal-versions.mjs", import.meta.url),
@@ -122,12 +123,17 @@ assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
 assert.match(html, /id="seasonalGameScreen"/);
 assert.match(html, /class="seasonal-game-body"/);
-assert.match(html, /class="seasonal-run-panel"/);
+assert.match(html, /class="info-panel seasonal-run-panel"/);
 assert.match(html, /id="seasonalStageNameValue"/);
-assert.match(html, /id="seasonalRouteTrack"/);
-assert.match(html, /id="seasonalFinaleValue"/);
+assert.match(html, /id="seasonalDistanceValue"/);
+assert.match(html, /id="seasonalDownsValue"/);
+assert.match(html, /id="seasonalAttemptsValue"/);
+assert.match(html, /id="seasonalChallengePanel"/);
+assert.match(html, /id="seasonalPowerMeter"/);
+assert.match(html, /id="seasonalAimMeter"/);
 assert.match(html, /seasonal-profile\.js/);
 assert.match(html, /seasonal-games\.js/);
+assert.match(html, /seasonal-parity\.js/);
 assert.match(seasonalProfile, /holiday-season/);
 assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_RELEASE_NAME/);
@@ -176,7 +182,7 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260805-challenge-ready-window/);
+assert.match(html, /20260805-seasonal-gameplay-parity/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
 assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*320px minmax\(0, 1fr\)/s);
@@ -190,6 +196,17 @@ assert.match(seasonalSource, /if \(game\.player === "turkey"\)/);
 assert.match(seasonalSource, /const runningStep = Math\.floor\(seasonalElapsed \* 9\) % 2/);
 assert.match(seasonalSource, /seasonalChallengeInputDelay = 0\.75/);
 assert.match(seasonalSource, /seasonalState === "challenge" && event\.repeat/);
+assert.match(seasonalSource, /!globalThis\.RETRO_RUN_SEASONAL_PARITY/);
+assert.match(seasonalParitySource, /const PARITY_DISTANCE = 50/);
+assert.match(seasonalParitySource, /const PARITY_DOWNS = 4/);
+assert.match(seasonalParitySource, /const PARITY_FIRST_DOWN = 10/);
+assert.match(seasonalParitySource, /const PARITY_VISIBLE_ROWS = 12/);
+assert.match(seasonalParitySource, /function parityBeginChallenge/);
+assert.match(seasonalParitySource, /PARITY_CHALLENGE_MS = 30000/);
+assert.match(seasonalParitySource, /parityChallengePhase = "power"/);
+assert.match(seasonalParitySource, /parityChallengePhase = "aim"/);
+assert.match(seasonalParitySource, /function parityNearestSafeRow/);
+assert.match(seasonalParitySource, /function parityUpdateChallenge/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -390,6 +407,120 @@ allSeasonalGameIds.forEach((gameId) => {
   profile.elements.get("seasonalStartButton").click();
   assert.notEqual(profile.game.crosserColors.body, openingColors.body, `${gameId} should change obstacle colors`);
 });
+
+function runParityProfile(profileId) {
+  const ids = [
+    "seasonalGameShelf", "seasonalGameScreen", "seasonalCanvas", "seasonalBackButton",
+    "seasonalStartButton", "seasonalGameTitle", "seasonalOpponentValue", "seasonalStageNameValue",
+    "seasonalGameNumberValue", "seasonalDistanceValue", "seasonalMilestoneValue", "seasonalBestValue",
+    "seasonalSeasonBestValue", "seasonalDownsValue", "seasonalAttemptsValue", "seasonalProgressInstructions",
+    "seasonalOverlay", "seasonalOverlayKicker", "seasonalOverlayTitle", "seasonalOverlayText",
+    "seasonalChallengePanel", "seasonalChallengeKicker", "seasonalChallengeTitle", "seasonalChallengeClock",
+    "seasonalChallengeTimer", "seasonalChallengeScene", "seasonalChallengeTarget", "seasonalChallengeAimMarker",
+    "seasonalChallengeToken", "seasonalChallengeInstructions", "seasonalPowerMeter", "seasonalPowerValue",
+    "seasonalPowerNeedle", "seasonalAimMeter", "seasonalAimValue", "seasonalAimNeedle",
+    "seasonalChallengeStatus", "seasonalChallengeActionButton", "arcadeHomeButton", "gameLibraryScreen",
+    "seasonalGameHoliday", "seasonalScoreValue", "seasonalObjectiveValue", "seasonalTimeValue",
+    "seasonalLivesValue", "seasonalRouteTrack", "seasonalFinaleValue",
+  ];
+  const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
+  const body = new FakeElement("body");
+  const frames = [];
+  const listeners = new Map();
+  const storage = new Map();
+  const canvas = elements.get("seasonalCanvas");
+  const context = new Proxy({}, {
+    get(target, property) {
+      if (!(property in target)) target[property] = () => {};
+      return target[property];
+    },
+    set(target, property, value) {
+      target[property] = value;
+      return true;
+    },
+  });
+  canvas.width = 540;
+  canvas.height = 720;
+  canvas.getContext = () => context;
+  elements.get("seasonalGameScreen").hidden = true;
+  elements.get("seasonalChallengePanel").hidden = true;
+  const requestFrame = (callback) => {
+    frames.push(callback);
+    return frames.length;
+  };
+  const documentElement = new FakeElement("html");
+  const parityContext = vm.createContext({
+    console,
+    Math,
+    Number,
+    globalThis: null,
+    RETRO_RUN_SEASONAL_PROFILE: profileId,
+    RETRO_RUN_SEASONAL_PARITY: true,
+    performance: { now: () => 1000 },
+    requestAnimationFrame: requestFrame,
+    localStorage: {
+      getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+      setItem(key, value) { storage.set(key, String(value)); },
+    },
+    document: {
+      body,
+      documentElement,
+      getElementById(id) { return elements.get(id) || null; },
+      createElement() { return new FakeElement(); },
+    },
+    window: {
+      addEventListener(type, callback) { listeners.set(type, callback); },
+      requestAnimationFrame: requestFrame,
+    },
+  });
+  parityContext.globalThis = parityContext;
+  vm.runInContext(seasonalSource, parityContext, { filename: "seasonal-games.js" });
+  const hooks = `
+globalThis.__parityTest = {
+  get state() { return parityState; },
+  get level() { return parityLevel; },
+  get phase() { return parityChallengePhase; },
+  get obstacleRows() { return [...new Set(parityObjects.map((object) => object.row))].sort((a, b) => a - b); },
+  forceChallenge() { parityBeginChallenge(1000); },
+  lockPower() { parityHandleChallengeAction(); },
+  setShot(power, aim) { parityChallengePower = power; parityChallengeAim = aim; },
+  launch() { parityLaunchChallenge(1000); },
+  finishShot() { parityUpdateChallenge(2000); parityUpdateChallenge(3300); },
+};`;
+  vm.runInContext(`${seasonalParitySource}\n${hooks}`, parityContext, { filename: "seasonal-parity.js" });
+  return { elements, frames, game: parityContext.__parityTest };
+}
+
+const parityHoliday = runParityProfile("holiday-season");
+parityHoliday.elements.get("seasonalGameShelf").children[0].click();
+parityHoliday.elements.get("seasonalStartButton").click();
+assert.equal(parityHoliday.game.state, "playing");
+assert.equal(parityHoliday.elements.get("seasonalOpponentValue").textContent, "Police Helicopter");
+assert.equal(parityHoliday.elements.get("seasonalGameNumberValue").textContent, "1 / 4");
+const parityRows = parityHoliday.game.obstacleRows;
+let parityConsecutiveRows = 0;
+let parityMaxConsecutiveRows = 0;
+parityRows.forEach((row, index) => {
+  parityConsecutiveRows = index > 0 && row === parityRows[index - 1] + 1 ? parityConsecutiveRows + 1 : 1;
+  parityMaxConsecutiveRows = Math.max(parityMaxConsecutiveRows, parityConsecutiveRows);
+});
+assert.ok(parityMaxConsecutiveRows <= 5);
+assert.ok(parityRows.every((row) => row % 6 !== 2 && row !== 27));
+parityHoliday.game.forceChallenge();
+assert.equal(parityHoliday.game.state, "challenge");
+assert.equal(parityHoliday.game.phase, "power");
+assert.equal(parityHoliday.elements.get("seasonalChallengePanel").hidden, false);
+assert.equal(parityHoliday.elements.get("seasonalChallengeTimer").textContent, "30");
+assert.equal(parityHoliday.elements.get("seasonalChallengeActionButton").textContent, "Set Power");
+parityHoliday.game.lockPower();
+assert.equal(parityHoliday.game.phase, "aim");
+assert.equal(parityHoliday.elements.get("seasonalChallengeActionButton").textContent, "Launch");
+parityHoliday.game.setShot(70, 0);
+parityHoliday.game.launch();
+assert.equal(parityHoliday.game.phase, "flight");
+parityHoliday.game.finishShot();
+assert.equal(parityHoliday.game.level, 1);
+assert.equal(parityHoliday.elements.get("seasonalStartButton").textContent, "Next Game");
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);

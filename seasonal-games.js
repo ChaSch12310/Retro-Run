@@ -1201,7 +1201,7 @@ function finishSeasonalSwipe(event) {
   }
 }
 
-if (seasonalShelf && seasonalScreen && seasonalContext) {
+if (!globalThis.RETRO_RUN_SEASONAL_PARITY && seasonalShelf && seasonalScreen && seasonalContext) {
   renderSeasonalShelf();
   seasonalBackButton.addEventListener("click", closeSeasonalGame);
   seasonalStartButton.addEventListener("click", handleSeasonalStart);
