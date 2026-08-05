@@ -174,16 +174,6 @@ body.game-library-open .play-panel {
   align-content: center;
 }
 
-.library-coming-soon {
-  grid-column: 1 / -1;
-  color: var(--text);
-  font-size: clamp(0.82rem, 2vw, 1rem);
-  letter-spacing: 0.14em;
-  text-align: center;
-  text-shadow: 0 2px 0 rgba(8, 15, 22, 0.5);
-  text-transform: uppercase;
-}
-
 .game-select-card {
   --card-accent: #c83b42;
   width: 100%;

@@ -105,6 +105,8 @@ assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
 assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
+assert.doesNotMatch(html, /More games coming soon/i);
+assert.doesNotMatch(styles, /library-coming-soon/);
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);
