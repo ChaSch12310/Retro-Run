@@ -87,20 +87,11 @@ class FakeElement {
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
-const scheduledWorkflow = fs.readFileSync(
-  new URL("../.github/workflows/schedule-test.yml", import.meta.url),
-  "utf8"
-);
 const wranglerConfig = fs.readFileSync(
   new URL("../wrangler.jsonc", import.meta.url),
   "utf8"
 );
 
-assert.match(scheduledWorkflow, /cron: "0 5 5 8 \*"/);
-assert.match(scheduledWorkflow, /"2026-08-05"/);
-assert.match(scheduledWorkflow, /--message "schedule test"/);
-assert.doesNotMatch(scheduledWorkflow, /--tag\b/);
-assert.match(scheduledWorkflow, /color: #f0bf43 !important/);
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
 assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
