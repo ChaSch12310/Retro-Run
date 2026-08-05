@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260805-holiday-ui" />
+    <link rel="stylesheet" href="styles.css?v=20260805-classic-holiday-lineup" />
   </head>
   <body>
     <main class="game-shell">
@@ -270,45 +270,59 @@
       </section>
 
       <section class="seasonal-game-screen" id="seasonalGameScreen" aria-labelledby="seasonalGameTitle" hidden>
-        <div class="seasonal-game-header">
-          <button class="secondary-button seasonal-back-button" id="seasonalBackButton" type="button">Back to Arcade</button>
-          <div>
-            <p class="library-kicker" id="seasonalGameHoliday">Seasonal Arcade</p>
-            <h2 id="seasonalGameTitle">Seasonal Game</h2>
-          </div>
-          <div class="seasonal-best-box">
-            <span>Best</span>
-            <strong id="seasonalBestValue">0</strong>
-          </div>
-        </div>
         <div class="seasonal-game-body">
-          <div class="seasonal-stage" id="seasonalStage">
-            <canvas id="seasonalCanvas" width="720" height="480" aria-label="Seasonal arcade game"></canvas>
-            <div class="seasonal-overlay" id="seasonalOverlay">
-              <p class="seasonal-overlay-kicker" id="seasonalOverlayKicker">Holiday Challenge</p>
-              <h3 id="seasonalOverlayTitle">Ready?</h3>
-              <p id="seasonalOverlayText">Move with arrow keys, WASD, or swipe anywhere on the game.</p>
-              <button id="seasonalStartButton" type="button">Start Game</button>
+          <aside class="seasonal-run-panel" aria-label="Holiday game progress">
+            <div class="seasonal-sidebar-title">
+              <p class="library-kicker" id="seasonalGameHoliday">Seasonal Arcade</p>
+              <h2 id="seasonalGameTitle">Seasonal Game</h2>
+            </div>
+            <div class="scoreboard seasonal-scoreboard" aria-live="polite">
+              <div class="score-card">
+                <span class="label">Stage</span>
+                <strong id="seasonalStageNameValue">Level 1</strong>
+              </div>
+              <div class="score-card">
+                <span class="label">Progress</span>
+                <strong id="seasonalObjectiveValue">Level 1 / 4</strong>
+              </div>
+              <div class="score-card">
+                <span class="label">Score</span>
+                <strong id="seasonalScoreValue">0</strong>
+              </div>
+              <div class="score-card">
+                <span class="label">Best</span>
+                <strong id="seasonalBestValue">0</strong>
+              </div>
+            </div>
+            <div class="status-row seasonal-status-row">
+              <div class="status-pill">
+                <span class="label">Time</span>
+                <strong id="seasonalTimeValue">60</strong>
+              </div>
+              <div class="status-pill">
+                <span class="label">Lives</span>
+                <strong id="seasonalLivesValue">3</strong>
+              </div>
+            </div>
+            <div class="instructions seasonal-instructions">
+              <h2>How To Play</h2>
+              <p class="seasonal-control-note">Cross every moving lane. At the finale, line up with left/right and confirm with up, space, or a tap.</p>
+              <p id="seasonalFinaleValue">Finale: Holiday Challenge</p>
+              <div class="seasonal-route-track" id="seasonalRouteTrack" aria-label="Four-level route"></div>
+            </div>
+            <button class="secondary-button seasonal-back-button" id="seasonalBackButton" type="button">Back to Arcade</button>
+          </aside>
+          <div class="seasonal-stage play-panel" id="seasonalStage">
+            <div class="canvas-frame">
+              <canvas id="seasonalCanvas" width="540" height="720" aria-label="Seasonal arcade game"></canvas>
+              <div class="seasonal-overlay" id="seasonalOverlay">
+                <p class="seasonal-overlay-kicker" id="seasonalOverlayKicker">Holiday Challenge</p>
+                <h3 id="seasonalOverlayTitle">Ready?</h3>
+                <p id="seasonalOverlayText">Move with arrow keys, WASD, or swipe anywhere on the game.</p>
+                <button id="seasonalStartButton" type="button">Start Game</button>
+              </div>
             </div>
           </div>
-          <aside class="seasonal-run-panel" aria-label="Holiday game progress">
-            <div class="seasonal-route-card">
-              <span class="seasonal-panel-label">Current Route</span>
-              <strong id="seasonalStageNameValue">Level 1</strong>
-              <div class="seasonal-route-track" id="seasonalRouteTrack" aria-label="Four-level route"></div>
-              <p id="seasonalFinaleValue">Finale: Holiday Challenge</p>
-            </div>
-            <div class="seasonal-hud" aria-live="polite">
-              <span id="seasonalScoreValue">Score 0</span>
-              <span id="seasonalObjectiveValue">Level 1 / 4</span>
-              <span id="seasonalTimeValue">Time 60</span>
-              <span id="seasonalLivesValue">Lives 3</span>
-            </div>
-            <div class="seasonal-controls-card">
-              <span class="seasonal-panel-label">How To Move</span>
-              <p class="seasonal-control-note">Cross every moving lane. At the finale, line up with left/right and confirm with up, space, or a tap.</p>
-            </div>
-          </aside>
         </div>
       </section>
 
@@ -766,7 +780,7 @@
     </div>
 
     <script src="game.js?v=20260805-restore-original-colors"></script>
-    <script src="seasonal-profile.js?v=20260805-holiday-ui"></script>
-    <script src="seasonal-games.js?v=20260805-holiday-ui"></script>
+    <script src="seasonal-profile.js?v=20260805-classic-holiday-lineup"></script>
+    <script src="seasonal-games.js?v=20260805-classic-holiday-lineup"></script>
   </body>
 </html>

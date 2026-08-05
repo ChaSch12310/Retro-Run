@@ -569,15 +569,20 @@ let seasonalLevel = 0;
 let seasonalRowsCrossed = 0;
 let seasonalCollisionGrace = 0;
 let seasonalMoveCooldown = 0;
-let seasonalChallengeTargetX = 310;
+let seasonalChallengeTargetX = 206;
 let seasonalChallengeTime = 0;
 let seasonalFinaleAnimation = 0;
 let seasonalPendingAction = "new-run";
-let seasonalPlayer = { x: 336, y: 400, targetX: 336, targetY: 400, width: 46, height: 58 };
+let seasonalPlayer = { x: 256, y: 555, targetX: 256, targetY: 555, width: 28, height: 30 };
 
+const SEASONAL_CANVAS_WIDTH = 540;
+const SEASONAL_CANVAS_HEIGHT = 720;
 const SEASONAL_LEVEL_COUNT = 4;
 const SEASONAL_LANE_COUNT = 6;
-const SEASONAL_LANE_Y = [338, 288, 238, 188, 138, 88];
+const SEASONAL_START_X = 256;
+const SEASONAL_START_Y = 555;
+const SEASONAL_ROW_STEP = 60;
+const SEASONAL_LANE_Y = [495, 435, 375, 315, 255, 195];
 
 function seasonalGameById(gameId) {
   return SEASONAL_GAMES.find((game) => game.id === gameId) || null;
@@ -665,12 +670,12 @@ function setSeasonalOverlay(title, text, buttonText, kicker) {
 
 function syncSeasonalHud() {
   if (!activeSeasonalGame) return;
-  seasonalScore.textContent = `Score ${seasonalRunScore}`;
+  seasonalScore.textContent = seasonalRunScore;
   seasonalObjective.textContent = seasonalState === "challenge"
     ? `${currentSeasonalFinale().target} Challenge`
-    : `Level ${seasonalLevel + 1} / ${SEASONAL_LEVEL_COUNT} · Row ${seasonalRowsCrossed} / ${SEASONAL_LANE_COUNT}`;
-  seasonalTime.textContent = `Time ${Math.max(0, Math.ceil(seasonalTimeLeft))}`;
-  seasonalLives.textContent = `Lives ${seasonalRunLives}`;
+    : `L${seasonalLevel + 1} / ${SEASONAL_LEVEL_COUNT} · Row ${seasonalRowsCrossed} / ${SEASONAL_LANE_COUNT}`;
+  seasonalTime.textContent = Math.max(0, Math.ceil(seasonalTimeLeft));
+  seasonalLives.textContent = seasonalRunLives;
   seasonalBest.textContent = currentSeasonalBest();
   seasonalHoliday.textContent = `${activeSeasonalGame.holiday} · ${currentSeasonalStageName()}`;
   seasonalStageName.textContent = `Level ${seasonalLevel + 1}: ${currentSeasonalStageName()}`;
@@ -728,7 +733,7 @@ function createSeasonalLanes() {
   for (let lane = 0; lane < SEASONAL_LANE_COUNT; lane += 1) {
     const direction = (lane + seasonalLevel) % 2 === 0 ? 1 : -1;
     const spacing = Math.max(172, 224 - seasonalLevel * 9 - lane * 3);
-    const count = Math.ceil(820 / spacing) + 1;
+    const count = Math.ceil((SEASONAL_CANVAS_WIDTH + 120) / spacing) + 1;
     const speed = Math.min(128, 72 + seasonalLevel * 9 + lane * 5);
     const offset = (lane * 83 + seasonalLevel * 47) % spacing;
     for (let index = 0; index < count; index += 1) {
@@ -737,10 +742,12 @@ function createSeasonalLanes() {
         lane,
         direction,
         speed,
-        x: direction > 0 ? offset + index * spacing - spacing : 720 - offset - index * spacing,
+        x: direction > 0
+          ? offset + index * spacing - spacing
+          : SEASONAL_CANVAS_WIDTH - offset - index * spacing,
         y: SEASONAL_LANE_Y[lane],
         width: obstacleWidth + (lane % 2) * 8,
-        height: 38,
+        height: 30,
         variant: (lane + index) % 3,
       });
     }
@@ -761,7 +768,14 @@ function beginSeasonalLevel(newRun = false) {
   seasonalCollisionGrace = 0.45;
   seasonalMoveCooldown = 0;
   seasonalFinaleAnimation = 0;
-  seasonalPlayer = { x: 336, y: 400, targetX: 336, targetY: 400, width: 46, height: 58 };
+  seasonalPlayer = {
+    x: SEASONAL_START_X,
+    y: SEASONAL_START_Y,
+    targetX: SEASONAL_START_X,
+    targetY: SEASONAL_START_Y,
+    width: 28,
+    height: 30,
+  };
   createSeasonalLanes();
   seasonalOverlay.hidden = true;
   syncSeasonalHud();
@@ -799,7 +813,7 @@ function finishSeasonalRun(won) {
 
 function moveSeasonalPlayer(dx, dy) {
   if (seasonalState === "challenge") {
-    seasonalPlayer.targetX = Math.max(42, Math.min(632, seasonalPlayer.targetX + dx * 62));
+    seasonalPlayer.targetX = Math.max(16, Math.min(496, seasonalPlayer.targetX + dx * 60));
     if (dy < 0) attemptSeasonalChallenge();
     return;
   }
@@ -808,14 +822,14 @@ function moveSeasonalPlayer(dx, dy) {
   const inverted = activeSeasonalGame.behavior === "invert" && Math.floor(seasonalElapsed / 5) % 2 === 1;
   const moveX = inverted ? -dx : dx;
   const moveY = inverted ? -dy : dy;
-  seasonalPlayer.targetX = Math.max(42, Math.min(632, seasonalPlayer.targetX + moveX * 62));
+  seasonalPlayer.targetX = Math.max(16, Math.min(496, seasonalPlayer.targetX + moveX * 60));
   if (moveY < 0 && seasonalRowsCrossed < SEASONAL_LANE_COUNT) {
     seasonalRowsCrossed += 1;
-    seasonalPlayer.targetY = 400 - seasonalRowsCrossed * 50;
+    seasonalPlayer.targetY = SEASONAL_START_Y - seasonalRowsCrossed * SEASONAL_ROW_STEP;
     seasonalRunScore += 25;
   } else if (moveY > 0 && seasonalRowsCrossed > 0) {
     seasonalRowsCrossed -= 1;
-    seasonalPlayer.targetY = 400 - seasonalRowsCrossed * 50;
+    seasonalPlayer.targetY = SEASONAL_START_Y - seasonalRowsCrossed * SEASONAL_ROW_STEP;
   }
   if (moveX !== 0 || moveY !== 0) seasonalMoveCooldown = 0.11;
   syncSeasonalHud();
@@ -825,16 +839,16 @@ function overlapsSeasonalPlayer(object) {
   const playerInset = 8;
   return seasonalPlayer.x + playerInset < object.x + object.width
     && seasonalPlayer.x + seasonalPlayer.width - playerInset > object.x
-    && seasonalPlayer.y + 12 < object.y + object.height
-    && seasonalPlayer.y + seasonalPlayer.height - 8 > object.y;
+    && seasonalPlayer.y + 5 < object.y + object.height
+    && seasonalPlayer.y + seasonalPlayer.height - 5 > object.y;
 }
 
 function beginSeasonalChallenge() {
   seasonalState = "challenge";
   seasonalChallengeTime = 10;
   seasonalTimeLeft = seasonalChallengeTime;
-  seasonalChallengeTargetX = 90 + ((seasonalLevel * 137 + activeSeasonalGame.id.length * 31) % 480);
-  seasonalPlayer.targetY = 354;
+  seasonalChallengeTargetX = 44 + ((seasonalLevel * 137 + activeSeasonalGame.id.length * 31) % 332);
+  seasonalPlayer.targetY = 570;
   syncSeasonalHud();
 }
 
@@ -900,8 +914,8 @@ function updateSeasonalGame(deltaSeconds) {
   if (seasonalState === "playing") {
     seasonalObjects.forEach((object) => {
       object.x += object.direction * object.speed * deltaSeconds;
-      if (object.direction > 0 && object.x > 760) object.x = -object.width - 40;
-      if (object.direction < 0 && object.x + object.width < -40) object.x = 760;
+      if (object.direction > 0 && object.x > SEASONAL_CANVAS_WIDTH + 40) object.x = -object.width - 40;
+      if (object.direction < 0 && object.x + object.width < -40) object.x = SEASONAL_CANVAS_WIDTH + 40;
     });
 
     const collision = seasonalCollisionGrace <= 0
@@ -913,10 +927,10 @@ function updateSeasonalGame(deltaSeconds) {
       seasonalHitFlash = 1;
       seasonalCollisionGrace = 1.35;
       seasonalRowsCrossed = 0;
-      seasonalPlayer.x = 336;
-      seasonalPlayer.y = 400;
-      seasonalPlayer.targetX = 336;
-      seasonalPlayer.targetY = 400;
+      seasonalPlayer.x = SEASONAL_START_X;
+      seasonalPlayer.y = SEASONAL_START_Y;
+      seasonalPlayer.targetX = SEASONAL_START_X;
+      seasonalPlayer.targetY = SEASONAL_START_Y;
       if (seasonalRunLives <= 0) finishSeasonalRun(false);
     } else if (seasonalRowsCrossed === SEASONAL_LANE_COUNT && Math.abs(seasonalPlayer.y - seasonalPlayer.targetY) < 5) {
       beginSeasonalChallenge();
@@ -938,31 +952,40 @@ function drawPixelRect(x, y, width, height, color) {
 
 function drawSeasonalBackground() {
   const game = activeSeasonalGame;
-  drawPixelRect(0, 0, 720, 480, game.sky);
-  drawPixelRect(0, 54, 720, 426, game.ground);
-  drawPixelRect(0, 390, 720, 90, "rgba(8,15,23,0.18)");
-  for (let index = 0; index < 9; index += 1) {
-    const x = index * 91 - 22;
-    drawPixelRect(x, 18 + (index % 3) * 11, 6, 6, index % 2 ? game.secondary : "#f5f1db");
-  }
-  SEASONAL_LANE_Y.forEach((y, lane) => {
-    drawPixelRect(0, y - 5, 720, 48, lane % 2 ? "rgba(9,18,28,0.29)" : "rgba(9,18,28,0.39)");
-    drawPixelRect(0, y - 5, 720, 3, "rgba(255,255,255,0.2)");
-    for (let marker = 0; marker < 10; marker += 1) {
-      drawPixelRect(marker * 82 + 16, y + 17, 42, 3, "rgba(255,255,255,0.22)");
+  const fieldLeft = 38;
+  const fieldRight = SEASONAL_CANVAS_WIDTH - 38;
+
+  drawPixelRect(0, 0, SEASONAL_CANVAS_WIDTH, SEASONAL_CANVAS_HEIGHT, "#111a28");
+  for (let row = 0; row < 12; row += 1) {
+    const y = row * SEASONAL_ROW_STEP;
+    const stripe = row % 2 === 0 ? game.ground : game.sky;
+    drawPixelRect(fieldLeft, y, fieldRight - fieldLeft, SEASONAL_ROW_STEP, stripe);
+    drawPixelRect(fieldLeft + 8, y, fieldRight - fieldLeft - 16, 3, "rgba(246,243,222,0.38)");
+    for (let marker = fieldLeft + 34; marker < fieldRight - 24; marker += 60) {
+      drawPixelRect(marker, y + 29, 28, 3, "rgba(246,243,222,0.25)");
     }
-    const arrowX = lane % 2 === seasonalLevel % 2 ? 26 : 680;
-    drawPixelRect(arrowX, y + 10, 14, 8, game.secondary);
-  });
+  }
+
+  drawPixelRect(0, 0, fieldLeft, SEASONAL_CANVAS_HEIGHT, "#2b3d52");
+  drawPixelRect(fieldRight, 0, SEASONAL_CANVAS_WIDTH - fieldRight, SEASONAL_CANVAS_HEIGHT, "#2b3d52");
+  for (let y = 10; y < SEASONAL_CANVAS_HEIGHT; y += 24) {
+    drawPixelRect(4, y, 30, 8, y % 48 === 10 ? game.accent : game.secondary);
+    drawPixelRect(fieldRight + 4, y, 30, 8, y % 48 === 10 ? game.secondary : game.accent);
+  }
+  drawPixelRect(fieldLeft, 0, 4, SEASONAL_CANVAS_HEIGHT, "#f6f3de");
+  drawPixelRect(fieldRight - 4, 0, 4, SEASONAL_CANVAS_HEIGHT, "#f6f3de");
+  drawPixelRect(fieldLeft + 6, 0, 4, SEASONAL_CANVAS_HEIGHT, game.secondary);
+  drawPixelRect(fieldRight - 10, 0, 4, SEASONAL_CANVAS_HEIGHT, game.secondary);
+
   if (game.behavior === "light") {
     seasonalContext.fillStyle = "rgba(4, 10, 24, 0.25)";
-    seasonalContext.fillRect(0, 54, 720, 336);
+    seasonalContext.fillRect(fieldLeft, 0, fieldRight - fieldLeft, SEASONAL_CANVAS_HEIGHT);
   }
   if (game.behavior === "paint") {
     const paintColors = ["#ef4e91", "#49c7df", "#f3cf58", "#7bdb68"];
     paintColors.forEach((color, index) => {
       seasonalContext.globalAlpha = 0.18;
-      drawPixelRect(index * 180, 54, 180, 336, color);
+      drawPixelRect(fieldLeft + index * 116, 0, 116, SEASONAL_CANVAS_HEIGHT, color);
     });
     seasonalContext.globalAlpha = 1;
   }
@@ -1005,50 +1028,71 @@ function drawSeasonalPlayer() {
   const flash = seasonalHitFlash > 0 && Math.floor(seasonalHitFlash * 10) % 2 === 0;
   if (flash) return;
   if (game.player === "plane") {
-    drawPixelRect(x + 18, y, 14, 52, game.secondary);
-    drawPixelRect(x, y + 20, 50, 15, game.accent);
-    drawPixelRect(x + 7, y + 39, 36, 9, game.accent);
+    drawPixelRect(x + 11, y, 8, 30, game.secondary);
+    drawPixelRect(x - 3, y + 11, 36, 9, game.accent);
+    drawPixelRect(x + 3, y + 23, 24, 5, game.accent);
     return;
   }
   if (game.player === "sleigh" || game.player === "sled") {
-    drawPixelRect(x, y + 30, 50, 18, game.accent);
-    drawPixelRect(x + 10, y + 10, 28, 24, game.secondary);
-    drawPixelRect(x + 4, y + 50, 48, 5, "#f4f0d9");
+    drawPixelRect(x - 5, y + 14, 38, 12, game.accent);
+    drawPixelRect(x + 3, y + 4, 22, 13, game.secondary);
+    drawPixelRect(x - 2, y + 27, 36, 3, "#f4f0d9");
     return;
   }
-  drawPixelRect(x + 12, y, 24, 20, "#edc29b");
-  drawPixelRect(x + 6, y + 18, 36, 28, game.accent);
-  drawPixelRect(x + 7, y + 45, 12, 13, "#172333");
-  drawPixelRect(x + 29, y + 45, 12, 13, "#172333");
-  drawPixelRect(x + 15, y + 24, 18, 10, game.secondary);
+  if (game.player === "turkey") {
+    const runningStep = Math.floor(seasonalElapsed * 9) % 2;
+    drawPixelRect(x - 7, y + 4, 9, 22, "#c84732");
+    drawPixelRect(x - 2, y - 2, 10, 26, "#e18a2f");
+    drawPixelRect(x + 5, y - 6, 11, 29, "#f0bc3f");
+    drawPixelRect(x + 13, y - 2, 10, 26, "#e18a2f");
+    drawPixelRect(x + 20, y + 4, 9, 22, "#c84732");
+    drawPixelRect(x - 2, y + 11, 29, 7, "#63331f");
+    drawPixelRect(x + 1, y + 14, 26, 17, "#7e4328");
+    drawPixelRect(x + 5, y + 18, 14, 9, "#b4662e");
+    drawPixelRect(x + 21, y + 3, 11, 14, "#8e4a2d");
+    drawPixelRect(x + 30, y + 7, 8, 5, "#f0bc3f");
+    drawPixelRect(x + 24, y + 15, 5, 8, "#c5363f");
+    drawPixelRect(x + 25, y + 6, 2, 2, "#f6f3de");
+    drawPixelRect(x + 26, y + 7, 2, 2, "#0b1520");
+    drawPixelRect(x + 7 - runningStep * 2, y + 30, 4, 7, "#d89132");
+    drawPixelRect(x + 20 + runningStep * 2, y + 30, 4, 7, "#d89132");
+    drawPixelRect(x + 3 - runningStep * 2, y + 36, 9, 2, "#d89132");
+    drawPixelRect(x + 20 + runningStep * 2, y + 36, 9, 2, "#d89132");
+    return;
+  }
+  drawPixelRect(x + 8, y, 12, 9, "#edc29b");
+  drawPixelRect(x + 3, y + 8, 22, 14, game.accent);
+  drawPixelRect(x + 4, y + 21, 7, 9, "#172333");
+  drawPixelRect(x + 17, y + 21, 7, 9, "#172333");
+  drawPixelRect(x + 9, y + 11, 10, 6, game.secondary);
 }
 
 function drawSeasonalChallenge() {
   const finale = currentSeasonalFinale();
-  drawPixelRect(0, 0, 720, 480, activeSeasonalGame.sky);
-  drawPixelRect(0, 280, 720, 200, activeSeasonalGame.ground);
+  drawPixelRect(0, 0, SEASONAL_CANVAS_WIDTH, SEASONAL_CANVAS_HEIGHT, activeSeasonalGame.sky);
+  drawPixelRect(0, 430, SEASONAL_CANVAS_WIDTH, 290, activeSeasonalGame.ground);
   seasonalContext.fillStyle = "#f6f3de";
   seasonalContext.font = "bold 23px monospace";
   seasonalContext.textAlign = "center";
-  seasonalContext.fillText(finale.title.toUpperCase(), 360, 50);
-  seasonalContext.font = "bold 14px monospace";
-  seasonalContext.fillText(finale.instruction, 360, 78);
+  seasonalContext.fillText(finale.title.toUpperCase(), 270, 75);
+  seasonalContext.font = "bold 12px monospace";
+  seasonalContext.fillText(finale.instruction, 270, 108);
 
   const targetX = seasonalChallengeTargetX;
   if (activeSeasonalGame.id === "sleigh-bell-sprint") {
-    drawPixelRect(targetX - 28, 210, 184, 96, "#733e34");
-    drawPixelRect(targetX - 42, 196, 212, 22, "#f2f0e2");
-    drawPixelRect(targetX + 42, 166, 48, 50, "#9b4b3e");
-    drawPixelRect(targetX + 36, 158, 60, 10, "#f2f0e2");
+    drawPixelRect(targetX - 28, 328, 184, 120, "#733e34");
+    drawPixelRect(targetX - 42, 310, 212, 24, "#f2f0e2");
+    drawPixelRect(targetX + 42, 260, 48, 70, "#9b4b3e");
+    drawPixelRect(targetX + 36, 250, 60, 12, "#f2f0e2");
   } else {
-    drawPixelRect(targetX, 185, 128, 118, "#13283f");
-    drawPixelRect(targetX + 10, 195, 108, 98, activeSeasonalGame.accent);
-    drawPixelRect(targetX + 22, 207, 84, 74, activeSeasonalGame.secondary);
+    drawPixelRect(targetX, 285, 128, 160, "#13283f");
+    drawPixelRect(targetX + 10, 295, 108, 140, activeSeasonalGame.accent);
+    drawPixelRect(targetX + 22, 310, 84, 110, activeSeasonalGame.secondary);
   }
   seasonalContext.fillStyle = "#0b1520";
   seasonalContext.font = "bold 14px monospace";
-  seasonalContext.fillText(finale.target.toUpperCase(), targetX + 64, 250);
-  drawPixelRect(targetX - 6, 316, 140, 7, activeSeasonalGame.secondary);
+  seasonalContext.fillText(finale.target.toUpperCase(), targetX + 64, 375);
+  drawPixelRect(targetX - 6, 492, 140, 8, activeSeasonalGame.secondary);
   drawSeasonalPlayer();
 }
 
@@ -1057,16 +1101,16 @@ function drawSeasonalFinale() {
   const progress = Math.max(0, Math.min(1, 1 - seasonalFinaleAnimation / 1.8));
   if (activeSeasonalGame.id === "sleigh-bell-sprint") {
     const x = seasonalChallengeTargetX + 38;
-    const y = 330 - progress * 145;
+    const y = 560 - progress * 245;
     drawPixelRect(x, y + 20, 70, 20, activeSeasonalGame.accent);
     drawPixelRect(x + 18, y, 34, 24, activeSeasonalGame.secondary);
     if (progress > 0.58) {
-      const dropY = 178 + (progress - 0.58) * 145;
+      const dropY = 275 + (progress - 0.58) * 205;
       drawPixelRect(seasonalChallengeTargetX + 56, dropY, 20, 30, activeSeasonalGame.accent);
     }
   } else {
     const pulse = 8 + Math.floor(progress * 28);
-    drawPixelRect(seasonalChallengeTargetX + 64 - pulse, 244 - pulse, pulse * 2, pulse * 2, activeSeasonalGame.secondary);
+    drawPixelRect(seasonalChallengeTargetX + 64 - pulse, 370 - pulse, pulse * 2, pulse * 2, activeSeasonalGame.secondary);
   }
 }
 
@@ -1085,8 +1129,8 @@ function drawSeasonalScene() {
   seasonalObjects.forEach(drawSeasonalObject);
   drawSeasonalPlayer();
   const progress = (seasonalLevel + seasonalRowsCrossed / SEASONAL_LANE_COUNT) / SEASONAL_LEVEL_COUNT;
-  drawPixelRect(18, 18, 684, 18, "#0b1520");
-  drawPixelRect(22, 22, 676 * progress, 10, activeSeasonalGame.secondary);
+  drawPixelRect(18, 18, 504, 18, "#0b1520");
+  drawPixelRect(22, 22, 496 * progress, 10, activeSeasonalGame.secondary);
 }
 
 function seasonalAnimationFrame(timestamp) {

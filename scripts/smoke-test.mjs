@@ -176,12 +176,18 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260805-holiday-ui/);
-assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 720px\) minmax\(250px, 320px\)/s);
-assert.match(styles, /#seasonalCanvas\s*\{[^}]*aspect-ratio:\s*3 \/ 2/s);
-assert.match(styles, /\.seasonal-hud\s*\{\s*display:\s*grid/s);
-assert.doesNotMatch(styles, /\.seasonal-hud\s*\{[^}]*position:\s*absolute/s);
+assert.match(html, /20260805-classic-holiday-lineup/);
+assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
+assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
+assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*320px minmax\(0, 1fr\)/s);
+assert.match(styles, /#seasonalCanvas\s*\{[^}]*aspect-ratio:\s*3 \/ 4/s);
+assert.match(styles, /body\.seasonal-game-open \.seasonal-stage\.play-panel\s*\{\s*display:\s*flex !important/s);
+assert.match(styles, /body\[data-device="mobile"\] \.seasonal-run-panel\s*\{\s*display:\s*none/s);
 assert.match(styles, /@media \(max-height: 560px\) and \(orientation: landscape\)/);
+assert.match(seasonalSource, /const SEASONAL_ROW_STEP = 60/);
+assert.match(seasonalSource, /width: 28,\s*height: 30/s);
+assert.match(seasonalSource, /if \(game\.player === "turkey"\)/);
+assert.match(seasonalSource, /const runningStep = Math\.floor\(seasonalElapsed \* 9\) % 2/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -227,8 +233,8 @@ function runSeasonalProfile(profileId) {
   });
 
   seasonalElements.get("seasonalGameScreen").hidden = true;
-  seasonalCanvasElement.width = 720;
-  seasonalCanvasElement.height = 480;
+  seasonalCanvasElement.width = 540;
+  seasonalCanvasElement.height = 720;
   seasonalCanvasElement.getContext = () => seasonalCanvasContext;
 
   const requestSeasonalFrame = (callback) => {
@@ -329,7 +335,7 @@ holidaySeason.windowListeners.get("keydown")({
   preventDefault() {},
 });
 holidaySeason.frames.shift()(16);
-assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, "Score 25");
+assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, 25);
 assert.equal(holidaySeason.game.rowsCrossed, 1);
 holidaySeason.game.forceChallenge();
 holidaySeason.game.alignChallenge();
