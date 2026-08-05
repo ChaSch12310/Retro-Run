@@ -539,6 +539,9 @@ const seasonalScore = document.getElementById("seasonalScoreValue");
 const seasonalObjective = document.getElementById("seasonalObjectiveValue");
 const seasonalTime = document.getElementById("seasonalTimeValue");
 const seasonalLives = document.getElementById("seasonalLivesValue");
+const seasonalStageName = document.getElementById("seasonalStageNameValue");
+const seasonalRouteTrack = document.getElementById("seasonalRouteTrack");
+const seasonalFinale = document.getElementById("seasonalFinaleValue");
 const seasonalOverlay = document.getElementById("seasonalOverlay");
 const seasonalOverlayKicker = document.getElementById("seasonalOverlayKicker");
 const seasonalOverlayTitle = document.getElementById("seasonalOverlayTitle");
@@ -670,6 +673,12 @@ function syncSeasonalHud() {
   seasonalLives.textContent = `Lives ${seasonalRunLives}`;
   seasonalBest.textContent = currentSeasonalBest();
   seasonalHoliday.textContent = `${activeSeasonalGame.holiday} · ${currentSeasonalStageName()}`;
+  seasonalStageName.textContent = `Level ${seasonalLevel + 1}: ${currentSeasonalStageName()}`;
+  seasonalFinale.textContent = `Finale: ${currentSeasonalFinale().title}`;
+  seasonalRouteTrack.innerHTML = currentSeasonalStages().map((stage, index) => {
+    const status = index < seasonalLevel ? "complete" : index === seasonalLevel ? "current" : "upcoming";
+    return `<span class="seasonal-route-stop ${status}"><b>${index + 1}</b><em>${stage}</em></span>`;
+  }).join("");
 }
 
 function openSeasonalGame(gameId) {

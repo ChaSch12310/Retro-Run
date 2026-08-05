@@ -121,6 +121,11 @@ assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
 assert.match(html, /id="seasonalGameScreen"/);
+assert.match(html, /class="seasonal-game-body"/);
+assert.match(html, /class="seasonal-run-panel"/);
+assert.match(html, /id="seasonalStageNameValue"/);
+assert.match(html, /id="seasonalRouteTrack"/);
+assert.match(html, /id="seasonalFinaleValue"/);
 assert.match(html, /seasonal-profile\.js/);
 assert.match(html, /seasonal-games\.js/);
 assert.match(seasonalProfile, /holiday-season/);
@@ -171,7 +176,12 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260805-crossing-worlds/);
+assert.match(html, /20260805-holiday-ui/);
+assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*minmax\(0, 720px\) minmax\(250px, 320px\)/s);
+assert.match(styles, /#seasonalCanvas\s*\{[^}]*aspect-ratio:\s*3 \/ 2/s);
+assert.match(styles, /\.seasonal-hud\s*\{\s*display:\s*grid/s);
+assert.doesNotMatch(styles, /\.seasonal-hud\s*\{[^}]*position:\s*absolute/s);
+assert.match(styles, /@media \(max-height: 560px\) and \(orientation: landscape\)/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -187,6 +197,9 @@ function runSeasonalProfile(profileId) {
     "seasonalObjectiveValue",
     "seasonalTimeValue",
     "seasonalLivesValue",
+    "seasonalStageNameValue",
+    "seasonalRouteTrack",
+    "seasonalFinaleValue",
     "seasonalOverlay",
     "seasonalOverlayKicker",
     "seasonalOverlayTitle",
@@ -299,6 +312,10 @@ holidayShelf.children[0].click();
 assert.equal(holidaySeason.elements.get("seasonalGameScreen").hidden, false);
 assert.equal(holidaySeason.elements.get("gameLibraryScreen").hidden, true);
 assert.equal(holidaySeason.elements.get("seasonalGameTitle").textContent, "Sleigh Bell Sprint");
+assert.equal(holidaySeason.elements.get("seasonalStageNameValue").textContent, "Level 1: New York");
+assert.match(holidaySeason.elements.get("seasonalRouteTrack").innerHTML, /New York/);
+assert.match(holidaySeason.elements.get("seasonalRouteTrack").innerHTML, /Tokyo/);
+assert.equal(holidaySeason.elements.get("seasonalFinaleValue").textContent, "Finale: Rooftop Landing");
 assert.equal(holidaySeason.body.classList.contains("seasonal-game-open"), true);
 holidaySeason.elements.get("seasonalStartButton").click();
 assert.equal(holidaySeason.elements.get("seasonalOverlay").hidden, true);
@@ -321,6 +338,7 @@ assert.equal(holidaySeason.game.state, "finale");
 holidaySeason.game.finishFinale();
 assert.equal(holidaySeason.game.level, 1);
 assert.equal(holidaySeason.game.stageName, "London");
+assert.equal(holidaySeason.elements.get("seasonalStageNameValue").textContent, "Level 2: London");
 assert.equal(holidaySeason.game.pendingAction, "next-level");
 holidaySeason.elements.get("seasonalStartButton").click();
 assert.equal(holidaySeason.game.state, "playing");
