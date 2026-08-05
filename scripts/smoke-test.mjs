@@ -54,6 +54,14 @@ class FakeElement {
     return child;
   }
 
+  append(...children) {
+    this.children.push(...children);
+  }
+
+  replaceChildren(...children) {
+    this.children = [...children];
+  }
+
   get innerHTML() {
     return this._innerHTML || "";
   }
@@ -87,6 +95,16 @@ class FakeElement {
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+const seasonalSource = fs.readFileSync(new URL("../seasonal-games.js", import.meta.url), "utf8");
+const seasonalProfile = fs.readFileSync(new URL("../seasonal-profile.js", import.meta.url), "utf8");
+const seasonalDeploymentSource = fs.readFileSync(
+  new URL("./deploy-seasonal-versions.mjs", import.meta.url),
+  "utf8"
+);
+const seasonalDeploymentList = fs.readFileSync(
+  new URL("./seasonal-deployments.mjs", import.meta.url),
+  "utf8"
+);
 const wranglerConfig = fs.readFileSync(
   new URL("../wrangler.jsonc", import.meta.url),
   "utf8"
@@ -101,6 +119,170 @@ assert.doesNotMatch(styles, /library-coming-soon/);
 assert.match(html, /20260805-restore-original-colors/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
+assert.match(html, /id="seasonalGameShelf"/);
+assert.match(html, /id="seasonalGameScreen"/);
+assert.match(html, /seasonal-profile\.js/);
+assert.match(html, /seasonal-games\.js/);
+assert.match(seasonalProfile, /holiday-season/);
+assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
+assert.doesNotMatch(seasonalDeploymentSource, /--tag\b|--preview-alias/);
+assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 23);
+
+const expectedSeasonalTitles = [
+  "Sleigh Bell Sprint",
+  "Menorah Light Quest",
+  "Seven Principles Journey",
+  "Pumpkin Panic",
+  "Turkey Trot Trouble",
+  "Midnight Rush",
+  "Heartbreaker Highway",
+  "Lucky Clover Chase",
+  "Egg Hunt Dash",
+  "Lantern Dragon Run",
+  "Firework Flyer",
+  "Groundhog Loop",
+  "Float Frenzy",
+  "Color Rush",
+  "Festival of Lights",
+  "Moonlight Delivery",
+  "Marigold Path",
+  "Planet Patrol",
+  "Upside-Down Arcade",
+  "Sun Chase",
+  "Harvest Moon Maze",
+  "Snow Day Sled Escape",
+  "Carnival Beat Run",
+  "Back-to-School Dash",
+  "Winter Solstice Star Quest",
+];
+
+expectedSeasonalTitles.forEach((title) => {
+  assert.ok(seasonalSource.includes(title), `Missing seasonal game: ${title}`);
+});
+assert.equal((seasonalSource.match(/^    id: "[a-z0-9-]+",$/gm) || []).length, 25);
+
+function runSeasonalProfile(profileId) {
+  const seasonalIds = [
+    "seasonalGameShelf",
+    "seasonalGameScreen",
+    "seasonalCanvas",
+    "seasonalBackButton",
+    "seasonalStartButton",
+    "seasonalGameTitle",
+    "seasonalGameHoliday",
+    "seasonalBestValue",
+    "seasonalScoreValue",
+    "seasonalObjectiveValue",
+    "seasonalTimeValue",
+    "seasonalLivesValue",
+    "seasonalOverlay",
+    "seasonalOverlayKicker",
+    "seasonalOverlayTitle",
+    "seasonalOverlayText",
+    "arcadeHomeButton",
+    "gameLibraryScreen",
+  ];
+  const seasonalElements = new Map(
+    seasonalIds.map((id) => [id, new FakeElement(id)])
+  );
+  const seasonalBody = new FakeElement("body");
+  const seasonalFrames = [];
+  const seasonalWindowListeners = new Map();
+  const seasonalStorage = new Map();
+  const seasonalCanvasElement = seasonalElements.get("seasonalCanvas");
+  const seasonalCanvasContext = new Proxy({}, {
+    get(target, property) {
+      if (!(property in target)) target[property] = () => {};
+      return target[property];
+    },
+    set(target, property, value) {
+      target[property] = value;
+      return true;
+    },
+  });
+
+  seasonalElements.get("seasonalGameScreen").hidden = true;
+  seasonalCanvasElement.width = 720;
+  seasonalCanvasElement.height = 480;
+  seasonalCanvasElement.getContext = () => seasonalCanvasContext;
+
+  const requestSeasonalFrame = (callback) => {
+    seasonalFrames.push(callback);
+    return seasonalFrames.length;
+  };
+  const seasonalWindow = {
+    addEventListener(type, callback) {
+      seasonalWindowListeners.set(type, callback);
+    },
+    requestAnimationFrame: requestSeasonalFrame,
+  };
+  const seasonalVmContext = vm.createContext({
+    console,
+    Math,
+    Number,
+    globalThis: null,
+    RETRO_RUN_SEASONAL_PROFILE: profileId,
+    requestAnimationFrame: requestSeasonalFrame,
+    localStorage: {
+      getItem(key) {
+        return seasonalStorage.has(key) ? seasonalStorage.get(key) : null;
+      },
+      setItem(key, value) {
+        seasonalStorage.set(key, String(value));
+      },
+    },
+    document: {
+      body: seasonalBody,
+      getElementById(id) {
+        return seasonalElements.get(id) || null;
+      },
+      createElement() {
+        return new FakeElement();
+      },
+    },
+    window: seasonalWindow,
+  });
+  seasonalVmContext.globalThis = seasonalVmContext;
+  vm.runInContext(seasonalSource, seasonalVmContext, { filename: "seasonal-games.js" });
+
+  return {
+    body: seasonalBody,
+    elements: seasonalElements,
+    frames: seasonalFrames,
+    windowListeners: seasonalWindowListeners,
+  };
+}
+
+const holidaySeason = runSeasonalProfile("holiday-season");
+const holidayShelf = holidaySeason.elements.get("seasonalGameShelf");
+assert.equal(holidayShelf.hidden, false);
+assert.equal(holidayShelf.children.length, 3);
+assert.match(holidayShelf.children[0].className, /seasonal-featured-card/);
+assert.match(holidayShelf.children[0].innerHTML, /Sleigh Bell Sprint/);
+assert.match(holidayShelf.children[1].innerHTML, /Menorah Light Quest/);
+assert.match(holidayShelf.children[2].innerHTML, /Seven Principles Journey/);
+
+holidayShelf.children[0].click();
+assert.equal(holidaySeason.elements.get("seasonalGameScreen").hidden, false);
+assert.equal(holidaySeason.elements.get("gameLibraryScreen").hidden, true);
+assert.equal(holidaySeason.elements.get("seasonalGameTitle").textContent, "Sleigh Bell Sprint");
+assert.equal(holidaySeason.body.classList.contains("seasonal-game-open"), true);
+holidaySeason.elements.get("seasonalStartButton").click();
+assert.equal(holidaySeason.elements.get("seasonalOverlay").hidden, true);
+holidaySeason.windowListeners.get("keydown")({
+  key: "ArrowRight",
+  preventDefault() {},
+});
+holidaySeason.frames.shift()(16);
+assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, "Score 2");
+holidaySeason.elements.get("seasonalBackButton").click();
+assert.equal(holidaySeason.elements.get("seasonalGameScreen").hidden, true);
+assert.equal(holidaySeason.elements.get("gameLibraryScreen").hidden, false);
+
+const halloweenSeason = runSeasonalProfile("pumpkin-panic");
+const halloweenShelf = halloweenSeason.elements.get("seasonalGameShelf");
+assert.equal(halloweenShelf.children.length, 1);
+assert.match(halloweenShelf.children[0].innerHTML, /Pumpkin Panic/);
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);

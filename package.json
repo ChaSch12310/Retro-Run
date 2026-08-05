@@ -7,7 +7,8 @@
     "test": "node scripts/smoke-test.mjs",
     "cloudflare:preview": "pnpm run build && wrangler versions upload --preview-alias preview --strict",
     "cloudflare:versions": "wrangler versions list",
-    "cloudflare:promote": "wrangler versions deploy"
+    "cloudflare:promote": "wrangler versions deploy",
+    "cloudflare:seasonal": "node scripts/deploy-seasonal-versions.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

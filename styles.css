@@ -4488,3 +4488,417 @@ body.game-library-open .game-library {
   grid-column: 1;
   grid-row: 2;
 }
+
+/* Seasonal builds use one shared arcade engine with a deployment-selected theme. */
+.seasonal-game-shelf {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.seasonal-game-shelf[hidden] {
+  display: none !important;
+}
+
+.seasonal-select-card {
+  --seasonal-accent: #d9473f;
+  --seasonal-secondary: #f3cf58;
+  --seasonal-sky: #132c4a;
+  --seasonal-ground: #dcecf2;
+  min-height: 220px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(230px, 1.1fr);
+  grid-template-areas:
+    "scene copy"
+    "scene play";
+  color: var(--text);
+  background: #14283f;
+  border: 5px solid #090f17;
+  overflow: hidden;
+  text-align: left;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.05),
+    0 9px 0 rgba(6, 13, 20, 0.42);
+}
+
+.seasonal-select-card:hover,
+.seasonal-select-card:focus-visible {
+  border-color: var(--seasonal-accent);
+  background: color-mix(in srgb, var(--seasonal-accent) 18%, #14283f);
+  box-shadow:
+    inset 0 0 0 4px var(--seasonal-accent),
+    0 9px 0 rgba(6, 13, 20, 0.42);
+}
+
+.seasonal-select-card:focus-visible {
+  outline: 4px solid var(--text);
+  outline-offset: 5px;
+}
+
+.seasonal-featured-card {
+  grid-column: 1 / -1;
+  min-height: 310px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+}
+
+.seasonal-card-scene {
+  grid-area: scene;
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 82px, rgba(255, 255, 255, 0.08) 82px 86px),
+    linear-gradient(180deg, var(--seasonal-sky) 0 48%, var(--seasonal-ground) 48% 100%);
+  border-right: 4px solid var(--line);
+}
+
+.seasonal-featured-card .seasonal-card-scene {
+  min-height: 310px;
+}
+
+.seasonal-card-moon {
+  position: absolute;
+  top: 30px;
+  right: 12%;
+  width: 62px;
+  height: 62px;
+  background: var(--seasonal-secondary);
+  border: 5px solid #0b1520;
+  box-shadow: 9px 9px 0 rgba(8, 15, 22, 0.35);
+}
+
+.seasonal-card-track {
+  position: absolute;
+  inset: 48% 0 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 74px, rgba(9, 15, 23, 0.23) 74px 80px),
+    repeating-linear-gradient(0deg, transparent 0 44px, rgba(255, 255, 255, 0.22) 44px 48px);
+}
+
+.seasonal-card-sprite {
+  position: absolute;
+  left: 22%;
+  bottom: 32px;
+  width: 104px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  color: #0b1520;
+  background: var(--seasonal-accent);
+  border: 6px solid #0b1520;
+  box-shadow:
+    inset 0 0 0 6px var(--seasonal-secondary),
+    10px 10px 0 rgba(8, 15, 22, 0.38);
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+}
+
+.seasonal-card-spark {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--seasonal-secondary);
+  box-shadow: 0 0 0 4px rgba(11, 21, 32, 0.35);
+}
+
+.seasonal-card-spark.spark-one { left: 14%; top: 24%; }
+.seasonal-card-spark.spark-two { left: 47%; top: 18%; width: 8px; height: 8px; }
+.seasonal-card-spark.spark-three { right: 18%; bottom: 26%; }
+
+.seasonal-card-copy {
+  grid-area: copy;
+  align-content: center;
+  display: grid;
+  gap: 10px;
+  padding: 24px 24px 12px;
+}
+
+.seasonal-card-tag {
+  color: var(--seasonal-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.seasonal-card-copy strong {
+  color: var(--text);
+  font-size: clamp(1.4rem, 3vw, 2.35rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.seasonal-card-copy > span:last-child {
+  color: #dce4d2;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.seasonal-featured-card .seasonal-card-copy {
+  padding: 34px 30px 20px;
+}
+
+.seasonal-featured-card .seasonal-card-copy strong {
+  font-size: clamp(2.25rem, 5vw, 4.1rem);
+}
+
+.seasonal-select-card .play-game-label {
+  grid-area: play;
+  color: #0b1520;
+  background: var(--seasonal-accent);
+}
+
+.seasonal-game-screen {
+  --seasonal-accent: #d9473f;
+  --seasonal-secondary: #f3cf58;
+  --seasonal-sky: #132c4a;
+  --seasonal-ground: #dcecf2;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  z-index: 8;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 16px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 12px, transparent 12px 24px),
+    #102236;
+  border: 4px solid var(--line);
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.05),
+    0 10px 0 rgba(8, 15, 22, 0.35);
+  overflow: hidden;
+}
+
+.seasonal-game-screen[hidden] {
+  display: none !important;
+}
+
+body.seasonal-game-open .game-library,
+body.seasonal-game-open .info-panel,
+body.seasonal-game-open .play-panel {
+  display: none !important;
+}
+
+.seasonal-game-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 12px;
+  background: #172f49;
+  border: 4px solid #0a1420;
+}
+
+.seasonal-game-header > div:nth-child(2) {
+  min-width: 0;
+  text-align: center;
+}
+
+.seasonal-game-header h2 {
+  margin: 0;
+  color: var(--seasonal-accent);
+  font-size: clamp(1.15rem, 3vw, 2rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.seasonal-game-header .library-kicker {
+  margin: 0 0 5px;
+  color: var(--seasonal-secondary);
+}
+
+.seasonal-best-box {
+  min-width: 86px;
+  padding: 8px 12px;
+  color: #0b1520;
+  background: var(--seasonal-secondary);
+  border: 4px solid #0a1420;
+  text-align: center;
+}
+
+.seasonal-best-box span,
+.seasonal-best-box strong {
+  display: block;
+}
+
+.seasonal-best-box span {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.seasonal-stage {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #08111b;
+  border: 5px solid #070d14;
+}
+
+#seasonalCanvas {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.seasonal-hud {
+  position: absolute;
+  inset: 12px 12px auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  pointer-events: none;
+}
+
+.seasonal-hud span {
+  padding: 8px 6px;
+  color: #f6f3de;
+  background: rgba(9, 18, 28, 0.9);
+  border: 3px solid #07101a;
+  font-size: clamp(0.62rem, 1.5vw, 0.82rem);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.seasonal-overlay {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(520px, calc(100% - 36px));
+  translate: -50% -50%;
+  padding: clamp(18px, 4vw, 32px);
+  color: var(--text);
+  background: #13283f;
+  border: 5px solid #080f17;
+  box-shadow:
+    inset 0 0 0 5px var(--seasonal-accent),
+    12px 12px 0 rgba(4, 9, 14, 0.48);
+  text-align: center;
+}
+
+.seasonal-overlay[hidden] {
+  display: none !important;
+}
+
+.seasonal-overlay-kicker {
+  margin: 0 0 8px;
+  color: var(--seasonal-secondary);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.seasonal-overlay h3 {
+  margin: 0 0 12px;
+  color: var(--seasonal-accent);
+  font-size: clamp(1.5rem, 5vw, 2.7rem);
+  text-transform: uppercase;
+}
+
+.seasonal-overlay p:not(.seasonal-overlay-kicker) {
+  margin: 0 auto 18px;
+  max-width: 44ch;
+  font-family: "Trebuchet MS", sans-serif;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.seasonal-overlay button {
+  color: #0a1420;
+  background: var(--seasonal-accent);
+}
+
+.seasonal-control-note {
+  margin: 0;
+  color: #dce4d2;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .seasonal-game-shelf {
+    grid-template-columns: 1fr;
+  }
+
+  .seasonal-featured-card,
+  .seasonal-select-card {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 0.9fr) minmax(210px, 1.1fr);
+    min-height: 230px;
+  }
+
+  .seasonal-featured-card .seasonal-card-scene,
+  .seasonal-card-scene {
+    min-height: 230px;
+  }
+
+  .seasonal-featured-card .seasonal-card-copy strong {
+    font-size: clamp(1.7rem, 5vw, 2.7rem);
+  }
+}
+
+@media (max-width: 620px) {
+  .seasonal-select-card,
+  .seasonal-featured-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "scene"
+      "copy"
+      "play";
+  }
+
+  .seasonal-card-scene,
+  .seasonal-featured-card .seasonal-card-scene {
+    min-height: 190px;
+    border-right: 0;
+    border-bottom: 4px solid var(--line);
+  }
+
+  .seasonal-game-screen {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .seasonal-game-header {
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .seasonal-best-box {
+    display: none;
+  }
+
+  .seasonal-back-button {
+    padding-inline: 10px;
+    font-size: 0.7rem;
+  }
+
+  .seasonal-hud {
+    inset: 6px 6px auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .seasonal-hud span {
+    padding: 5px 3px;
+    border-width: 2px;
+    font-size: 0.58rem;
+  }
+
+  .seasonal-control-note {
+    display: none;
+  }
+}

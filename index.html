@@ -51,6 +51,8 @@
           <p>Choose a game to enter the arcade</p>
         </div>
 
+        <div class="seasonal-game-shelf" id="seasonalGameShelf" aria-label="Featured seasonal games"></div>
+
         <div class="game-card-grid">
           <button class="game-select-card featured-game-card" id="gridironDashButton" type="button">
             <span class="game-card-art" aria-hidden="true">
@@ -265,6 +267,36 @@
             <span class="play-game-label">Play Game</span>
           </button>
         </div>
+      </section>
+
+      <section class="seasonal-game-screen" id="seasonalGameScreen" aria-labelledby="seasonalGameTitle" hidden>
+        <div class="seasonal-game-header">
+          <button class="secondary-button seasonal-back-button" id="seasonalBackButton" type="button">Back to Arcade</button>
+          <div>
+            <p class="library-kicker" id="seasonalGameHoliday">Seasonal Arcade</p>
+            <h2 id="seasonalGameTitle">Seasonal Game</h2>
+          </div>
+          <div class="seasonal-best-box">
+            <span>Best</span>
+            <strong id="seasonalBestValue">0</strong>
+          </div>
+        </div>
+        <div class="seasonal-stage" id="seasonalStage">
+          <canvas id="seasonalCanvas" width="720" height="480" aria-label="Seasonal arcade game"></canvas>
+          <div class="seasonal-hud" aria-live="polite">
+            <span id="seasonalScoreValue">Score 0</span>
+            <span id="seasonalObjectiveValue">Objective 0 / 0</span>
+            <span id="seasonalTimeValue">Time 60</span>
+            <span id="seasonalLivesValue">Lives 3</span>
+          </div>
+          <div class="seasonal-overlay" id="seasonalOverlay">
+            <p class="seasonal-overlay-kicker" id="seasonalOverlayKicker">Holiday Challenge</p>
+            <h3 id="seasonalOverlayTitle">Ready?</h3>
+            <p id="seasonalOverlayText">Move with arrow keys, WASD, or swipe anywhere on the game.</p>
+            <button id="seasonalStartButton" type="button">Start Game</button>
+          </div>
+        </div>
+        <p class="seasonal-control-note">Keyboard: arrows or WASD. Tablet and mobile: swipe anywhere on the game.</p>
       </section>
 
       <aside class="info-panel">
@@ -721,5 +753,7 @@
     </div>
 
     <script src="game.js?v=20260805-restore-original-colors"></script>
+    <script src="seasonal-profile.js?v=20260805-seasonal-arcade"></script>
+    <script src="seasonal-games.js?v=20260805-seasonal-arcade"></script>
   </body>
 </html>
