@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { seasonalDeployments } from "./seasonal-deployments.mjs";
 
 const requestedProfile = process.argv.find((argument) => argument.startsWith("--profile="))?.split("=")[1];
+const releaseName = process.env.RETRO_RUN_RELEASE_NAME?.trim();
 const deployments = requestedProfile
   ? seasonalDeployments.filter((deployment) => deployment.profile === requestedProfile)
   : seasonalDeployments;
@@ -25,7 +26,8 @@ function run(command, args, extraEnvironment = {}) {
 }
 
 for (const deployment of deployments) {
-  process.stdout.write(`\n=== ${deployment.message} ===\n`);
+  const versionMessage = releaseName ? `${releaseName} - ${deployment.message}` : deployment.message;
+  process.stdout.write(`\n=== ${versionMessage} ===\n`);
   await run("pnpm", ["run", "build"], {
     RETRO_RUN_SEASONAL_PROFILE: deployment.profile,
   });
@@ -36,7 +38,7 @@ for (const deployment of deployments) {
     "upload",
     "--strict",
     "--message",
-    deployment.message,
+    versionMessage,
   ]);
 }
 

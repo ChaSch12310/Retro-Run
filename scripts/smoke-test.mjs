@@ -125,6 +125,8 @@ assert.match(html, /seasonal-profile\.js/);
 assert.match(html, /seasonal-games\.js/);
 assert.match(seasonalProfile, /holiday-season/);
 assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
+assert.match(seasonalDeploymentSource, /RETRO_RUN_RELEASE_NAME/);
+assert.match(seasonalDeploymentSource, /releaseName \? `\$\{releaseName\} - \$\{deployment\.message\}`/);
 assert.doesNotMatch(seasonalDeploymentSource, /--tag\b|--preview-alias/);
 assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 23);
 
