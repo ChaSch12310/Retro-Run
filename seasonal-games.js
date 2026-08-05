@@ -3,14 +3,14 @@ const SEASONAL_GAMES = [
     id: "sleigh-bell-sprint",
     title: "Sleigh Bell Sprint",
     holiday: "Christmas",
-    description: "Fly between rooftops, dodge chimneys, and deliver presents before sunrise.",
+    description: "Fly between rooftops, dodge police helicopters, and deliver presents before sunrise.",
     objective: "Presents",
     target: 8,
     time: 75,
     distance: 1500,
     behavior: "delivery",
     player: "sleigh",
-    obstacle: "Chimney",
+    obstacle: "Police Helicopter",
     accent: "#d9473f",
     secondary: "#f3cf58",
     sky: "#132c4a",
@@ -459,6 +459,69 @@ const SEASONAL_PROFILES = {
   ],
 };
 
+const SEASONAL_STAGE_SETS = {
+  "sleigh-bell-sprint": ["New York", "London", "Paris", "Tokyo"],
+  "menorah-light-quest": ["Brooklyn", "Jerusalem", "Montreal", "Paris"],
+  "seven-principles-journey": ["Unity Block", "Purpose Park", "Creativity Square", "Community Hall"],
+  "pumpkin-panic": ["Lantern Lane", "Ghost Town", "Monster Market", "Midnight Manor"],
+  "turkey-trot-trouble": ["Main Street", "Balloon Row", "Band Boulevard", "Parade Plaza"],
+  "midnight-rush": ["Times Square", "Harbor Lights", "Neon Crossing", "Clocktower Plaza"],
+  "heartbreaker-highway": ["Rose Row", "Cupid Crossing", "Candy Corner", "Heartlight Bridge"],
+  "lucky-clover-chase": ["Green Village", "Clover Fields", "Emerald Hills", "Rainbow Road"],
+  "egg-hunt-dash": ["Tulip Garden", "Hedge Maze", "Bunny Burrow", "Golden Meadow"],
+  "lantern-dragon-run": ["Lantern Street", "Firework Market", "Dragon Gate", "Festival Square"],
+  "firework-flyer": ["Capital Run", "River Show", "Liberty Harbor", "Grand Finale"],
+  "groundhog-loop": ["First Morning", "Shadow Street", "Clockwork Park", "Tomorrow Tunnel"],
+  "float-frenzy": ["Canal Street", "Bead Boulevard", "Brass Band Bend", "Royal Float Row"],
+  "color-rush": ["Pink Powder Path", "Blue Burst Block", "Golden Cloud Way", "Rainbow Square"],
+  "festival-of-lights": ["Lamp Lane", "Market Glow", "Rangoli Road", "Palace Lights"],
+  "moonlight-delivery": ["Moon Crescent Row", "Family Street", "Lantern Market", "Celebration Court"],
+  "marigold-path": ["Marigold Gate", "Memory Bridge", "Candle Plaza", "Remembrance Hill"],
+  "planet-patrol": ["City Park", "River Rescue", "Wildlife Way", "Clean Earth Center"],
+  "upside-down-arcade": ["Backward Block", "Bouncy Boulevard", "Invisible Avenue", "Silly Square"],
+  "sun-chase": ["Sunrise Beach", "Dune Dash", "Golden Hills", "Sunset Summit"],
+  "harvest-moon-maze": ["Cornfield Crossing", "Hay Bale Bend", "Tractor Trail", "Harvest Moon Farm"],
+  "snow-day-sled-escape": ["Schoolyard Hill", "Pine Pass", "Frozen Pond", "Summit Slope"],
+  "carnival-beat-run": ["Drum Street", "Samba Square", "Parade Pulse", "Finale Avenue"],
+  "back-to-school-dash": ["Freshman Hall", "Library Lane", "Science Wing", "Final Bell"],
+  "winter-solstice-star-quest": ["Frost Forest", "Moonlit Lake", "Aurora Ridge", "Star Summit"],
+};
+
+const SEASONAL_FINALES = {
+  "sleigh-bell-sprint": { title: "Rooftop Landing", instruction: "Line up with the glowing roof and press up to land.", target: "Roof", success: "The sleigh lands and Santa drops through the chimney!" },
+  "menorah-light-quest": { title: "Light the Menorah", instruction: "Line up with the center candle and press up to light it.", target: "Candle", success: "The menorah shines across the neighborhood!" },
+  "seven-principles-journey": { title: "Community Circle", instruction: "Line up with the open place and press up to join the circle.", target: "Circle", success: "The community challenge is complete!" },
+  "pumpkin-panic": { title: "Seal the Haunted Gate", instruction: "Line up with the moonlit lock and press up.", target: "Gate", success: "The haunted gate slams shut behind you!" },
+  "turkey-trot-trouble": { title: "Parade Finish", instruction: "Line up with the open float and press up to hop aboard.", target: "Float", success: "The turkey rides safely through the finale!" },
+  "midnight-rush": { title: "Drop the Ball", instruction: "Line up with the clock tower and press up before midnight.", target: "Clock", success: "The countdown reaches zero right on time!" },
+  "heartbreaker-highway": { title: "Deliver the Valentine", instruction: "Line up with the glowing mailbox and press up.", target: "Mailbox", success: "The final valentine is delivered!" },
+  "lucky-clover-chase": { title: "Reach the Rainbow", instruction: "Line up with the rainbow and press up to claim the finish.", target: "Rainbow", success: "A pot of gold sparkles at the finish!" },
+  "egg-hunt-dash": { title: "Golden Egg", instruction: "Line up with the golden nest and press up.", target: "Nest", success: "You found the level's golden egg!" },
+  "lantern-dragon-run": { title: "Raise the Lantern", instruction: "Line up with the dragon arch and press up.", target: "Arch", success: "The lantern rises above the festival!" },
+  "firework-flyer": { title: "Star Formation", instruction: "Line up with the open star and press up to join formation.", target: "Star", success: "The plane completes the firework star!" },
+  "groundhog-loop": { title: "Choose Tomorrow", instruction: "Line up with the sunrise tunnel and press up.", target: "Tunnel", success: "The loop breaks and tomorrow begins!" },
+  "float-frenzy": { title: "Catch the Bead", instruction: "Line up with the golden bead and press up.", target: "Bead", success: "You catch the parade's final golden bead!" },
+  "color-rush": { title: "Color Burst", instruction: "Line up with the blank mural and press up.", target: "Mural", success: "The mural erupts into every color!" },
+  "festival-of-lights": { title: "Light the Final Lamp", instruction: "Line up with the dark lamp and press up.", target: "Lamp", success: "The whole street glows with light!" },
+  "moonlight-delivery": { title: "Final Delivery", instruction: "Line up with the decorated doorway and press up.", target: "Door", success: "The celebration delivery arrives!" },
+  "marigold-path": { title: "Complete the Path", instruction: "Line up with the glowing marigold arch and press up.", target: "Arch", success: "The remembrance path shines brightly!" },
+  "planet-patrol": { title: "Rescue the Animal", instruction: "Line up with the rescue zone and press up.", target: "Rescue", success: "The final animal reaches safety!" },
+  "upside-down-arcade": { title: "Wrong-Way Finish", instruction: "Line up with the upside-down doorway and press up.", target: "Door", success: "Somehow, the wrong way was right!" },
+  "sun-chase": { title: "Catch the Sunset", instruction: "Line up with the last ray and press up.", target: "Sun", success: "You reach the summit before sunset!" },
+  "harvest-moon-maze": { title: "Barn Door Finish", instruction: "Line up with the open barn and press up.", target: "Barn", success: "The harvest is safely inside!" },
+  "snow-day-sled-escape": { title: "Stick the Landing", instruction: "Line up with the soft snowbank and press up.", target: "Snowbank", success: "The sled lands in a perfect spray of snow!" },
+  "carnival-beat-run": { title: "Hit the Final Beat", instruction: "Line up with the bright drum and press up on the beat.", target: "Drum", success: "The parade finishes on a perfect beat!" },
+  "back-to-school-dash": { title: "Beat the Bell", instruction: "Line up with the classroom door and press up.", target: "Classroom", success: "You slide into class before the bell!" },
+  "winter-solstice-star-quest": { title: "Restore the Star", instruction: "Line up with the empty constellation and press up.", target: "Star", success: "The winter sky is complete again!" },
+};
+
+const CHRISTMAS_CITY_HELICOPTER_COLORS = [
+  { body: "#1d4f91", trim: "#e8edf0", glass: "#7fc8ef" },
+  { body: "#d64035", trim: "#f6f3de", glass: "#9fd7ef" },
+  { body: "#2457a6", trim: "#f0bf43", glass: "#b7def2" },
+  { body: "#f1f1ea", trim: "#d64035", glass: "#68b7dc" },
+];
+
 SEASONAL_GAMES.forEach((game) => {
   SEASONAL_PROFILES[game.id] = [game.id];
 });
@@ -494,16 +557,24 @@ let seasonalState = "menu";
 let seasonalLastFrame = 0;
 let seasonalElapsed = 0;
 let seasonalTimeLeft = 0;
-let seasonalDistance = 0;
-let seasonalCollected = 0;
 let seasonalRunScore = 0;
 let seasonalRunLives = 3;
-let seasonalSpawnClock = 0;
-let seasonalCollectClock = 0;
 let seasonalHitFlash = 0;
 let seasonalObjects = [];
 let seasonalPointerStart = null;
-let seasonalPlayer = { x: 336, y: 374, targetX: 336, targetY: 374, width: 46, height: 58 };
+let seasonalLevel = 0;
+let seasonalRowsCrossed = 0;
+let seasonalCollisionGrace = 0;
+let seasonalMoveCooldown = 0;
+let seasonalChallengeTargetX = 310;
+let seasonalChallengeTime = 0;
+let seasonalFinaleAnimation = 0;
+let seasonalPendingAction = "new-run";
+let seasonalPlayer = { x: 336, y: 400, targetX: 336, targetY: 400, width: 46, height: 58 };
+
+const SEASONAL_LEVEL_COUNT = 4;
+const SEASONAL_LANE_COUNT = 6;
+const SEASONAL_LANE_Y = [338, 288, 238, 188, 138, 88];
 
 function seasonalGameById(gameId) {
   return SEASONAL_GAMES.find((game) => game.id === gameId) || null;
@@ -556,6 +627,31 @@ function currentSeasonalBest() {
   return Number(localStorage.getItem(seasonalBestKey())) || 0;
 }
 
+function currentSeasonalStages() {
+  return SEASONAL_STAGE_SETS[activeSeasonalGame.id] || ["Opening Run", "Crossing Two", "Challenge Three", "Final Route"];
+}
+
+function currentSeasonalFinale() {
+  return SEASONAL_FINALES[activeSeasonalGame.id];
+}
+
+function currentSeasonalStageName() {
+  return currentSeasonalStages()[seasonalLevel] || `Level ${seasonalLevel + 1}`;
+}
+
+function currentSeasonalCrosserColors() {
+  if (activeSeasonalGame.id === "sleigh-bell-sprint") {
+    return CHRISTMAS_CITY_HELICOPTER_COLORS[seasonalLevel] || CHRISTMAS_CITY_HELICOPTER_COLORS[0];
+  }
+  const levelPalettes = [
+    { body: activeSeasonalGame.accent, trim: activeSeasonalGame.secondary, glass: "#9fd7ef" },
+    { body: activeSeasonalGame.secondary, trim: activeSeasonalGame.accent, glass: "#d8eef4" },
+    { body: "#172333", trim: activeSeasonalGame.accent, glass: activeSeasonalGame.secondary },
+    { body: "#f6f3de", trim: activeSeasonalGame.secondary, glass: activeSeasonalGame.accent },
+  ];
+  return levelPalettes[seasonalLevel] || levelPalettes[0];
+}
+
 function setSeasonalOverlay(title, text, buttonText, kicker) {
   seasonalOverlay.hidden = false;
   seasonalOverlayTitle.textContent = title;
@@ -567,10 +663,13 @@ function setSeasonalOverlay(title, text, buttonText, kicker) {
 function syncSeasonalHud() {
   if (!activeSeasonalGame) return;
   seasonalScore.textContent = `Score ${seasonalRunScore}`;
-  seasonalObjective.textContent = `${activeSeasonalGame.objective} ${seasonalCollected} / ${activeSeasonalGame.target}`;
+  seasonalObjective.textContent = seasonalState === "challenge"
+    ? `${currentSeasonalFinale().target} Challenge`
+    : `Level ${seasonalLevel + 1} / ${SEASONAL_LEVEL_COUNT} · Row ${seasonalRowsCrossed} / ${SEASONAL_LANE_COUNT}`;
   seasonalTime.textContent = `Time ${Math.max(0, Math.ceil(seasonalTimeLeft))}`;
   seasonalLives.textContent = `Lives ${seasonalRunLives}`;
   seasonalBest.textContent = currentSeasonalBest();
+  seasonalHoliday.textContent = `${activeSeasonalGame.holiday} · ${currentSeasonalStageName()}`;
 }
 
 function openSeasonalGame(gameId) {
@@ -588,13 +687,20 @@ function openSeasonalGame(gameId) {
   seasonalTitle.textContent = game.title;
   seasonalHoliday.textContent = `${game.holiday} Arcade`;
   seasonalCanvas.setAttribute("aria-label", `${game.title} game`);
-  seasonalCollected = 0;
   seasonalRunScore = 0;
   seasonalRunLives = 3;
   seasonalTimeLeft = game.time;
   seasonalObjects = [];
+  seasonalLevel = 0;
+  seasonalRowsCrossed = 0;
+  seasonalPendingAction = "new-run";
   syncSeasonalHud();
-  setSeasonalOverlay(game.title, `${game.description} Collect ${game.target} ${game.objective.toLowerCase()} and reach the finish.`, "Start Game", game.holiday);
+  setSeasonalOverlay(
+    game.title,
+    `${game.description} Cross each moving lane, then complete a short challenge to unlock the next level.`,
+    "Start Level 1",
+    game.holiday
+  );
   drawSeasonalScene();
 }
 
@@ -607,21 +713,59 @@ function closeSeasonalGame() {
   document.body.classList.add("game-library-open");
 }
 
-function resetSeasonalRun() {
+function createSeasonalLanes() {
+  seasonalObjects = [];
+  const obstacleWidth = activeSeasonalGame.id === "sleigh-bell-sprint" ? 72 : 56;
+  for (let lane = 0; lane < SEASONAL_LANE_COUNT; lane += 1) {
+    const direction = (lane + seasonalLevel) % 2 === 0 ? 1 : -1;
+    const spacing = Math.max(172, 224 - seasonalLevel * 9 - lane * 3);
+    const count = Math.ceil(820 / spacing) + 1;
+    const speed = Math.min(128, 72 + seasonalLevel * 9 + lane * 5);
+    const offset = (lane * 83 + seasonalLevel * 47) % spacing;
+    for (let index = 0; index < count; index += 1) {
+      seasonalObjects.push({
+        type: "crosser",
+        lane,
+        direction,
+        speed,
+        x: direction > 0 ? offset + index * spacing - spacing : 720 - offset - index * spacing,
+        y: SEASONAL_LANE_Y[lane],
+        width: obstacleWidth + (lane % 2) * 8,
+        height: 38,
+        variant: (lane + index) % 3,
+      });
+    }
+  }
+}
+
+function beginSeasonalLevel(newRun = false) {
+  if (newRun) {
+    seasonalLevel = 0;
+    seasonalRunScore = 0;
+    seasonalRunLives = 3;
+  }
   seasonalState = "playing";
   seasonalElapsed = 0;
-  seasonalTimeLeft = activeSeasonalGame.time;
-  seasonalDistance = 0;
-  seasonalCollected = 0;
-  seasonalRunScore = 0;
-  seasonalRunLives = 3;
-  seasonalSpawnClock = 0.35;
-  seasonalCollectClock = 0.8;
+  seasonalTimeLeft = Math.max(48, activeSeasonalGame.time - seasonalLevel * 4);
+  seasonalRowsCrossed = 0;
   seasonalHitFlash = 0;
-  seasonalObjects = [];
-  seasonalPlayer = { x: 336, y: 374, targetX: 336, targetY: 374, width: 46, height: 58 };
+  seasonalCollisionGrace = 0.45;
+  seasonalMoveCooldown = 0;
+  seasonalFinaleAnimation = 0;
+  seasonalPlayer = { x: 336, y: 400, targetX: 336, targetY: 400, width: 46, height: 58 };
+  createSeasonalLanes();
   seasonalOverlay.hidden = true;
   syncSeasonalHud();
+}
+
+function resetSeasonalRun() {
+  beginSeasonalLevel(true);
+}
+
+function handleSeasonalStart() {
+  if (seasonalPendingAction === "next-level") beginSeasonalLevel(false);
+  else if (seasonalPendingAction === "retry-level") beginSeasonalLevel(false);
+  else beginSeasonalLevel(true);
 }
 
 function finishSeasonalRun(won) {
@@ -636,96 +780,145 @@ function finishSeasonalRun(won) {
   setSeasonalOverlay(
     won ? "Challenge Complete" : "Run Over",
     won
-      ? `${activeSeasonalGame.objective} secured. Final score: ${seasonalRunScore}.`
-      : `You collected ${seasonalCollected} of ${activeSeasonalGame.target} ${activeSeasonalGame.objective.toLowerCase()}.`,
+      ? `All four levels cleared. Final score: ${seasonalRunScore}.`
+      : `You reached ${currentSeasonalStageName()}. Try the crossing again.`,
     won ? "Play Again" : "Try Again",
-    won ? "Season Saved" : "One More Run"
+    won ? "All Levels Clear" : "One More Run"
   );
+  seasonalPendingAction = "new-run";
 }
 
 function moveSeasonalPlayer(dx, dy) {
+  if (seasonalState === "challenge") {
+    seasonalPlayer.targetX = Math.max(42, Math.min(632, seasonalPlayer.targetX + dx * 62));
+    if (dy < 0) attemptSeasonalChallenge();
+    return;
+  }
   if (seasonalState !== "playing") return;
+  if (seasonalMoveCooldown > 0) return;
   const inverted = activeSeasonalGame.behavior === "invert" && Math.floor(seasonalElapsed / 5) % 2 === 1;
   const moveX = inverted ? -dx : dx;
   const moveY = inverted ? -dy : dy;
-  seasonalPlayer.targetX = Math.max(52, Math.min(622, seasonalPlayer.targetX + moveX * 72));
-  seasonalPlayer.targetY = Math.max(164, Math.min(390, seasonalPlayer.targetY + moveY * 62));
-  if (moveY < 0) seasonalDistance += 34;
-  seasonalRunScore += 2;
-}
-
-function spawnSeasonalObject(type) {
-  const lane = Math.floor(Math.random() * 7);
-  const width = type === "obstacle" ? 54 : 30;
-  const routeLane = activeSeasonalGame.behavior === "route" || activeSeasonalGame.behavior === "loop"
-    ? Math.floor((seasonalCollected + 2) % 7)
-    : lane;
-  seasonalObjects.push({
-    type,
-    x: 48 + (type === "collectible" ? routeLane : lane) * 86,
-    y: -70,
-    width,
-    height: type === "obstacle" ? 54 : 30,
-    speed: 112 + Math.min(75, seasonalDistance / 24) + Math.random() * 25,
-    drift: activeSeasonalGame.behavior === "flight" ? (Math.random() - 0.5) * 35 : 0,
-  });
+  seasonalPlayer.targetX = Math.max(42, Math.min(632, seasonalPlayer.targetX + moveX * 62));
+  if (moveY < 0 && seasonalRowsCrossed < SEASONAL_LANE_COUNT) {
+    seasonalRowsCrossed += 1;
+    seasonalPlayer.targetY = 400 - seasonalRowsCrossed * 50;
+    seasonalRunScore += 25;
+  } else if (moveY > 0 && seasonalRowsCrossed > 0) {
+    seasonalRowsCrossed -= 1;
+    seasonalPlayer.targetY = 400 - seasonalRowsCrossed * 50;
+  }
+  if (moveX !== 0 || moveY !== 0) seasonalMoveCooldown = 0.11;
+  syncSeasonalHud();
 }
 
 function overlapsSeasonalPlayer(object) {
-  return seasonalPlayer.x < object.x + object.width
-    && seasonalPlayer.x + seasonalPlayer.width > object.x
-    && seasonalPlayer.y < object.y + object.height
-    && seasonalPlayer.y + seasonalPlayer.height > object.y;
+  const playerInset = 8;
+  return seasonalPlayer.x + playerInset < object.x + object.width
+    && seasonalPlayer.x + seasonalPlayer.width - playerInset > object.x
+    && seasonalPlayer.y + 12 < object.y + object.height
+    && seasonalPlayer.y + seasonalPlayer.height - 8 > object.y;
+}
+
+function beginSeasonalChallenge() {
+  seasonalState = "challenge";
+  seasonalChallengeTime = 10;
+  seasonalTimeLeft = seasonalChallengeTime;
+  seasonalChallengeTargetX = 90 + ((seasonalLevel * 137 + activeSeasonalGame.id.length * 31) % 480);
+  seasonalPlayer.targetY = 354;
+  syncSeasonalHud();
+}
+
+function failSeasonalChallenge(message) {
+  seasonalRunLives -= 1;
+  if (seasonalRunLives <= 0) {
+    finishSeasonalRun(false);
+    return;
+  }
+  seasonalState = "menu";
+  seasonalPendingAction = "retry-level";
+  setSeasonalOverlay("Challenge Missed", message, "Retry Level", currentSeasonalStageName());
+  syncSeasonalHud();
+}
+
+function attemptSeasonalChallenge() {
+  if (seasonalState !== "challenge") return;
+  const playerCenter = seasonalPlayer.targetX + seasonalPlayer.width / 2;
+  const targetCenter = seasonalChallengeTargetX + 64;
+  if (Math.abs(playerCenter - targetCenter) > 72) {
+    failSeasonalChallenge(`You missed the ${currentSeasonalFinale().target.toLowerCase()}. Line it up and try again.`);
+    return;
+  }
+  seasonalState = "finale";
+  seasonalFinaleAnimation = 1.8;
+  seasonalRunScore += 350 + seasonalLevel * 100;
+  syncSeasonalHud();
+}
+
+function completeSeasonalFinale() {
+  if (seasonalLevel >= SEASONAL_LEVEL_COUNT - 1) {
+    finishSeasonalRun(true);
+    return;
+  }
+  const completedStage = currentSeasonalStageName();
+  seasonalLevel += 1;
+  seasonalState = "menu";
+  seasonalPendingAction = "next-level";
+  setSeasonalOverlay(
+    "Level Complete",
+    `${currentSeasonalFinale().success} Next stop: ${currentSeasonalStageName()}.`,
+    `Start Level ${seasonalLevel + 1}`,
+    completedStage
+  );
+  syncSeasonalHud();
 }
 
 function updateSeasonalGame(deltaSeconds) {
-  if (seasonalState !== "playing") return;
+  if (seasonalState === "finale") {
+    seasonalFinaleAnimation -= deltaSeconds;
+    if (seasonalFinaleAnimation <= 0) completeSeasonalFinale();
+    return;
+  }
+  if (seasonalState !== "playing" && seasonalState !== "challenge") return;
   seasonalElapsed += deltaSeconds;
   seasonalTimeLeft -= deltaSeconds;
-  seasonalDistance += deltaSeconds * 70;
   seasonalHitFlash = Math.max(0, seasonalHitFlash - deltaSeconds);
+  seasonalCollisionGrace = Math.max(0, seasonalCollisionGrace - deltaSeconds);
+  seasonalMoveCooldown = Math.max(0, seasonalMoveCooldown - deltaSeconds);
   seasonalPlayer.x += (seasonalPlayer.targetX - seasonalPlayer.x) * Math.min(1, deltaSeconds * 14);
   seasonalPlayer.y += (seasonalPlayer.targetY - seasonalPlayer.y) * Math.min(1, deltaSeconds * 14);
 
-  seasonalSpawnClock -= deltaSeconds;
-  seasonalCollectClock -= deltaSeconds;
-  const rhythmBoost = activeSeasonalGame.behavior === "rhythm" ? 0.12 : 0;
-  if (seasonalSpawnClock <= 0) {
-    spawnSeasonalObject("obstacle");
-    seasonalSpawnClock = Math.max(0.48, 1.02 - seasonalDistance / 4500 - rhythmBoost);
-  }
-  if (seasonalCollectClock <= 0) {
-    spawnSeasonalObject("collectible");
-    seasonalCollectClock = 1.15 + Math.random() * 0.55;
-  }
+  if (seasonalState === "playing") {
+    seasonalObjects.forEach((object) => {
+      object.x += object.direction * object.speed * deltaSeconds;
+      if (object.direction > 0 && object.x > 760) object.x = -object.width - 40;
+      if (object.direction < 0 && object.x + object.width < -40) object.x = 760;
+    });
 
-  seasonalObjects.forEach((object) => {
-    object.y += object.speed * deltaSeconds;
-    object.x += object.drift * deltaSeconds;
-  });
-
-  seasonalObjects = seasonalObjects.filter((object) => {
-    if (object.y > 540) return false;
-    if (!overlapsSeasonalPlayer(object)) return true;
-    if (object.type === "collectible") {
-      seasonalCollected = Math.min(activeSeasonalGame.target, seasonalCollected + 1);
-      seasonalRunScore += 100;
-      return false;
-    }
-    if (seasonalHitFlash <= 0) {
+    const collision = seasonalCollisionGrace <= 0
+      ? seasonalObjects.find(overlapsSeasonalPlayer)
+      : null;
+    if (collision) {
       seasonalRunLives -= 1;
-      seasonalRunScore = Math.max(0, seasonalRunScore - 50);
-      seasonalHitFlash = 1.1;
-      seasonalPlayer.targetY = Math.min(390, seasonalPlayer.targetY + 45);
+      seasonalRunScore = Math.max(0, seasonalRunScore - 75);
+      seasonalHitFlash = 1;
+      seasonalCollisionGrace = 1.35;
+      seasonalRowsCrossed = 0;
+      seasonalPlayer.x = 336;
+      seasonalPlayer.y = 400;
+      seasonalPlayer.targetX = 336;
+      seasonalPlayer.targetY = 400;
+      if (seasonalRunLives <= 0) finishSeasonalRun(false);
+    } else if (seasonalRowsCrossed === SEASONAL_LANE_COUNT && Math.abs(seasonalPlayer.y - seasonalPlayer.targetY) < 5) {
+      beginSeasonalChallenge();
     }
-    return false;
-  });
+  }
 
   syncSeasonalHud();
-  if (seasonalRunLives <= 0 || seasonalTimeLeft <= 0) {
+  if (seasonalTimeLeft <= 0 && seasonalState === "challenge") {
+    failSeasonalChallenge("Time ran out before the final move.");
+  } else if (seasonalTimeLeft <= 0) {
     finishSeasonalRun(false);
-  } else if (seasonalDistance >= activeSeasonalGame.distance && seasonalCollected >= activeSeasonalGame.target) {
-    finishSeasonalRun(true);
   }
 }
 
@@ -737,27 +930,30 @@ function drawPixelRect(x, y, width, height, color) {
 function drawSeasonalBackground() {
   const game = activeSeasonalGame;
   drawPixelRect(0, 0, 720, 480, game.sky);
-  drawPixelRect(0, 128, 720, 352, game.ground);
+  drawPixelRect(0, 54, 720, 426, game.ground);
+  drawPixelRect(0, 390, 720, 90, "rgba(8,15,23,0.18)");
   for (let index = 0; index < 9; index += 1) {
-    const x = (index * 91 + Math.floor(seasonalDistance * 0.2)) % 760 - 40;
-    drawPixelRect(x, 48 + (index % 3) * 20, 6, 6, index % 2 ? game.secondary : "#f5f1db");
+    const x = index * 91 - 22;
+    drawPixelRect(x, 18 + (index % 3) * 11, 6, 6, index % 2 ? game.secondary : "#f5f1db");
   }
-  for (let lane = 0; lane < 8; lane += 1) {
-    drawPixelRect(lane * 90, 128, 4, 352, "rgba(255,255,255,0.12)");
-  }
-  for (let stripe = 0; stripe < 7; stripe += 1) {
-    const y = 145 + ((stripe * 70 + seasonalDistance * 0.8) % 420);
-    drawPixelRect(0, y, 720, 4, "rgba(255,255,255,0.16)");
-  }
+  SEASONAL_LANE_Y.forEach((y, lane) => {
+    drawPixelRect(0, y - 5, 720, 48, lane % 2 ? "rgba(9,18,28,0.29)" : "rgba(9,18,28,0.39)");
+    drawPixelRect(0, y - 5, 720, 3, "rgba(255,255,255,0.2)");
+    for (let marker = 0; marker < 10; marker += 1) {
+      drawPixelRect(marker * 82 + 16, y + 17, 42, 3, "rgba(255,255,255,0.22)");
+    }
+    const arrowX = lane % 2 === seasonalLevel % 2 ? 26 : 680;
+    drawPixelRect(arrowX, y + 10, 14, 8, game.secondary);
+  });
   if (game.behavior === "light") {
-    seasonalContext.fillStyle = `rgba(4, 10, 24, ${Math.max(0.08, 0.55 - seasonalCollected * 0.045)})`;
-    seasonalContext.fillRect(0, 128, 720, 352);
+    seasonalContext.fillStyle = "rgba(4, 10, 24, 0.25)";
+    seasonalContext.fillRect(0, 54, 720, 336);
   }
   if (game.behavior === "paint") {
     const paintColors = ["#ef4e91", "#49c7df", "#f3cf58", "#7bdb68"];
     paintColors.forEach((color, index) => {
       seasonalContext.globalAlpha = 0.18;
-      drawPixelRect(index * 180, 128, 180, 352, color);
+      drawPixelRect(index * 180, 54, 180, 336, color);
     });
     seasonalContext.globalAlpha = 1;
   }
@@ -765,16 +961,32 @@ function drawSeasonalBackground() {
 
 function drawSeasonalObject(object) {
   const game = activeSeasonalGame;
-  if (object.type === "collectible") {
-    drawPixelRect(object.x + 6, object.y, 18, 30, game.secondary);
-    drawPixelRect(object.x, object.y + 6, 30, 18, game.secondary);
-    drawPixelRect(object.x + 10, object.y + 8, 10, 14, "#fff5c8");
+  const crosserColors = currentSeasonalCrosserColors();
+  if (activeSeasonalGame.id === "sleigh-bell-sprint") {
+    const noseX = object.direction > 0 ? object.x + object.width - 18 : object.x;
+    drawPixelRect(object.x + 8, object.y + 9, object.width - 24, 25, crosserColors.body);
+    drawPixelRect(noseX, object.y + 13, 18, 17, crosserColors.glass);
+    drawPixelRect(object.x, object.y + 17, 16, 8, crosserColors.trim);
+    drawPixelRect(object.x - 6, object.y + 10, 5, 22, crosserColors.body);
+    drawPixelRect(object.x + 18, object.y + 2, 38, 5, crosserColors.trim);
+    drawPixelRect(object.x + 35, object.y - 5, 5, 9, "#172333");
+    drawPixelRect(object.x + 6, object.y - 9, object.width - 8, 4, "#dce9ef");
+    drawPixelRect(object.x + 24, object.y + 34, 34, 4, "#090f17");
+    drawPixelRect(object.x + 25, object.y + 5, 8, 5, object.variant % 2 ? "#ee4444" : "#55a9ef");
+    drawPixelRect(object.x + 34, object.y + 5, 8, 5, object.variant % 2 ? "#55a9ef" : "#ee4444");
     return;
   }
-  drawPixelRect(object.x, object.y + 10, object.width, object.height - 10, "#172333");
-  drawPixelRect(object.x + 6, object.y, object.width - 12, 18, game.accent);
-  drawPixelRect(object.x + 8, object.y + object.height - 8, 12, 8, "#090f17");
-  drawPixelRect(object.x + object.width - 20, object.y + object.height - 8, 12, 8, "#090f17");
+  if (object.variant === 0) {
+    drawPixelRect(object.x + 17, object.y, 20, 14, "#edc29b");
+    drawPixelRect(object.x + 8, object.y + 13, 38, 22, crosserColors.body);
+    drawPixelRect(object.x + 9, object.y + 34, 12, 6, "#0b1520");
+    drawPixelRect(object.x + 33, object.y + 34, 12, 6, "#0b1520");
+    return;
+  }
+  drawPixelRect(object.x, object.y + 9, object.width, object.height - 9, object.variant === 1 ? crosserColors.body : crosserColors.trim);
+  drawPixelRect(object.x + 8, object.y, object.width - 18, 16, crosserColors.glass);
+  drawPixelRect(object.x + 8, object.y + object.height - 6, 12, 6, "#090f17");
+  drawPixelRect(object.x + object.width - 20, object.y + object.height - 6, 12, 6, "#090f17");
 }
 
 function drawSeasonalPlayer() {
@@ -802,13 +1014,68 @@ function drawSeasonalPlayer() {
   drawPixelRect(x + 15, y + 24, 18, 10, game.secondary);
 }
 
+function drawSeasonalChallenge() {
+  const finale = currentSeasonalFinale();
+  drawPixelRect(0, 0, 720, 480, activeSeasonalGame.sky);
+  drawPixelRect(0, 280, 720, 200, activeSeasonalGame.ground);
+  seasonalContext.fillStyle = "#f6f3de";
+  seasonalContext.font = "bold 23px monospace";
+  seasonalContext.textAlign = "center";
+  seasonalContext.fillText(finale.title.toUpperCase(), 360, 50);
+  seasonalContext.font = "bold 14px monospace";
+  seasonalContext.fillText(finale.instruction, 360, 78);
+
+  const targetX = seasonalChallengeTargetX;
+  if (activeSeasonalGame.id === "sleigh-bell-sprint") {
+    drawPixelRect(targetX - 28, 210, 184, 96, "#733e34");
+    drawPixelRect(targetX - 42, 196, 212, 22, "#f2f0e2");
+    drawPixelRect(targetX + 42, 166, 48, 50, "#9b4b3e");
+    drawPixelRect(targetX + 36, 158, 60, 10, "#f2f0e2");
+  } else {
+    drawPixelRect(targetX, 185, 128, 118, "#13283f");
+    drawPixelRect(targetX + 10, 195, 108, 98, activeSeasonalGame.accent);
+    drawPixelRect(targetX + 22, 207, 84, 74, activeSeasonalGame.secondary);
+  }
+  seasonalContext.fillStyle = "#0b1520";
+  seasonalContext.font = "bold 14px monospace";
+  seasonalContext.fillText(finale.target.toUpperCase(), targetX + 64, 250);
+  drawPixelRect(targetX - 6, 316, 140, 7, activeSeasonalGame.secondary);
+  drawSeasonalPlayer();
+}
+
+function drawSeasonalFinale() {
+  drawSeasonalChallenge();
+  const progress = Math.max(0, Math.min(1, 1 - seasonalFinaleAnimation / 1.8));
+  if (activeSeasonalGame.id === "sleigh-bell-sprint") {
+    const x = seasonalChallengeTargetX + 38;
+    const y = 330 - progress * 145;
+    drawPixelRect(x, y + 20, 70, 20, activeSeasonalGame.accent);
+    drawPixelRect(x + 18, y, 34, 24, activeSeasonalGame.secondary);
+    if (progress > 0.58) {
+      const dropY = 178 + (progress - 0.58) * 145;
+      drawPixelRect(seasonalChallengeTargetX + 56, dropY, 20, 30, activeSeasonalGame.accent);
+    }
+  } else {
+    const pulse = 8 + Math.floor(progress * 28);
+    drawPixelRect(seasonalChallengeTargetX + 64 - pulse, 244 - pulse, pulse * 2, pulse * 2, activeSeasonalGame.secondary);
+  }
+}
+
 function drawSeasonalScene() {
   if (!seasonalContext || !activeSeasonalGame) return;
   seasonalContext.imageSmoothingEnabled = false;
+  if (seasonalState === "challenge") {
+    drawSeasonalChallenge();
+    return;
+  }
+  if (seasonalState === "finale") {
+    drawSeasonalFinale();
+    return;
+  }
   drawSeasonalBackground();
   seasonalObjects.forEach(drawSeasonalObject);
   drawSeasonalPlayer();
-  const progress = Math.min(1, seasonalDistance / activeSeasonalGame.distance);
+  const progress = (seasonalLevel + seasonalRowsCrossed / SEASONAL_LANE_COUNT) / SEASONAL_LEVEL_COUNT;
   drawPixelRect(18, 18, 684, 18, "#0b1520");
   drawPixelRect(22, 22, 676 * progress, 10, activeSeasonalGame.secondary);
 }
@@ -840,23 +1107,29 @@ function handleSeasonalKey(event) {
   if (keyMoves[event.key]) {
     event.preventDefault();
     moveSeasonalPlayer(...keyMoves[event.key]);
+  } else if ((event.key === " " || event.key === "Enter") && seasonalState === "challenge") {
+    event.preventDefault();
+    attemptSeasonalChallenge();
   } else if (event.key === "Escape") {
     closeSeasonalGame();
   }
 }
 
 function beginSeasonalSwipe(event) {
-  if (seasonalState !== "playing") return;
+  if (seasonalState !== "playing" && seasonalState !== "challenge") return;
   seasonalPointerStart = { x: event.clientX, y: event.clientY };
   seasonalCanvas.setPointerCapture?.(event.pointerId);
 }
 
 function finishSeasonalSwipe(event) {
-  if (!seasonalPointerStart || seasonalState !== "playing") return;
+  if (!seasonalPointerStart || (seasonalState !== "playing" && seasonalState !== "challenge")) return;
   const deltaX = event.clientX - seasonalPointerStart.x;
   const deltaY = event.clientY - seasonalPointerStart.y;
   seasonalPointerStart = null;
-  if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 14) return;
+  if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 14) {
+    if (seasonalState === "challenge") attemptSeasonalChallenge();
+    return;
+  }
   if (Math.abs(deltaX) > Math.abs(deltaY)) {
     moveSeasonalPlayer(Math.sign(deltaX), 0);
   } else {
@@ -867,7 +1140,7 @@ function finishSeasonalSwipe(event) {
 if (seasonalShelf && seasonalScreen && seasonalContext) {
   renderSeasonalShelf();
   seasonalBackButton.addEventListener("click", closeSeasonalGame);
-  seasonalStartButton.addEventListener("click", resetSeasonalRun);
+  seasonalStartButton.addEventListener("click", handleSeasonalStart);
   arcadeHomeButton.addEventListener("click", closeSeasonalGame);
   seasonalCanvas.addEventListener("pointerdown", beginSeasonalSwipe);
   seasonalCanvas.addEventListener("pointerup", finishSeasonalSwipe);

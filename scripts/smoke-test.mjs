@@ -160,6 +160,16 @@ expectedSeasonalTitles.forEach((title) => {
   assert.ok(seasonalSource.includes(title), `Missing seasonal game: ${title}`);
 });
 assert.equal((seasonalSource.match(/^    id: "[a-z0-9-]+",$/gm) || []).length, 25);
+assert.equal((seasonalSource.match(/^  "[a-z0-9-]+": \["/gm) || []).length, 25);
+assert.equal((seasonalSource.match(/^  "[a-z0-9-]+": \{ title:/gm) || []).length, 25);
+assert.match(seasonalSource, /"sleigh-bell-sprint": \["New York", "London", "Paris", "Tokyo"\]/);
+assert.match(seasonalSource, /obstacle: "Police Helicopter"/);
+assert.match(seasonalSource, /title: "Rooftop Landing"/);
+assert.match(seasonalSource, /Santa drops through the chimney/);
+assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
+assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
+assert.match(seasonalSource, /function completeSeasonalFinale\(/);
+assert.match(html, /20260805-crossing-worlds/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -243,12 +253,33 @@ function runSeasonalProfile(profileId) {
     window: seasonalWindow,
   });
   seasonalVmContext.globalThis = seasonalVmContext;
-  vm.runInContext(seasonalSource, seasonalVmContext, { filename: "seasonal-games.js" });
+  const seasonalHooks = `
+globalThis.__seasonalTest = {
+  get state() { return seasonalState; },
+  get level() { return seasonalLevel; },
+  get rowsCrossed() { return seasonalRowsCrossed; },
+  get stageName() { return currentSeasonalStageName(); },
+  get stages() { return [...currentSeasonalStages()]; },
+  get finaleTitle() { return currentSeasonalFinale().title; },
+  get crosserColors() { return { ...currentSeasonalCrosserColors() }; },
+  get laneDirections() { return [...new Set(seasonalObjects.map((object) => object.direction))]; },
+  get crosserCount() { return seasonalObjects.length; },
+  get pendingAction() { return seasonalPendingAction; },
+  forceChallenge() { beginSeasonalChallenge(); },
+  alignChallenge() {
+    seasonalPlayer.x = seasonalChallengeTargetX + 64 - seasonalPlayer.width / 2;
+    seasonalPlayer.targetX = seasonalPlayer.x;
+  },
+  attemptChallenge() { attemptSeasonalChallenge(); },
+  finishFinale() { updateSeasonalGame(2); },
+};`;
+  vm.runInContext(`${seasonalSource}\n${seasonalHooks}`, seasonalVmContext, { filename: "seasonal-games.js" });
 
   return {
     body: seasonalBody,
     elements: seasonalElements,
     frames: seasonalFrames,
+    game: seasonalVmContext.__seasonalTest,
     windowListeners: seasonalWindowListeners,
   };
 }
@@ -269,12 +300,29 @@ assert.equal(holidaySeason.elements.get("seasonalGameTitle").textContent, "Sleig
 assert.equal(holidaySeason.body.classList.contains("seasonal-game-open"), true);
 holidaySeason.elements.get("seasonalStartButton").click();
 assert.equal(holidaySeason.elements.get("seasonalOverlay").hidden, true);
+assert.equal(holidaySeason.game.state, "playing");
+assert.equal(holidaySeason.game.stageName, "New York");
+assert.ok(holidaySeason.game.crosserCount >= 18);
+assert.deepEqual([...holidaySeason.game.laneDirections].sort(), [-1, 1]);
+assert.equal(holidaySeason.game.crosserColors.body, "#1d4f91");
 holidaySeason.windowListeners.get("keydown")({
-  key: "ArrowRight",
+  key: "ArrowUp",
   preventDefault() {},
 });
 holidaySeason.frames.shift()(16);
-assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, "Score 2");
+assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, "Score 25");
+assert.equal(holidaySeason.game.rowsCrossed, 1);
+holidaySeason.game.forceChallenge();
+holidaySeason.game.alignChallenge();
+holidaySeason.game.attemptChallenge();
+assert.equal(holidaySeason.game.state, "finale");
+holidaySeason.game.finishFinale();
+assert.equal(holidaySeason.game.level, 1);
+assert.equal(holidaySeason.game.stageName, "London");
+assert.equal(holidaySeason.game.pendingAction, "next-level");
+holidaySeason.elements.get("seasonalStartButton").click();
+assert.equal(holidaySeason.game.state, "playing");
+assert.equal(holidaySeason.game.crosserColors.body, "#d64035");
 holidaySeason.elements.get("seasonalBackButton").click();
 assert.equal(holidaySeason.elements.get("seasonalGameScreen").hidden, true);
 assert.equal(holidaySeason.elements.get("gameLibraryScreen").hidden, false);
@@ -283,6 +331,28 @@ const halloweenSeason = runSeasonalProfile("pumpkin-panic");
 const halloweenShelf = halloweenSeason.elements.get("seasonalGameShelf");
 assert.equal(halloweenShelf.children.length, 1);
 assert.match(halloweenShelf.children[0].innerHTML, /Pumpkin Panic/);
+
+const allSeasonalGameIds = [...seasonalSource.matchAll(/^    id: "([a-z0-9-]+)",$/gm)]
+  .map((match) => match[1]);
+allSeasonalGameIds.forEach((gameId) => {
+  const profile = runSeasonalProfile(gameId);
+  const shelf = profile.elements.get("seasonalGameShelf");
+  assert.equal(shelf.children.length, 1, `${gameId} should render one featured game`);
+  shelf.children[0].click();
+  profile.elements.get("seasonalStartButton").click();
+  assert.equal(profile.game.stages.length, 4, `${gameId} should have four levels`);
+  assert.ok(profile.game.finaleTitle, `${gameId} should have a finale`);
+  assert.deepEqual([...profile.game.laneDirections].sort(), [-1, 1]);
+  const openingColors = profile.game.crosserColors;
+  profile.game.forceChallenge();
+  profile.game.alignChallenge();
+  profile.game.attemptChallenge();
+  assert.equal(profile.game.state, "finale");
+  profile.game.finishFinale();
+  assert.equal(profile.game.level, 1);
+  profile.elements.get("seasonalStartButton").click();
+  assert.notEqual(profile.game.crosserColors.body, openingColors.body, `${gameId} should change obstacle colors`);
+});
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);
@@ -1603,4 +1673,4 @@ for (let level = 0; level < 12; level += 1) {
   });
 }
 assert.ok(game.maxConsecutiveDefenderRows < 12);
-console.log("Retro Run smoke tests passed for all ten arcade games.");
+console.log("Retro Run smoke tests passed for ten sports games and 25 seasonal games.");
