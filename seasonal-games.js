@@ -571,6 +571,7 @@ let seasonalCollisionGrace = 0;
 let seasonalMoveCooldown = 0;
 let seasonalChallengeTargetX = 206;
 let seasonalChallengeTime = 0;
+let seasonalChallengeInputDelay = 0;
 let seasonalFinaleAnimation = 0;
 let seasonalPendingAction = "new-run";
 let seasonalPlayer = { x: 256, y: 555, targetX: 256, targetY: 555, width: 28, height: 30 };
@@ -846,6 +847,7 @@ function overlapsSeasonalPlayer(object) {
 function beginSeasonalChallenge() {
   seasonalState = "challenge";
   seasonalChallengeTime = 10;
+  seasonalChallengeInputDelay = 0.75;
   seasonalTimeLeft = seasonalChallengeTime;
   seasonalChallengeTargetX = 44 + ((seasonalLevel * 137 + activeSeasonalGame.id.length * 31) % 332);
   seasonalPlayer.targetY = 570;
@@ -865,7 +867,7 @@ function failSeasonalChallenge(message) {
 }
 
 function attemptSeasonalChallenge() {
-  if (seasonalState !== "challenge") return;
+  if (seasonalState !== "challenge" || seasonalChallengeInputDelay > 0) return;
   const playerCenter = seasonalPlayer.targetX + seasonalPlayer.width / 2;
   const targetCenter = seasonalChallengeTargetX + 64;
   if (Math.abs(playerCenter - targetCenter) > 72) {
@@ -908,6 +910,7 @@ function updateSeasonalGame(deltaSeconds) {
   seasonalHitFlash = Math.max(0, seasonalHitFlash - deltaSeconds);
   seasonalCollisionGrace = Math.max(0, seasonalCollisionGrace - deltaSeconds);
   seasonalMoveCooldown = Math.max(0, seasonalMoveCooldown - deltaSeconds);
+  seasonalChallengeInputDelay = Math.max(0, seasonalChallengeInputDelay - deltaSeconds);
   seasonalPlayer.x += (seasonalPlayer.targetX - seasonalPlayer.x) * Math.min(1, deltaSeconds * 14);
   seasonalPlayer.y += (seasonalPlayer.targetY - seasonalPlayer.y) * Math.min(1, deltaSeconds * 14);
 
@@ -1076,7 +1079,11 @@ function drawSeasonalChallenge() {
   seasonalContext.textAlign = "center";
   seasonalContext.fillText(finale.title.toUpperCase(), 270, 75);
   seasonalContext.font = "bold 12px monospace";
-  seasonalContext.fillText(finale.instruction, 270, 108);
+  seasonalContext.fillText(
+    seasonalChallengeInputDelay > 0 ? "GET READY..." : finale.instruction,
+    270,
+    108
+  );
 
   const targetX = seasonalChallengeTargetX;
   if (activeSeasonalGame.id === "sleigh-bell-sprint") {
@@ -1157,6 +1164,10 @@ function handleSeasonalKey(event) {
     s: [0, 1],
     S: [0, 1],
   };
+  if (seasonalState === "challenge" && event.repeat) {
+    event.preventDefault();
+    return;
+  }
   if (keyMoves[event.key]) {
     event.preventDefault();
     moveSeasonalPlayer(...keyMoves[event.key]);

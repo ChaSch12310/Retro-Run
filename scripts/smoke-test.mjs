@@ -176,7 +176,7 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260805-classic-holiday-lineup/);
+assert.match(html, /20260805-challenge-ready-window/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
 assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*320px minmax\(0, 1fr\)/s);
@@ -188,6 +188,8 @@ assert.match(seasonalSource, /const SEASONAL_ROW_STEP = 60/);
 assert.match(seasonalSource, /width: 28,\s*height: 30/s);
 assert.match(seasonalSource, /if \(game\.player === "turkey"\)/);
 assert.match(seasonalSource, /const runningStep = Math\.floor\(seasonalElapsed \* 9\) % 2/);
+assert.match(seasonalSource, /seasonalChallengeInputDelay = 0\.75/);
+assert.match(seasonalSource, /seasonalState === "challenge" && event\.repeat/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -292,6 +294,7 @@ globalThis.__seasonalTest = {
     seasonalPlayer.targetX = seasonalPlayer.x;
   },
   attemptChallenge() { attemptSeasonalChallenge(); },
+  tickChallenge(seconds) { updateSeasonalGame(seconds); },
   finishFinale() { updateSeasonalGame(2); },
 };`;
   vm.runInContext(`${seasonalSource}\n${seasonalHooks}`, seasonalVmContext, { filename: "seasonal-games.js" });
@@ -338,6 +341,13 @@ holidaySeason.frames.shift()(16);
 assert.equal(holidaySeason.elements.get("seasonalScoreValue").textContent, 25);
 assert.equal(holidaySeason.game.rowsCrossed, 1);
 holidaySeason.game.forceChallenge();
+holidaySeason.windowListeners.get("keydown")({
+  key: "ArrowUp",
+  repeat: true,
+  preventDefault() {},
+});
+assert.equal(holidaySeason.game.state, "challenge");
+holidaySeason.game.tickChallenge(1);
 holidaySeason.game.alignChallenge();
 holidaySeason.game.attemptChallenge();
 assert.equal(holidaySeason.game.state, "finale");
@@ -371,6 +381,7 @@ allSeasonalGameIds.forEach((gameId) => {
   assert.deepEqual([...profile.game.laneDirections].sort(), [-1, 1]);
   const openingColors = profile.game.crosserColors;
   profile.game.forceChallenge();
+  profile.game.tickChallenge(1);
   profile.game.alignChallenge();
   profile.game.attemptChallenge();
   assert.equal(profile.game.state, "finale");
