@@ -936,7 +936,7 @@ body.game-library-open .play-panel {
 .baseball-sport-badge .game-icon-speed,
 .lacrosse-sport-badge .game-icon-speed,
 .dodgeball-sport-badge .game-icon-speed {
-  display: none;
+  display: block;
 }
 
 .mini-surf-fin,
