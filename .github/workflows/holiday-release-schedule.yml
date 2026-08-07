@@ -1,0 +1,88 @@
+name: Holiday Release Schedule
+
+run-name: Holiday release - ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'automatic' }}
+
+on:
+  schedule:
+    - cron: "0 0 3 1 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 30 3 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 3 4 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 1,6 7 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 24 10 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 2,21,30 11 *"
+      timezone: "America/Chicago"
+    - cron: "0 0 8,29 12 *"
+      timezone: "America/Chicago"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Release to production now"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - standard
+          - upside-down-arcade
+          - firework-flyer
+          - pumpkin-panic
+          - turkey-trot-trouble
+          - holiday-season
+          - midnight-rush
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-run-production-release
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Retro Run
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Select scheduled release
+        id: release
+        env:
+          RETRO_RUN_FORCE_PROFILE: ${{ inputs.profile }}
+        run: node scripts/holiday-release-schedule.mjs
+
+      - name: Test all games
+        run: pnpm test
+
+      - name: Build selected edition
+        env:
+          RETRO_RUN_SEASONAL_PROFILE: ${{ steps.release.outputs.profile }}
+        run: pnpm run build
+
+      - name: Deploy selected edition to production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm exec wrangler deploy
+          --strict
+          --keep-vars
+          --message "Scheduled release - ${{ steps.release.outputs.message }}"

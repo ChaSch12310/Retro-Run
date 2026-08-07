@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
+import { HOLIDAY_RELEASE_TRANSITIONS, releaseForMonthDay } from "./holiday-release-schedule.mjs";
 
 class FakeClassList {
   constructor() {
@@ -110,6 +111,10 @@ const wranglerConfig = fs.readFileSync(
   new URL("../wrangler.jsonc", import.meta.url),
   "utf8"
 );
+const holidayWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/holiday-release-schedule.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -152,6 +157,31 @@ assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 6);
   "upside-down-arcade",
 ].forEach((profile) => assert.match(seasonalDeploymentList, new RegExp(`profile: "${profile}"`)));
 assert.doesNotMatch(seasonalDeploymentList, /profile: "marigold-path"/);
+assert.deepEqual(
+  Object.fromEntries(
+    Object.entries(HOLIDAY_RELEASE_TRANSITIONS).map(([monthDay, release]) => [monthDay, release.profile])
+  ),
+  {
+    "01-03": "standard",
+    "03-30": "upside-down-arcade",
+    "04-03": "standard",
+    "07-01": "firework-flyer",
+    "07-06": "standard",
+    "10-24": "pumpkin-panic",
+    "11-02": "standard",
+    "11-21": "turkey-trot-trouble",
+    "11-30": "standard",
+    "12-08": "holiday-season",
+    "12-29": "midnight-rush",
+  }
+);
+assert.equal(releaseForMonthDay("08-07"), null);
+assert.equal((holidayWorkflow.match(/timezone: "America\/Chicago"/g) || []).length, 7);
+assert.match(holidayWorkflow, /pnpm test/);
+assert.match(holidayWorkflow, /RETRO_RUN_SEASONAL_PROFILE: \$\{\{ steps\.release\.outputs\.profile \}\}/);
+assert.match(holidayWorkflow, /wrangler deploy/);
+assert.match(holidayWorkflow, /--strict/);
+assert.match(holidayWorkflow, /--keep-vars/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
