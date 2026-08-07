@@ -3461,7 +3461,7 @@ function tutorialSlides() {
       title: "Attack the Slope",
       items: [
         "Clear 50 gates to reach the final jump.",
-        "Dodge rival skiers, trees, and closed gate sections.",
+        "Dodge moving rocks, pine trees, and closed gate sections.",
         "The camera scrolls forward as your skier races downhill.",
       ],
     }
@@ -3914,13 +3914,17 @@ function checkCollisions(time) {
         hitEffect = null;
         return;
       }
-      registerHit(time, isDodgeballMode() ? "Hit by a throw" : isSurfingMode() ? "Board collision" : isSkiingMode() ? "Skier collision" : isBaseballMode() ? "Tagged out" : isLacrosseMode() ? "Stick check" : isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : isWaterPoloMode() ? "Defensive hold" : "Big hit", {
+      const variant = (lane.index + index) % 4;
+      const hitReason = isSkiingMode()
+        ? variant % 2 === 0 ? "Hit a tree" : "Hit a rock"
+        : isDodgeballMode() ? "Hit by a throw" : isSurfingMode() ? "Board collision" : isBaseballMode() ? "Tagged out" : isLacrosseMode() ? "Stick check" : isBasketballMode() ? "Ball stolen" : isSoccerMode() ? "Hard tackle" : isHockeyMode() ? "Body check" : isWaterPoloMode() ? "Defensive hold" : "Big hit";
+      registerHit(time, hitReason, {
         impactX: player.worldX,
         impactY: screenYFromWorldRow(player.worldRow),
         defenderX: x + 5,
         defenderY: top - 4,
         facing: lane.direction > 0 ? "right" : "left",
-        variant: (lane.index + index) % 4,
+        variant,
         row,
         defenderIndex: index,
       });
@@ -4212,7 +4216,7 @@ function applyGameModeUi() {
     : surfing
     ? "Use WASD or the arrow keys to carve up the wave and avoid rocks and rival surfers."
     : skiing
-    ? "Use WASD or the arrow keys to race down the course and avoid gates and rival skiers."
+    ? "Use WASD or the arrow keys to race down the course and avoid rocks, trees, and closed gates."
     : baseball
     ? "Use WASD or the arrow keys to run the diamond and dodge tags from fielders."
     : lacrosse
@@ -4231,7 +4235,7 @@ function applyGameModeUi() {
     : surfing
     ? "Swipe anywhere on the screen to carve up the wave and avoid rocks and rival surfers."
     : skiing
-    ? "Swipe anywhere on the screen to race down the course and avoid gates and rival skiers."
+    ? "Swipe anywhere on the screen to race down the course and avoid rocks, trees, and closed gates."
     : baseball
     ? "Swipe anywhere on the screen to run the diamond and dodge tags from fielders."
     : lacrosse
@@ -6319,7 +6323,11 @@ function drawDefenderLane(y, lane, team, time) {
 }
 
 function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
-  if (isSurfingMode() || isSkiingMode() || isBaseballMode() || isLacrosseMode() || isDodgeballMode()) {
+  if (isSkiingMode()) {
+    drawSkiObstacleSprite(x, y, variant, tackleLean);
+    return;
+  }
+  if (isSurfingMode() || isBaseballMode() || isLacrosseMode() || isDodgeballMode()) {
     drawNewSportAthleteSprite(x, y, team, facing, Math.floor(time / 120 + x / 28) % 2, {
       variant,
       number: [2, 4, 6, 8][variant % 4],
@@ -6379,6 +6387,21 @@ function drawDefenderSprite(x, y, team, time, facing, variant, tackleLean = 1) {
   pixelRect(x + trailLegX * s + tackleShift, y + (12 + bob) * s + tackleDrop, 3, legHeight, PALETTE.white, s);
   pixelRect(x + leadLegX * s + tackleShift, y + (12 + bob + legHeight) * s + tackleDrop, 3, 1, PALETTE.outline, s);
   pixelRect(x + trailLegX * s + tackleShift, y + (12 + bob + legHeight) * s + tackleDrop, 3, 1, PALETTE.outline, s);
+}
+
+function drawSkiObstacleSprite(x, y, variant, tackleLean = 1) {
+  const impact = Math.max(0, tackleLean - 1);
+  const jolt = impact * (variant % 2 === 0 ? -5 : 5);
+  if (variant % 2 === 0) {
+    drawSkiPineTree(x + 4 + jolt, y - 4 + impact * 3);
+  } else {
+    drawSkiRockCluster(x + 6 + jolt, y + 4 + impact * 4);
+  }
+  if (impact > 0.05) {
+    ctx.fillStyle = "#f6f3de";
+    ctx.fillRect(x - 2, y + 25, 7, 5);
+    ctx.fillRect(x + 29, y + 19, 9, 5);
+  }
 }
 
 function drawNewSportAthleteSprite(x, y, team, facing, frame, options = {}) {
