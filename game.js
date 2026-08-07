@@ -2,6 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const teamNameEl = document.getElementById("teamName");
+const teamNameLabelEl = document.getElementById("teamNameLabel");
 const distanceEl = document.getElementById("distanceValue");
 const bestEl = document.getElementById("bestValue");
 const seasonBestEl = document.getElementById("seasonBestValue");
@@ -35,6 +36,7 @@ const createCareerTitleEl = document.getElementById("createCareerTitle");
 const franchiseMainContentEl = document.getElementById("franchiseMainContent");
 const homeTeamNameEl = document.getElementById("homeTeamName");
 const nextOpponentNameEl = document.getElementById("nextOpponentName");
+const nextOpponentLabelEl = document.getElementById("nextOpponentLabel");
 const teamNameInputEl = document.getElementById("teamNameInput");
 const runnerNameInputEl = document.getElementById("runnerNameInput");
 const playerNameLabelEl = document.getElementById("playerNameLabel");
@@ -3721,10 +3723,14 @@ function tutorialSlides() {
     {
       badge: "Season",
       title: "Chase the Title",
-      text: `Your ${currentHomeTeam().name} play a 12-game season, beginning against ${teams[0].name}.`,
+      text: skiing
+        ? `Your ${currentHomeTeam().name} race a 12-course season, beginning at ${teams[0].name}.`
+        : `Your ${currentHomeTeam().name} play a 12-game season, beginning against ${teams[0].name}.`,
       items: [
         "Finishing in 10 attempts or fewer records a win; taking more than 10 records a loss.",
-        "The schedule shows the previous two, current, and next two matchups.",
+        skiing
+          ? "The schedule shows the previous two, current, and next two mountain courses."
+          : "The schedule shows the previous two, current, and next two matchups.",
         `Progress is saved to the active ${soccer || lacrosse ? "national-team" : surfing || skiing ? "tour" : "franchise"} slot after every game.`,
         "Restart Season resets that season's record and progress but keeps player upgrades.",
         "After Season 1, the runner roster and injuries unlock. No additional management systems are added in later seasons.",
@@ -4009,7 +4015,9 @@ function gameOver(reason) {
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale - 1, 0, 100);
   }
-  franchise.lastResult = isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() || isDodgeballMode()
+  franchise.lastResult = isSkiingMode()
+    ? `${reason} at ${currentTeam().name}. Supporters want a better response.`
+    : isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isDodgeballMode()
     ? `${reason} against ${currentTeam().name}. Supporters want a better response.`
     : `${reason} against the ${currentTeam().name}. Fans want a better answer next week.`;
   saveFranchise();
@@ -4108,6 +4116,8 @@ function completeLevel() {
             : isWaterPoloMode()
               ? `Huge power-shot win over ${beatenTeam.name}. Supporters are roaring.`
             : `Huge field-goal win over the ${beatenTeam.name}. Fans are roaring.`)
+      : isSkiingMode()
+        ? `You completed the course at ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
       : isBasketballMode()
         ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
         : `You escaped ${isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() || isDodgeballMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
@@ -4211,6 +4221,8 @@ function applyGameModeUi() {
   canvas.setAttribute("aria-label", `${mode.title} game`);
   distanceLabelEl.textContent = mode.distanceLabel;
   downsLabelEl.textContent = mode.chancesLabel;
+  teamNameLabelEl.textContent = skiing ? "Course" : "Opponent";
+  nextOpponentLabelEl.textContent = skiing ? "Next Course" : "Next Opponent";
   keyboardInstructionsEl.textContent = dodgeball
     ? "Use WASD or the arrow keys to cross the gym and dodge incoming throwers."
     : surfing
@@ -4496,7 +4508,9 @@ function updateStartOverlay() {
     startButton.hidden = true;
   } else if (seasonCheckpointLevel > currentSeasonStartLevel()) {
     overlayTitleEl.textContent = "Resume Season";
-    overlayTextEl.textContent = `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
+    overlayTextEl.textContent = skiing
+      ? `Continue Season ${franchise.year} on course ${currentSeasonWeek()} at ${nextOpponent.name}.`
+      : `Continue Season ${franchise.year} in week ${currentSeasonWeek()} against ${nextOpponent.name}.`;
     startButton.textContent = surfing ? "Resume Heat" : skiing ? "Resume Run" : basketball || hockey || waterPolo || baseball || lacrosse || dodgeball ? "Resume Game" : soccer ? "Resume Match" : "Resume Run";
   } else {
     overlayTitleEl.textContent = franchise.year > 1
@@ -6940,7 +6954,7 @@ function drawScoreboardBar() {
   ctx.fillRect(barX + 4, barY + 4, barW - 8, 5);
 
   drawTeamChip(44, barY + 13, 194, 31, homeTeam, "YOUR TEAM", true);
-  drawLabel("VS", 259, barY + 34, PALETTE.cream, 12);
+  drawLabel(isSkiingMode() ? "AT" : "VS", 259, barY + 34, PALETTE.cream, 12);
   if (isBasketballMode()) {
     drawLabel("Q4", 260, barY + 17, "#65b7e8", 8);
   } else if (isDodgeballMode()) {
@@ -6958,7 +6972,7 @@ function drawScoreboardBar() {
   } else if (isWaterPoloMode()) {
     drawLabel("Q4", 260, barY + 17, "#54d2e6", 8);
   }
-  drawTeamChip(302, barY + 13, 194, 31, opponent, "OPPONENT", false);
+  drawTeamChip(302, barY + 13, 194, 31, opponent, isSkiingMode() ? "COURSE" : "OPPONENT", false);
 
   drawHudChip(44, barY + 50, 142, 24, `${mode.distanceAbbr} ${String(player.distance).padStart(3, "0")}`);
   drawHudChip(195, barY + 50, 142, 24, `${mode.chanceAbbr} ${displayedChanceCount()}`);
