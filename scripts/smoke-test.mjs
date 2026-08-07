@@ -182,8 +182,9 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-holiday-character-parade/);
+assert.match(html, /20260807-holiday-finale-spectacular/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
+assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
 assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*320px minmax\(0, 1fr\)/s);
 assert.match(styles, /#seasonalCanvas\s*\{[^}]*aspect-ratio:\s*3 \/ 4/s);
@@ -395,6 +396,23 @@ assert.match(halloweenShelf.children[0].innerHTML, /Pumpkin Panic/);
 
 const allSeasonalGameIds = [...seasonalSource.matchAll(/^    id: "([a-z0-9-]+)",$/gm)]
   .map((match) => match[1]);
+const finaleTargetRenderer = seasonalParitySource.slice(
+  seasonalParitySource.indexOf("function parityDrawFinaleTarget()"),
+  seasonalParitySource.indexOf("function parityDrawFinaleScene("),
+);
+allSeasonalGameIds.forEach((gameId) => {
+  assert.match(finaleTargetRenderer, new RegExp(`"${gameId}"`), `${gameId} should have custom finale art`);
+});
+const obstacleRenderer = seasonalParitySource.slice(
+  seasonalParitySource.indexOf("function parityDrawObstacle("),
+  seasonalParitySource.indexOf("function parityDrawPerson("),
+);
+const seasonalObstacleNames = [...new Set([...seasonalSource.matchAll(/obstacle: "([^"]+)"/g)].map((match) => match[1]))];
+seasonalObstacleNames.filter((name) => name !== "Police Helicopter").forEach((name) => {
+  assert.match(obstacleRenderer, new RegExp(`"${name}"`), `${name} should have custom opponent art`);
+});
+assert.match(obstacleRenderer, /parityGame\.id === "sleigh-bell-sprint"/);
+assert.match(obstacleRenderer, /parityGame\.id === "turkey-trot-trouble"/);
 allSeasonalGameIds.forEach((gameId) => {
   const profile = runSeasonalProfile(gameId);
   const shelf = profile.elements.get("seasonalGameShelf");
@@ -424,7 +442,7 @@ function runParityProfile(profileId) {
     "seasonalSeasonBestValue", "seasonalDownsValue", "seasonalAttemptsValue", "seasonalProgressInstructions",
     "seasonalOverlay", "seasonalOverlayKicker", "seasonalOverlayTitle", "seasonalOverlayText",
     "seasonalChallengePanel", "seasonalChallengeKicker", "seasonalChallengeTitle", "seasonalChallengeClock",
-    "seasonalChallengeTimer", "seasonalChallengeScene", "seasonalChallengeTarget", "seasonalChallengeAimMarker",
+    "seasonalChallengeTimer", "seasonalChallengeScene", "seasonalChallengeCanvas", "seasonalChallengeTarget", "seasonalChallengeAimMarker",
     "seasonalChallengeToken", "seasonalChallengeInstructions", "seasonalPowerMeter", "seasonalPowerValue",
     "seasonalPowerNeedle", "seasonalAimMeter", "seasonalAimValue", "seasonalAimNeedle",
     "seasonalChallengeStatus", "seasonalChallengeActionButton", "arcadeHomeButton", "gameLibraryScreen",
@@ -450,6 +468,10 @@ function runParityProfile(profileId) {
   canvas.width = 540;
   canvas.height = 720;
   canvas.getContext = () => context;
+  const challengeCanvas = elements.get("seasonalChallengeCanvas");
+  challengeCanvas.width = 480;
+  challengeCanvas.height = 150;
+  challengeCanvas.getContext = () => context;
   elements.get("seasonalGameScreen").hidden = true;
   elements.get("seasonalChallengePanel").hidden = true;
   const requestFrame = (callback) => {
@@ -522,13 +544,34 @@ assert.equal(parityHoliday.elements.get("seasonalChallengeTimer").textContent, "
 assert.equal(parityHoliday.elements.get("seasonalChallengeActionButton").textContent, "Set Power");
 parityHoliday.game.lockPower();
 assert.equal(parityHoliday.game.phase, "aim");
-assert.equal(parityHoliday.elements.get("seasonalChallengeActionButton").textContent, "Launch");
+assert.equal(parityHoliday.elements.get("seasonalChallengeActionButton").textContent, "Aim for Roof");
 parityHoliday.game.setShot(70, 0);
 parityHoliday.game.launch();
 assert.equal(parityHoliday.game.phase, "flight");
 parityHoliday.game.finishShot();
 assert.equal(parityHoliday.game.level, 1);
 assert.equal(parityHoliday.elements.get("seasonalStartButton").textContent, "Next Game");
+
+allSeasonalGameIds.forEach((gameId) => {
+  const profile = runParityProfile(gameId);
+  profile.elements.get("seasonalGameShelf").children[0].click();
+  profile.elements.get("seasonalStartButton").click();
+  profile.game.forceChallenge();
+  assert.match(profile.elements.get("seasonalChallengeInstructions").textContent, /Set power, then aim\./);
+  profile.game.setShot(70, 0);
+  profile.game.launch();
+  profile.game.finishShot();
+  assert.equal(profile.game.level, 1, `${gameId} custom finale should advance after success`);
+});
+
+const parityChristmasMiss = runParityProfile("sleigh-bell-sprint");
+parityChristmasMiss.elements.get("seasonalGameShelf").children[0].click();
+parityChristmasMiss.elements.get("seasonalStartButton").click();
+parityChristmasMiss.game.forceChallenge();
+parityChristmasMiss.game.setShot(10, 0);
+parityChristmasMiss.game.launch();
+parityChristmasMiss.game.finishShot();
+assert.match(parityChristmasMiss.elements.get("seasonalOverlayText").textContent, /Santa misses the roof/);
 assert.match(html, /game-sport-badge football-sport-badge/);
 assert.match(html, /game-sport-badge soccer-sport-badge/);
 assert.match(html, /game-sport-badge basketball-sport-badge/);

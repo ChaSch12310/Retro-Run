@@ -5475,6 +5475,14 @@ body[data-device="mobile"] #seasonalCanvas {
     linear-gradient(180deg, #557fa6 0 42%, #2c6736 42% 100%);
 }
 
+#seasonalChallengeCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
 .seasonal-challenge-target {
   position: absolute;
   z-index: 2;
@@ -5496,4 +5504,13 @@ body[data-device="mobile"] #seasonalCanvas {
 .seasonal-challenge-token {
   background: var(--seasonal-accent);
   border-radius: 0;
+}
+
+.seasonal-challenge-target,
+.seasonal-challenge-token {
+  display: none;
+}
+
+.seasonal-challenge-scene .kick-aim-marker {
+  z-index: 5;
 }

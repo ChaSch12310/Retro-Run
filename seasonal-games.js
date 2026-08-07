@@ -82,7 +82,7 @@ const SEASONAL_GAMES = [
     distance: 1500,
     behavior: "parade",
     player: "turkey",
-    obstacle: "Float",
+    obstacle: "Chef",
     accent: "#c65d2f",
     secondary: "#f1b84b",
     sky: "#6f8eb0",
