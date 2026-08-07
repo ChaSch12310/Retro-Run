@@ -139,7 +139,14 @@ assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_RELEASE_NAME/);
 assert.match(seasonalDeploymentSource, /releaseName \? `\$\{releaseName\} - \$\{deployment\.message\}`/);
 assert.doesNotMatch(seasonalDeploymentSource, /--tag\b|--preview-alias/);
-assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 23);
+assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 4);
+[
+  "holiday-season",
+  "pumpkin-panic",
+  "turkey-trot-trouble",
+  "upside-down-arcade",
+].forEach((profile) => assert.match(seasonalDeploymentList, new RegExp(`profile: "${profile}"`)));
+assert.doesNotMatch(seasonalDeploymentList, /profile: "marigold-path"/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
