@@ -5358,9 +5358,9 @@ body.seasonal-game-open .seasonal-run-panel {
 
 #seasonalCanvas {
   display: block;
-  width: min(100%, 760px);
+  width: min(100%, 760px, calc((100dvh - 160px) * 0.75));
   height: auto;
-  max-height: 100%;
+  max-height: none;
   aspect-ratio: 3 / 4;
   border: 6px solid #09080d;
   background: #254529;
@@ -5385,6 +5385,16 @@ body[data-device="laptop"] .seasonal-stage.play-panel {
   padding: 10px;
 }
 
+body[data-device="tablet"] #seasonalCanvas {
+  width: min(100%, calc((100dvh - 160px) * 0.75));
+  height: auto;
+}
+
+body[data-device="laptop"] #seasonalCanvas {
+  width: min(100%, calc((100dvh - 150px) * 0.75));
+  height: auto;
+}
+
 body[data-device="mobile"] .seasonal-game-body {
   grid-template-columns: 1fr;
   grid-template-areas: "seasonal-play";
@@ -5400,7 +5410,8 @@ body[data-device="mobile"] .seasonal-stage.play-panel {
 }
 
 body[data-device="mobile"] #seasonalCanvas {
-  height: min(100%, calc(100dvh - 120px));
+  width: min(100%, calc((100dvh - 120px) * 0.75));
+  height: auto;
 }
 
 @media (max-width: 980px) and (min-width: 641px) {
@@ -5425,7 +5436,8 @@ body[data-device="mobile"] #seasonalCanvas {
   }
 
   #seasonalCanvas {
-    height: min(100%, calc(100dvh - 120px));
+    width: min(100%, calc((100dvh - 120px) * 0.75));
+    height: auto;
   }
 }
 

@@ -182,7 +182,7 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260805-seasonal-gameplay-parity/);
+assert.match(html, /20260807-holiday-character-parade/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
 assert.match(styles, /\.seasonal-game-body\s*\{[^}]*grid-template-columns:\s*320px minmax\(0, 1fr\)/s);
@@ -207,6 +207,14 @@ assert.match(seasonalParitySource, /parityChallengePhase = "power"/);
 assert.match(seasonalParitySource, /parityChallengePhase = "aim"/);
 assert.match(seasonalParitySource, /function parityNearestSafeRow/);
 assert.match(seasonalParitySource, /function parityUpdateChallenge/);
+const seasonalPlayerTypes = [...seasonalSource.matchAll(/player:\s*"([^"]+)"/g)].map((match) => match[1]);
+assert.equal(seasonalPlayerTypes.length, 25);
+assert.ok(!seasonalPlayerTypes.includes("runner"));
+seasonalPlayerTypes.forEach((playerType) => {
+  assert.match(seasonalParitySource, new RegExp(`player === "${playerType}"`));
+});
+assert.match(styles, /body\[data-device="mobile"\] #seasonalCanvas\s*\{[^}]*width:\s*min\(100%, calc\(\(100dvh - 120px\) \* 0\.75\)\)[^}]*height:\s*auto/s);
+assert.match(styles, /body\[data-device="laptop"\] #seasonalCanvas\s*\{[^}]*width:\s*min\(100%, calc\(\(100dvh - 150px\) \* 0\.75\)\)[^}]*height:\s*auto/s);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [
@@ -505,7 +513,7 @@ parityRows.forEach((row, index) => {
   parityMaxConsecutiveRows = Math.max(parityMaxConsecutiveRows, parityConsecutiveRows);
 });
 assert.ok(parityMaxConsecutiveRows <= 5);
-assert.ok(parityRows.every((row) => row % 6 !== 2 && row !== 27));
+assert.ok(parityRows.every((row) => [0, 1].includes(row % 6) && row !== 27));
 parityHoliday.game.forceChallenge();
 assert.equal(parityHoliday.game.state, "challenge");
 assert.equal(parityHoliday.game.phase, "power");

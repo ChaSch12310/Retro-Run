@@ -225,7 +225,11 @@ function parityCloseGame() {
 }
 
 function parityIsSafeRow(row) {
-  return row <= PARITY_START_ROW || row % 6 === 2 || row === 27 || row >= PARITY_START_ROW + PARITY_DISTANCE;
+  const lanePosition = row % 6;
+  return row <= PARITY_START_ROW
+    || (lanePosition !== 0 && lanePosition !== 1)
+    || row === 27
+    || row >= PARITY_START_ROW + PARITY_DISTANCE;
 }
 
 function paritySeed(row, salt) {
@@ -611,23 +615,52 @@ function parityDrawObstacle(object) {
   parityRect(object.x + object.width - 20, y + object.height - 5, 12, 5, "#090f17");
 }
 
+function parityDrawPerson(x, y, shirt = parityGame.accent, pants = "#172333", skin = "#edc29b") {
+  parityRect(x + 8, y + 1, 12, 8, skin);
+  parityRect(x + 3, y + 9, 22, 13, shirt);
+  parityRect(x, y + 11, 4, 9, skin);
+  parityRect(x + 24, y + 11, 4, 9, skin);
+  parityRect(x + 4, y + 22, 7, 8, pants);
+  parityRect(x + 17, y + 22, 7, 8, pants);
+  parityRect(x + 16, y + 4, 2, 2, "#172333");
+}
+
 function parityDrawPlayer() {
   if (parityHitFlash > 0 && Math.floor(parityHitFlash * 12) % 2 === 0) return;
   const x = parityPlayer.x;
   const y = parityScreenY(parityPlayer.worldRow) - PARITY_PLAYER_HEIGHT / 2;
-  if (parityGame.player === "plane") {
-    parityRect(x + 11, y, 8, 30, parityGame.secondary);
-    parityRect(x - 3, y + 11, 36, 9, parityGame.accent);
+  const player = parityGame.player;
+  if (player === "plane") {
+    parityRect(x + 10, y, 9, 30, parityGame.secondary);
+    parityRect(x - 4, y + 10, 38, 10, parityGame.accent);
     parityRect(x + 3, y + 23, 24, 5, parityGame.accent);
+    parityRect(x + 12, y + 4, 5, 7, "#81c8e8");
+    parityRect(x + 13, y - 3, 3, 5, "#f4f0d9");
+    parityRect(x + 7, y - 2, 15, 2, "#f4f0d9");
     return;
   }
-  if (parityGame.player === "sleigh" || parityGame.player === "sled") {
-    parityRect(x - 5, y + 14, 38, 12, parityGame.accent);
-    parityRect(x + 3, y + 4, 22, 13, parityGame.secondary);
-    parityRect(x - 2, y + 27, 36, 3, "#f4f0d9");
+  if (player === "sleigh") {
+    parityRect(x - 6, y + 17, 42, 10, parityGame.accent);
+    parityRect(x - 2, y + 25, 40, 4, "#f4f0d9");
+    parityRect(x + 1, y + 12, 5, 12, parityGame.secondary);
+    parityRect(x + 8, y + 8, 12, 14, "#d9473f");
+    parityRect(x + 10, y + 2, 9, 8, "#edc29b");
+    parityRect(x + 8, y, 13, 4, "#f4f0d9");
+    parityRect(x + 8, y + 18, 13, 4, "#f4f0d9");
+    parityRect(x + 22, y + 6, 11, 14, "#b88735");
+    parityRect(x + 24, y + 3, 8, 5, parityGame.secondary);
     return;
   }
-  if (parityGame.player === "turkey") {
+  if (player === "sled") {
+    parityRect(x - 5, y + 20, 40, 7, parityGame.accent);
+    parityRect(x - 2, y + 27, 38, 3, "#f4f0d9");
+    parityRect(x + 7, y + 9, 18, 13, "#3f78b5");
+    parityRect(x + 10, y + 2, 10, 9, "#edc29b");
+    parityRect(x + 8, y, 14, 4, "#d9473f");
+    parityRect(x + 5, y + 14, 6, 4, "#f4f0d9");
+    return;
+  }
+  if (player === "turkey") {
     parityRect(x - 7, y + 4, 9, 22, "#c84732");
     parityRect(x - 2, y - 2, 10, 26, "#e18a2f");
     parityRect(x + 5, y - 6, 11, 29, "#f0bc3f");
@@ -639,11 +672,207 @@ function parityDrawPlayer() {
     parityRect(x + 24, y + 15, 5, 8, "#c5363f");
     return;
   }
-  parityRect(x + 8, y, 12, 9, "#edc29b");
-  parityRect(x + 3, y + 8, 22, 14, parityGame.accent);
-  parityRect(x + 4, y + 21, 7, 9, "#172333");
-  parityRect(x + 17, y + 21, 7, 9, "#172333");
-  parityRect(x + 9, y + 11, 10, 6, parityGame.secondary);
+  if (player === "dragon") {
+    parityRect(x - 5, y + 13, 34, 15, "#d63f35");
+    parityRect(x + 20, y + 6, 16, 16, "#d63f35");
+    parityRect(x + 34, y + 11, 6, 5, "#f2c24d");
+    parityRect(x - 9, y + 9, 8, 8, "#f2c24d");
+    parityRect(x + 4, y + 8, 5, 5, "#f2c24d");
+    parityRect(x + 13, y + 8, 5, 5, "#f2c24d");
+    parityRect(x + 25, y + 9, 3, 3, "#172333");
+    parityRect(x, y + 27, 7, 3, "#f2c24d");
+    parityRect(x + 18, y + 27, 7, 3, "#f2c24d");
+    return;
+  }
+  if (player === "groundhog") {
+    parityRect(x + 4, y + 8, 22, 22, "#9b633d");
+    parityRect(x + 7, y + 1, 17, 14, "#b77a4b");
+    parityRect(x + 5, y, 6, 6, "#7b492f");
+    parityRect(x + 20, y, 6, 6, "#7b492f");
+    parityRect(x + 20, y + 6, 3, 3, "#172333");
+    parityRect(x + 13, y + 10, 8, 4, "#ead0a4");
+    parityRect(x, y + 19, 7, 7, "#7b492f");
+    return;
+  }
+  if (player === "bunny") {
+    parityRect(x + 6, y - 5, 6, 13, "#f4f0e7");
+    parityRect(x + 18, y - 5, 6, 13, "#f4f0e7");
+    parityRect(x + 7, y + 3, 17, 13, "#f4f0e7");
+    parityRect(x + 4, y + 14, 22, 16, parityGame.accent);
+    parityRect(x + 19, y + 7, 3, 3, "#172333");
+    parityRect(x + 24, y + 17, 11, 10, "#b88735");
+    parityRect(x + 26, y + 14, 7, 4, parityGame.secondary);
+    return;
+  }
+
+  if (player === "menorah-carrier") {
+    parityDrawPerson(x, y, "#397ac5", "#f4f0d9");
+    parityRect(x + 25, y + 7, 3, 18, parityGame.secondary);
+    parityRect(x + 20, y + 8, 13, 3, parityGame.secondary);
+    [20, 24, 29].forEach((offset) => parityRect(x + offset, y + 2, 2, 7, "#f4f0d9"));
+    [20, 24, 29].forEach((offset) => parityRect(x + offset, y, 2, 3, "#f29d38"));
+    return;
+  }
+  if (player === "kinara-carrier") {
+    parityDrawPerson(x, y, "#181818", "#34854a");
+    parityRect(x - 7, y + 18, 14, 4, "#7c4a2c");
+    parityRect(x - 5, y + 7, 3, 12, "#d64035");
+    parityRect(x, y + 5, 3, 14, "#191919");
+    parityRect(x + 5, y + 7, 3, 12, "#4ca45b");
+    parityRect(x - 5, y + 4, 3, 3, "#f2c24d");
+    parityRect(x, y + 2, 3, 3, "#f2c24d");
+    parityRect(x + 5, y + 4, 3, 3, "#f2c24d");
+    return;
+  }
+  if (player === "trick-or-treater") {
+    parityDrawPerson(x, y, "#34244d", "#15131e");
+    parityRect(x + 6, y - 1, 16, 12, "#f47a28");
+    parityRect(x + 9, y + 3, 3, 3, "#24183d");
+    parityRect(x + 17, y + 3, 3, 3, "#24183d");
+    parityRect(x - 6, y + 15, 10, 11, "#f47a28");
+    parityRect(x - 4, y + 12, 6, 4, "#9ed35a");
+    return;
+  }
+  if (player === "party-runner") {
+    parityDrawPerson(x, y, "#24376a", "#101a3a");
+    parityRect(x + 6, y - 5, 16, 5, "#15131e");
+    parityRect(x + 9, y - 11, 10, 8, "#15131e");
+    parityRect(x + 10, y - 5, 8, 2, parityGame.secondary);
+    parityRect(x + 29, y + 3, 2, 15, "#f4d35e");
+    parityRect(x + 26, y, 3, 3, "#ef4b4b");
+    parityRect(x + 31, y - 2, 3, 3, "#54c7e8");
+    return;
+  }
+  if (player === "cupid-runner") {
+    parityDrawPerson(x, y, parityGame.accent, "#f4f0d9");
+    parityRect(x - 6, y + 8, 9, 15, "#f4f0d9");
+    parityRect(x + 25, y + 8, 9, 15, "#f4f0d9");
+    parityRect(x - 9, y + 2, 6, 7, "#ffd4dc");
+    parityRect(x - 7, y + 8, 10, 8, "#ef5c7c");
+    parityRect(x - 4, y + 16, 4, 4, "#ef5c7c");
+    return;
+  }
+  if (player === "leprechaun") {
+    parityDrawPerson(x, y, "#258342", "#23352a");
+    parityRect(x + 5, y - 3, 19, 5, "#216c39");
+    parityRect(x + 8, y - 10, 13, 9, "#216c39");
+    parityRect(x + 8, y - 3, 13, 2, parityGame.secondary);
+    parityRect(x + 9, y + 8, 11, 5, "#d67831");
+    parityRect(x + 27, y + 12, 4, 4, "#47b65e");
+    parityRect(x + 25, y + 15, 8, 3, "#47b65e");
+    return;
+  }
+  if (player === "bead-runner") {
+    parityDrawPerson(x, y, "#7042a8", "#27834b");
+    parityRect(x + 7, y - 3, 14, 4, "#f4c84b");
+    parityRect(x + 6, y + 10, 4, 4, "#f4c84b");
+    parityRect(x + 12, y + 13, 4, 4, "#4ca45b");
+    parityRect(x + 18, y + 10, 4, 4, "#8b5bd1");
+    parityRect(x + 24, y + 14, 6, 9, "#e55279");
+    return;
+  }
+  if (player === "color-runner") {
+    parityDrawPerson(x, y, "#ef4e91", "#3c8cc3");
+    parityRect(x + 3, y + 9, 8, 7, "#49c7df");
+    parityRect(x + 11, y + 15, 8, 7, "#f4b953");
+    parityRect(x + 19, y + 9, 6, 7, "#6fbf72");
+    parityRect(x - 5, y + 3, 4, 4, "#f4b953");
+    parityRect(x + 29, y + 2, 5, 5, "#49c7df");
+    return;
+  }
+  if (player === "lamp-carrier") {
+    parityDrawPerson(x, y, "#7b3f91", "#392054");
+    parityRect(x + 25, y + 16, 11, 5, "#f29d38");
+    parityRect(x + 28, y + 12, 5, 5, "#ffe078");
+    parityRect(x + 29, y + 8, 3, 5, "#f47a28");
+    parityRect(x + 27, y + 21, 7, 2, "#8b542d");
+    return;
+  }
+  if (player === "gift-carrier") {
+    parityDrawPerson(x, y, "#32a88a", "#173f4b");
+    parityRect(x - 7, y + 11, 12, 13, parityGame.secondary);
+    parityRect(x - 2, y + 11, 3, 13, parityGame.accent);
+    parityRect(x - 7, y + 16, 12, 3, parityGame.accent);
+    parityRect(x - 4, y + 7, 4, 5, parityGame.accent);
+    parityRect(x, y + 7, 4, 5, parityGame.accent);
+    return;
+  }
+  if (player === "calavera") {
+    parityDrawPerson(x, y, "#743c81", "#20182d", "#f4f0d9");
+    parityRect(x + 6, y - 1, 16, 11, "#f4f0d9");
+    parityRect(x + 9, y + 2, 4, 4, "#241d3b");
+    parityRect(x + 17, y + 2, 4, 4, "#241d3b");
+    parityRect(x + 13, y + 7, 5, 2, "#241d3b");
+    parityRect(x + 4, y - 4, 5, 5, "#f28b30");
+    parityRect(x + 20, y - 4, 5, 5, "#d75ac8");
+    return;
+  }
+  if (player === "ranger") {
+    parityDrawPerson(x, y, "#28764c", "#294f38");
+    parityRect(x + 5, y - 2, 19, 4, "#315b3e");
+    parityRect(x + 9, y - 7, 11, 7, "#315b3e");
+    parityRect(x + 10, y + 12, 8, 7, "#5fc7df");
+    parityRect(x + 28, y + 13, 8, 13, "#397a63");
+    parityRect(x + 30, y + 9, 4, 5, "#3fa96c");
+    return;
+  }
+  if (player === "jester") {
+    parityDrawPerson(x, y, "#f05ab5", "#4c3290");
+    parityRect(x + 6, y - 4, 8, 7, "#56d7c9");
+    parityRect(x + 15, y - 4, 8, 7, "#f05ab5");
+    parityRect(x + 3, y - 8, 5, 5, "#56d7c9");
+    parityRect(x + 22, y - 8, 5, 5, "#f05ab5");
+    parityRect(x + 7, y + 9, 7, 13, "#56d7c9");
+    parityRect(x + 14, y + 9, 7, 13, "#f05ab5");
+    return;
+  }
+  if (player === "beach-runner") {
+    parityDrawPerson(x, y, "#f48b35", "#287ba1");
+    parityRect(x + 7, y + 3, 5, 3, "#172333");
+    parityRect(x + 16, y + 3, 5, 3, "#172333");
+    parityRect(x - 7, y + 4, 7, 25, parityGame.secondary);
+    parityRect(x - 9, y + 9, 2, 15, "#f4f0d9");
+    parityRect(x - 5, y + 7, 3, 3, "#e87555");
+    return;
+  }
+  if (player === "farmer") {
+    parityDrawPerson(x, y, "#3f78a8", "#5c3a27");
+    parityRect(x + 3, y - 2, 22, 5, "#e6c34d");
+    parityRect(x + 8, y - 7, 13, 7, "#b98b32");
+    parityRect(x + 8, y + 10, 5, 12, "#e6c34d");
+    parityRect(x + 18, y + 10, 5, 12, "#e6c34d");
+    parityRect(x + 28, y + 5, 2, 22, "#7a4c2e");
+    parityRect(x + 25, y + 3, 8, 4, "#da7b32");
+    return;
+  }
+  if (player === "dancer") {
+    parityDrawPerson(x, y, "#e55279", "#4ed2bd");
+    parityRect(x + 6, y - 5, 4, 7, "#f4c84b");
+    parityRect(x + 12, y - 9, 4, 11, "#4ed2bd");
+    parityRect(x + 18, y - 5, 4, 7, "#e55279");
+    parityRect(x, y + 19, 28, 7, "#87527f");
+    parityRect(x - 4, y + 13, 5, 4, "#f4c84b");
+    parityRect(x + 27, y + 13, 5, 4, "#f4c84b");
+    return;
+  }
+  if (player === "student") {
+    parityDrawPerson(x, y, "#4b89c8", "#26384d");
+    parityRect(x + 4, y - 2, 18, 4, "#25344b");
+    parityRect(x - 5, y + 10, 9, 15, "#d95746");
+    parityRect(x + 23, y + 13, 10, 8, "#e5b83f");
+    parityRect(x + 25, y + 15, 6, 2, "#f4f0d9");
+    return;
+  }
+  if (player === "explorer") {
+    parityDrawPerson(x, y, "#386995", "#243651");
+    parityRect(x + 5, y - 2, 18, 13, "#79b9e6");
+    parityRect(x + 9, y + 1, 10, 8, "#edc29b");
+    parityRect(x + 24, y + 13, 4, 12, "#7b542d");
+    parityRect(x + 27, y + 8, 7, 7, parityGame.secondary);
+    parityRect(x + 29, y + 5, 3, 4, "#f4f0d9");
+    return;
+  }
+  parityDrawPerson(x, y);
 }
 
 function parityDrawScene() {
