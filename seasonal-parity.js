@@ -85,6 +85,34 @@ const PARITY_FINALE_MISSES = {
   "winter-solstice-star-quest": "The star misses its place in the winter constellation.",
 };
 
+const PARITY_FIELD_THEMES = {
+  "sleigh-bell-sprint": { surface: ["#244e76", "#1e456b"], edge: "#132c4a", detail: "#dcecf2", decor: "skyline" },
+  "menorah-light-quest": { surface: ["#b8d8e8", "#a5cddd"], edge: "#e7f2f7", detail: "#4e8fe6", decor: "snow" },
+  "seven-principles-journey": { surface: ["#a77446", "#98663d"], edge: "#242024", detail: "#4ca45b", decor: "community" },
+  "pumpkin-panic": { surface: ["#44364d", "#392d44"], edge: "#20172f", detail: "#f47a28", decor: "haunted" },
+  "turkey-trot-trouble": { surface: ["#725246", "#67483d"], edge: "#9d6d46", detail: "#f1b84b", decor: "parade" },
+  "midnight-rush": { surface: ["#334252", "#293746"], edge: "#101a3a", detail: "#f4d35e", decor: "skyline" },
+  "heartbreaker-highway": { surface: ["#9d4e68", "#8e455f"], edge: "#61304c", detail: "#ffd4dc", decor: "roses" },
+  "lucky-clover-chase": { surface: ["#4b9b51", "#408947"], edge: "#2d713d", detail: "#f4d44d", decor: "country" },
+  "egg-hunt-dash": { surface: ["#c79f77", "#b98f69"], edge: "#57964c", detail: "#f5dd69", decor: "garden" },
+  "lantern-dragon-run": { surface: ["#772932", "#67232c"], edge: "#321820", detail: "#f2c24d", decor: "lanterns" },
+  "firework-flyer": { surface: ["#173662", "#102b53"], edge: "#091a3c", detail: "#f3f0df", decor: "stars" },
+  "groundhog-loop": { surface: ["#799555", "#6d884c"], edge: "#56723e", detail: "#e9c46a", decor: "country" },
+  "float-frenzy": { surface: ["#665078", "#59456c"], edge: "#342b4d", detail: "#f4c84b", decor: "parade" },
+  "color-rush": { surface: ["#ddb052", "#cf9f49"], edge: "#6fbf72", detail: "#49c7df", decor: "color" },
+  "festival-of-lights": { surface: ["#4e315c", "#43294f"], edge: "#25163f", detail: "#ffe078", decor: "lamps" },
+  "moonlight-delivery": { surface: ["#41645f", "#375954"], edge: "#123a4c", detail: "#f0d274", decor: "market" },
+  "marigold-path": { surface: ["#613952", "#553147"], edge: "#241d3b", detail: "#f28b30", decor: "marigolds" },
+  "planet-patrol": { surface: ["#5aa866", "#4d9958"], edge: "#33784b", detail: "#5fc7df", decor: "park" },
+  "upside-down-arcade": { surface: ["#b68d3c", "#9e7434"], edge: "#5b3d8a", detail: "#56d7c9", decor: "arcade" },
+  "sun-chase": { surface: ["#d4b15d", "#c6a34e"], edge: "#2891ac", detail: "#ffe06a", decor: "beach" },
+  "harvest-moon-maze": { surface: ["#9c793b", "#8d6b34"], edge: "#6e542e", detail: "#e6c34d", decor: "farm" },
+  "snow-day-sled-escape": { surface: ["#dceaf1", "#cbdfe9"], edge: "#6d91b0", detail: "#4fa1db", decor: "snow" },
+  "carnival-beat-run": { surface: ["#765171", "#684562"], edge: "#344a77", detail: "#4ed2bd", decor: "parade" },
+  "back-to-school-dash": { surface: ["#b58b68", "#a77a57"], edge: "#65798b", detail: "#e5b83f", decor: "school" },
+  "winter-solstice-star-quest": { surface: ["#203454", "#192b49"], edge: "#101d3b", detail: "#f3d66b", decor: "stars" },
+};
+
 const parityProfileId = globalThis.RETRO_RUN_SEASONAL_PROFILE || "holiday-season";
 const parityProfileGames = (SEASONAL_PROFILES[parityProfileId] || [])
   .map((gameId) => SEASONAL_GAMES.find((game) => game.id === gameId))
@@ -905,45 +933,130 @@ function parityObstacleColors() {
   return palettes[parityLevel];
 }
 
+function parityDrawThemePattern(theme, row, top, fieldLeft, fieldRight) {
+  const width = fieldRight - fieldLeft;
+  if (["skyline", "stars"].includes(theme.decor)) {
+    for (let x = fieldLeft + 20 + (row % 3) * 16; x < fieldRight - 10; x += 92) parityRect(x, top + 16, 4, 4, theme.detail);
+  } else if (theme.decor === "snow") {
+    for (let x = fieldLeft + 18 + (row % 2) * 28; x < fieldRight - 18; x += 72) {
+      parityRect(x, top + 17, 12, 3, "rgba(255,255,255,0.62)");
+      parityRect(x + 4, top + 13, 3, 11, "rgba(255,255,255,0.48)");
+    }
+  } else if (["parade", "community", "color"].includes(theme.decor)) {
+    const colors = [parityGame.accent, parityGame.secondary, theme.detail];
+    for (let x = fieldLeft + 22 + (row % 3) * 12; x < fieldRight - 12; x += 67) parityRect(x, top + 16 + (x % 3) * 8, 5, 5, colors[(x + row) % colors.length]);
+  } else if (["garden", "roses", "marigolds"].includes(theme.decor)) {
+    for (let x = fieldLeft + 28 + (row % 2) * 24; x < fieldRight - 16; x += 78) {
+      parityRect(x, top + 18, 5, 5, parityGame.accent);
+      parityRect(x + 5, top + 18, 5, 5, parityGame.secondary);
+      parityRect(x + 3, top + 23, 3, 8, "#397b42");
+    }
+  } else if (["country", "park", "farm"].includes(theme.decor)) {
+    for (let x = fieldLeft + 20; x < fieldRight - 16; x += 64) parityRect(x, top + 28, 31, 3, "rgba(246,243,222,0.28)");
+  } else if (["lanterns", "lamps", "market"].includes(theme.decor)) {
+    for (let x = fieldLeft + 30 + (row % 2) * 34; x < fieldRight - 16; x += 92) {
+      parityRect(x, top + 12, 7, 10, theme.detail);
+      parityRect(x + 2, top + 22, 3, 8, "rgba(246,243,222,0.38)");
+    }
+  } else if (theme.decor === "haunted") {
+    for (let x = fieldLeft + 26 + (row % 2) * 40; x < fieldRight - 16; x += 108) {
+      parityRect(x, top + 19, 12, 12, "#6c6375");
+      parityRect(x + 3, top + 15, 6, 5, "#6c6375");
+    }
+  } else if (theme.decor === "arcade") {
+    for (let x = fieldLeft + 16; x < fieldRight; x += 42) parityRect(x, top + (x % 84 ? 39 : 15), 18, 4, x % 84 ? parityGame.accent : theme.detail);
+  } else if (theme.decor === "beach") {
+    for (let x = fieldLeft + 12; x < fieldRight - 10; x += 74) parityRect(x, top + 35, 44, 4, "rgba(255,255,255,0.34)");
+  } else if (theme.decor === "school") {
+    for (let x = fieldLeft; x < fieldRight; x += 58) parityRect(x, top + 29, 52, 3, "rgba(246,243,222,0.24)");
+  }
+  parityRect(fieldLeft, top, width, 2, "rgba(246,243,222,0.18)");
+}
+
+function parityDrawThemeEdges(theme, fieldLeft, fieldRight) {
+  parityRect(0, 0, fieldLeft, PARITY_HEIGHT, theme.edge);
+  parityRect(fieldRight, 0, PARITY_WIDTH - fieldRight, PARITY_HEIGHT, theme.edge);
+  for (let y = 8; y < PARITY_HEIGHT; y += 34) {
+    if (theme.decor === "skyline") {
+      parityRect(5, y, 23, 25, y % 68 ? "#263b55" : "#1a2d45");
+      parityRect(fieldRight + 10, y, 23, 25, y % 68 ? "#1a2d45" : "#263b55");
+      parityRect(10, y + 6, 5, 5, theme.detail);
+      parityRect(fieldRight + 15, y + 6, 5, 5, theme.detail);
+    } else if (["stars", "haunted"].includes(theme.decor)) {
+      parityRect(8 + (y % 3), y + 7, 5, 5, theme.detail);
+      parityRect(fieldRight + 24 - (y % 4), y + 12, 5, 5, parityGame.secondary);
+    } else if (theme.decor === "snow") {
+      parityRect(2, y + 10, 34, 16, "#f2f4e9");
+      parityRect(fieldRight + 2, y + 10, 36, 16, "#f2f4e9");
+      parityRect(13, y, 9, 16, "#39705a");
+      parityRect(fieldRight + 17, y, 9, 16, "#39705a");
+    } else if (["parade", "community", "color"].includes(theme.decor)) {
+      parityRect(5, y, 12, 15, parityGame.accent);
+      parityRect(19, y + 4, 12, 15, parityGame.secondary);
+      parityRect(fieldRight + 6, y + 3, 12, 15, parityGame.secondary);
+      parityRect(fieldRight + 21, y, 12, 15, parityGame.accent);
+    } else if (["lanterns", "lamps", "market"].includes(theme.decor)) {
+      parityRect(11, y, 14, 17, theme.detail);
+      parityRect(15, y + 17, 6, 13, "#6c4b35");
+      parityRect(fieldRight + 13, y, 14, 17, theme.detail);
+      parityRect(fieldRight + 17, y + 17, 6, 13, "#6c4b35");
+    } else if (["garden", "roses", "marigolds", "country", "park", "farm"].includes(theme.decor)) {
+      parityRect(3, y + 4, 32, 23, y % 68 ? "#397b42" : "#4f9148");
+      parityRect(fieldRight + 3, y + 4, 34, 23, y % 68 ? "#4f9148" : "#397b42");
+      parityRect(10, y, 6, 7, parityGame.accent);
+      parityRect(fieldRight + 23, y, 6, 7, parityGame.secondary);
+    } else if (theme.decor === "beach") {
+      parityRect(0, y + 8, 38, 6, "#f6f3de");
+      parityRect(fieldRight, y + 8, 40, 6, "#f6f3de");
+      parityRect(4, y + 17, 30, 4, "#57c3d5");
+      parityRect(fieldRight + 5, y + 17, 30, 4, "#57c3d5");
+    } else if (theme.decor === "school") {
+      parityRect(3, y, 31, 28, y % 68 ? "#4b89c8" : "#d6a83e");
+      parityRect(fieldRight + 4, y, 31, 28, y % 68 ? "#d6a83e" : "#4b89c8");
+      parityRect(26, y + 12, 4, 4, "#172333");
+      parityRect(fieldRight + 8, y + 12, 4, 4, "#172333");
+    } else if (theme.decor === "arcade") {
+      parityRect(4, y, 30, 9, y % 68 ? parityGame.accent : theme.detail);
+      parityRect(fieldRight + 4, y, 30, 9, y % 68 ? theme.detail : parityGame.secondary);
+    }
+  }
+  parityRect(fieldLeft, 0, 4, PARITY_HEIGHT, theme.detail);
+  parityRect(fieldRight - 4, 0, 4, PARITY_HEIGHT, theme.detail);
+}
+
+function parityDrawCheckpoint(y, color, fieldLeft, fieldRight) {
+  if (y <= 0 || y >= PARITY_HEIGHT) return;
+  for (let x = fieldLeft + 8; x < fieldRight - 10; x += 28) parityRect(x, y - 2, 17, 4, color);
+}
+
 function parityDrawField() {
   const fieldLeft = 38;
   const fieldRight = PARITY_WIDTH - 38;
-  parityRect(0, 0, PARITY_WIDTH, PARITY_HEIGHT, "#111a28");
+  const theme = PARITY_FIELD_THEMES[parityGame.id];
+  parityRect(0, 0, PARITY_WIDTH, PARITY_HEIGHT, theme.edge);
   const firstRow = Math.floor(parityCameraRow) - 1;
   for (let row = firstRow; row <= firstRow + PARITY_VISIBLE_ROWS + 2; row += 1) {
     if (row < 0) continue;
     const top = parityScreenY(row) - PARITY_ROW_HEIGHT / 2;
-    const endzone = row >= PARITY_START_ROW + PARITY_DISTANCE;
-    const color = endzone ? parityGame.accent : row % 2 ? "#37773b" : "#2a6131";
-    parityRect(fieldLeft, top, fieldRight - fieldLeft, PARITY_ROW_HEIGHT, color);
-    parityRect(fieldLeft + 8, top, fieldRight - fieldLeft - 16, 3, "rgba(245,239,199,0.42)");
-    for (let x = fieldLeft + 34; x < fieldRight - 20; x += 60) parityRect(x, top + 29, 28, 3, "rgba(245,239,199,0.28)");
-    if (row % 5 === 0) {
-      parityContext.fillStyle = "rgba(245,239,199,0.42)";
-      parityContext.font = "bold 12px monospace";
-      parityContext.fillText(String(Math.max(0, row - PARITY_START_ROW)).padStart(2, "0"), fieldLeft + 16, top + 45);
+    const finishZone = row >= PARITY_START_ROW + PARITY_DISTANCE;
+    parityRect(fieldLeft, top, fieldRight - fieldLeft, PARITY_ROW_HEIGHT, finishZone ? parityGame.accent : theme.surface[row % 2]);
+    parityDrawThemePattern(theme, row, top, fieldLeft, fieldRight);
+    if (finishZone) {
+      for (let x = fieldLeft + 8; x < fieldRight - 8; x += 32) parityRect(x, top + 8, 16, 8, parityGame.secondary);
     }
     if (row === 27) {
-      parityRect(230, top + 12, 80, 36, parityGame.accent);
+      parityRect(228, top + 12, 84, 36, theme.edge);
+      parityRect(234, top + 17, 72, 26, parityGame.accent);
       parityContext.fillStyle = parityGame.secondary;
-      parityContext.font = "bold 20px monospace";
+      parityContext.font = "bold 18px monospace";
       parityContext.textAlign = "center";
-      parityContext.fillText(parityGame.monogram, 270, top + 38);
+      parityContext.fillText(parityGame.monogram, 270, top + 37);
       parityContext.textAlign = "start";
     }
   }
-  parityRect(0, 0, fieldLeft, PARITY_HEIGHT, "#2b3d52");
-  parityRect(fieldRight, 0, PARITY_WIDTH - fieldRight, PARITY_HEIGHT, "#2b3d52");
-  for (let y = 10; y < PARITY_HEIGHT; y += 24) {
-    parityRect(4, y, 30, 8, y % 48 === 10 ? parityGame.accent : parityGame.secondary);
-    parityRect(fieldRight + 4, y, 30, 8, y % 48 === 10 ? parityGame.secondary : parityGame.accent);
-  }
-  parityRect(fieldLeft, 0, 4, PARITY_HEIGHT, "#f5efc7");
-  parityRect(fieldRight - 4, 0, 4, PARITY_HEIGHT, "#f5efc7");
-  const lineY = parityScreenY(parityFirstDownLine);
-  const targetY = parityScreenY(parityFirstDownTarget);
-  if (lineY > 0 && lineY < PARITY_HEIGHT) parityRect(fieldLeft + 4, lineY - 2, fieldRight - fieldLeft - 8, 4, "#2e75bd");
-  if (targetY > 0 && targetY < PARITY_HEIGHT) parityRect(fieldLeft + 4, targetY - 2, fieldRight - fieldLeft - 8, 4, "#f0c84f");
+  parityDrawThemeEdges(theme, fieldLeft, fieldRight);
+  parityDrawCheckpoint(parityScreenY(parityFirstDownLine), parityGame.accent, fieldLeft, fieldRight);
+  parityDrawCheckpoint(parityScreenY(parityFirstDownTarget), theme.detail, fieldLeft, fieldRight);
 }
 
 function parityDrawObstacle(object) {

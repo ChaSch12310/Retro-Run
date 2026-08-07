@@ -182,7 +182,7 @@ assert.match(seasonalSource, /Santa drops through the chimney/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-holiday-finale-spectacular/);
+assert.match(html, /20260807-holiday-worlds/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -403,6 +403,16 @@ const finaleTargetRenderer = seasonalParitySource.slice(
 allSeasonalGameIds.forEach((gameId) => {
   assert.match(finaleTargetRenderer, new RegExp(`"${gameId}"`), `${gameId} should have custom finale art`);
 });
+const fieldThemeSource = seasonalParitySource.slice(
+  seasonalParitySource.indexOf("const PARITY_FIELD_THEMES"),
+  seasonalParitySource.indexOf("const parityProfileId"),
+);
+allSeasonalGameIds.forEach((gameId) => {
+  assert.match(fieldThemeSource, new RegExp(`"${gameId}"`), `${gameId} should have a custom playfield`);
+});
+assert.doesNotMatch(seasonalParitySource, /#37773b|#2a6131/);
+assert.match(seasonalParitySource, /function parityDrawThemeEdges/);
+assert.match(seasonalParitySource, /function parityDrawCheckpoint/);
 const obstacleRenderer = seasonalParitySource.slice(
   seasonalParitySource.indexOf("function parityDrawObstacle("),
   seasonalParitySource.indexOf("function parityDrawPerson("),
