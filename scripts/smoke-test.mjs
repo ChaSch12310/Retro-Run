@@ -183,7 +183,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-holiday-storybook/);
+assert.match(html, /20260807-marigold-skeletons/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -212,6 +212,9 @@ assert.match(seasonalParitySource, /function parityUpdateChallenge/);
 assert.match(seasonalParitySource, /function parityDrawChristmasSanta/);
 assert.match(seasonalParitySource, /function parityDrawChristmasBag/);
 assert.match(seasonalParitySource, /parityGame\.obstacle === "Greek Soldier"/);
+assert.match(seasonalSource, /obstacle: "Skeleton"/);
+assert.match(seasonalParitySource, /parityGame\.obstacle === "Skeleton"/);
+assert.doesNotMatch(seasonalSource, /obstacle: "Stone Arch"/);
 assert.match(seasonalParitySource, /"menorah-light-quest": \{ surface: \["#b99a68", "#aa8959"\][^\n]+decor: "ancient-city"/);
 assert.doesNotMatch(seasonalParitySource, /parityGame\.obstacle === "Ice"/);
 assert.doesNotMatch(seasonalParitySource, /fillText\(parityGame\.monogram/);

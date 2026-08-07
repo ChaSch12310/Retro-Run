@@ -1156,6 +1156,31 @@ function parityDrawObstacle(object) {
     parityContext.fill();
     return;
   }
+  if (parityGame.obstacle === "Skeleton") {
+    const skeletonX = object.x + object.width / 2;
+    const step = object.variant % 2 === 0 ? 1 : -1;
+    const bone = "#f4f0d9";
+    parityRect(skeletonX - 7, y, 14, 10, bone);
+    parityRect(skeletonX - 9, y + 3, 18, 5, bone);
+    parityRect(skeletonX - 5, y + 3, 3, 3, "#241d3b");
+    parityRect(skeletonX + 2, y + 3, 3, 3, "#241d3b");
+    parityRect(skeletonX - 2, y + 7, 5, 2, "#241d3b");
+    parityRect(skeletonX - 8, y - 4, 6, 5, "#f28b30");
+    parityRect(skeletonX + 3, y - 4, 6, 5, object.variant === 2 ? "#4ed2bd" : "#d75ac8");
+    parityRect(skeletonX - 2, y + 10, 4, 13, bone);
+    parityRect(skeletonX - 8, y + 12, 16, 3, bone);
+    parityRect(skeletonX - 7, y + 16, 14, 2, bone);
+    parityRect(skeletonX - 6, y + 20, 12, 2, bone);
+    parityRect(skeletonX - 14, y + 11 + step * 2, 7, 3, bone);
+    parityRect(skeletonX + 7, y + 11 - step * 2, 7, 3, bone);
+    parityRect(skeletonX - 16, y + 8 + step * 4, 3, 8, bone);
+    parityRect(skeletonX + 13, y + 8 - step * 4, 3, 8, bone);
+    parityRect(skeletonX - 6, y + 23, 3, 7, bone);
+    parityRect(skeletonX + 3, y + 23, 3, 7, bone);
+    parityRect(skeletonX - 9 - step * 3, y + 27, 7, 3, bone);
+    parityRect(skeletonX + 2 - step * 3, y + 27, 7, 3, bone);
+    return;
+  }
   if (parityGame.obstacle === "Barrier") {
     parityRect(object.x + 2, y + 8, object.width - 4, 14, object.variant % 2 ? "#d64035" : "#4ca45b");
     for (let x = object.x + 8; x < object.x + object.width - 6; x += 15) parityRect(x, y + 8, 7, 14, "#181818");
