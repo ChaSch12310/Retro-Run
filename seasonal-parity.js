@@ -8,13 +8,17 @@ const parityTitle = document.getElementById("seasonalGameTitle");
 const parityOpponent = document.getElementById("seasonalOpponentValue");
 const parityStage = document.getElementById("seasonalStageNameValue");
 const parityGameNumber = document.getElementById("seasonalGameNumberValue");
+const parityDistanceLabel = document.getElementById("seasonalDistanceLabel");
 const parityDistance = document.getElementById("seasonalDistanceValue");
 const parityMilestone = document.getElementById("seasonalMilestoneValue");
 const parityBest = document.getElementById("seasonalBestValue");
 const paritySeasonBest = document.getElementById("seasonalSeasonBestValue");
 const parityDown = document.getElementById("seasonalDownsValue");
+const parityDownLabel = document.getElementById("seasonalDownsLabel");
 const parityAttempts = document.getElementById("seasonalAttemptsValue");
 const parityInstructions = document.getElementById("seasonalProgressInstructions");
+const parityKeyboardInstructions = document.getElementById("seasonalKeyboardInstructions");
+const parityTouchInstructions = document.getElementById("seasonalTouchInstructions");
 const parityOverlay = document.getElementById("seasonalOverlay");
 const parityOverlayKicker = document.getElementById("seasonalOverlayKicker");
 const parityOverlayTitle = document.getElementById("seasonalOverlayTitle");
@@ -56,6 +60,8 @@ const PARITY_PLAYER_HEIGHT = 30;
 const PARITY_CHALLENGE_MS = 30000;
 const PARITY_POWER_MIN = 48;
 const PARITY_AIM_LIMIT = 28;
+const PARITY_PRANKSTER_TARGET = 50;
+const PARITY_PRANKSTER_LANE_LIMIT = 5;
 
 const PARITY_FINALE_MISSES = {
   "sleigh-bell-sprint": "Santa misses the roof and tumbles safely into a snowbank below.",
@@ -132,6 +138,9 @@ let parityCollisionGrace = 0;
 let parityHitTimer = 0;
 let parityHitFlash = 0;
 let paritySeasonBestValue = 0;
+let parityPranksterHits = 0;
+let parityPranksterLaneRow = null;
+let parityPranksterLaneTime = 0;
 let parityObjects = [];
 let parityPointerStart = null;
 let parityOverlayAction = "start";
@@ -179,6 +188,16 @@ function parityTotalDistance() {
   return parityLevel * PARITY_DISTANCE + parityDistanceRun();
 }
 
+function parityIsAprilFoolsMode() {
+  return parityGame?.id === "upside-down-arcade";
+}
+
+function parityProgressScore() {
+  return parityIsAprilFoolsMode()
+    ? parityLevel * PARITY_PRANKSTER_TARGET + parityPranksterHits
+    : parityTotalDistance();
+}
+
 function parityBestKey() {
   return `retro-run-seasonal-best-${parityGame.id}`;
 }
@@ -207,18 +226,30 @@ function paritySetOverlay(title, text, buttonText, kicker, action) {
 function paritySyncHud() {
   if (!parityGame) return;
   const distance = parityDistanceRun();
-  const total = parityTotalDistance();
+  const total = parityProgressScore();
   paritySeasonBestValue = Math.max(paritySeasonBestValue, total);
   parityOpponent.textContent = parityGame.obstacle;
   parityStage.textContent = parityStageName();
   parityGameNumber.textContent = `${parityLevel + 1} / ${PARITY_LEVELS}`;
-  parityDistance.textContent = distance;
-  parityMilestone.textContent = "50 yds";
+  parityDistanceLabel.textContent = parityIsAprilFoolsMode() ? "Pranksters Hit" : "Yards";
+  parityDistance.textContent = parityIsAprilFoolsMode() ? parityPranksterHits : distance;
+  parityMilestone.textContent = parityIsAprilFoolsMode() ? "50 hits" : "50 yds";
   parityBest.textContent = parityStoredBest();
   paritySeasonBest.textContent = paritySeasonBestValue;
-  parityDown.textContent = Math.min(PARITY_DOWNS, PARITY_DOWNS - parityDownsLeft + 1);
+  parityDownLabel.textContent = parityIsAprilFoolsMode() ? "Lane Time" : "Down";
+  parityDown.textContent = parityIsAprilFoolsMode()
+    ? `${Math.max(0, PARITY_PRANKSTER_LANE_LIMIT - parityPranksterLaneTime).toFixed(1)}s`
+    : Math.min(PARITY_DOWNS, PARITY_DOWNS - parityDownsLeft + 1);
   parityAttempts.textContent = parityAttemptsCount;
-  parityInstructions.textContent = `Reach 50 yards against ${parityGame.obstacle.toLowerCase()}, then complete ${parityFinale().title}.`;
+  parityKeyboardInstructions.textContent = parityIsAprilFoolsMode()
+    ? "Use `WASD` or the arrow keys to move through rows and tag moving pranksters."
+    : "Use `WASD` or the arrow keys to move up the field and dodge obstacles.";
+  parityTouchInstructions.textContent = parityIsAprilFoolsMode()
+    ? "Swipe anywhere on the screen to move through rows and tag moving pranksters."
+    : "Swipe anywhere on the screen to move up the field and dodge obstacles.";
+  parityInstructions.textContent = parityIsAprilFoolsMode()
+    ? "Hit 50 pranksters to win. Reaching the finish or staying in one enemy lane for 5 seconds loses."
+    : `Reach 50 yards against ${parityGame.obstacle.toLowerCase()}, then complete ${parityFinale().title}.`;
   if (total > parityStoredBest()) localStorage.setItem(parityBestKey(), String(total));
 }
 
@@ -328,6 +359,9 @@ function parityResetLevelState() {
   parityCollisionGrace = 0.65;
   parityHitTimer = 0;
   parityHitFlash = 0;
+  parityPranksterHits = 0;
+  parityPranksterLaneRow = null;
+  parityPranksterLaneTime = 0;
   parityCreateObstacles();
   paritySyncHud();
 }
@@ -401,6 +435,54 @@ function parityHandleHit() {
     paritySetOverlay("Run Over", `All four downs are gone. Restart ${parityStageName()} from the beginning.`, "Try Again", parityGame.holiday, "retry");
   }
   paritySyncHud();
+}
+
+function parityFailAprilFools(title, text) {
+  parityState = "menu";
+  paritySetOverlay(title, text, "Try Again", parityGame.holiday, "retry");
+  paritySyncHud();
+}
+
+function parityCompleteAprilFoolsStage() {
+  paritySyncHud();
+  if (parityLevel >= PARITY_LEVELS - 1) {
+    parityState = "won";
+    parityLevel = 0;
+    paritySaveProgress();
+    paritySetOverlay("Season Complete", "You tagged 50 pranksters in all four backwards games.", "Play Again", parityGame.title, "replay");
+    return;
+  }
+  parityLevel += 1;
+  paritySaveProgress();
+  parityState = "menu";
+  parityAttemptsCount = 1;
+  parityResetLevelState();
+  paritySetOverlay("Game Complete", `50 pranksters tagged! Next: ${parityStageName()}.`, "Next Game", parityGame.title, "next");
+}
+
+function parityHandlePranksterHit(object) {
+  parityPranksterHits += 1;
+  parityHitFlash = 0.18;
+  parityCollisionGrace = 0.22;
+  object.x = object.direction > 0 ? PARITY_WIDTH + 60 : -object.width - 60;
+  if (parityPranksterHits >= PARITY_PRANKSTER_TARGET) parityCompleteAprilFoolsStage();
+}
+
+function parityUpdatePranksterLane(dt) {
+  const row = Math.round(parityPlayer.worldRow);
+  if (parityIsSafeRow(row)) {
+    parityPranksterLaneRow = null;
+    parityPranksterLaneTime = 0;
+    return;
+  }
+  if (parityPranksterLaneRow !== row) {
+    parityPranksterLaneRow = row;
+    parityPranksterLaneTime = 0;
+  }
+  parityPranksterLaneTime += dt;
+  if (parityPranksterLaneTime >= PARITY_PRANKSTER_LANE_LIMIT) {
+    parityFailAprilFools("Lane Timeout", "You stayed in the same enemy lane for 5 seconds. Keep moving between rows and try again.");
+  }
 }
 
 function parityFinishHit() {
@@ -576,6 +658,7 @@ function parityUpdate(time) {
   if (parityState !== "playing") return;
   parityMoveCooldown = Math.max(0, parityMoveCooldown - dt);
   parityCollisionGrace = Math.max(0, parityCollisionGrace - dt);
+  parityHitFlash = Math.max(0, parityHitFlash - dt);
   parityPlayer.x += (parityPlayer.targetX - parityPlayer.x) * Math.min(1, dt * 14);
   parityPlayer.worldRow += (parityPlayer.targetRow - parityPlayer.worldRow) * Math.min(1, dt * 14);
   const targetCamera = Math.max(0, parityPlayer.furthestRow - 7);
@@ -585,7 +668,14 @@ function parityUpdate(time) {
     if (object.direction > 0 && object.x > PARITY_WIDTH + 50) object.x = -object.width - 50;
     if (object.direction < 0 && object.x + object.width < -50) object.x = PARITY_WIDTH + 50;
   });
-  if (parityCheckCollision()) parityHandleHit();
+  const collision = parityCheckCollision();
+  if (parityIsAprilFoolsMode()) {
+    if (collision) parityHandlePranksterHit(collision);
+    if (parityState === "playing") parityUpdatePranksterLane(dt);
+    if (parityState === "playing" && parityDistanceRun() >= PARITY_DISTANCE && Math.abs(parityPlayer.worldRow - parityPlayer.targetRow) < 0.08) {
+      parityFailAprilFools("Wrong-Way Finish", "You reached the end, so the pranksters win. Tag 50 of them before crossing the finish.");
+    }
+  } else if (collision) parityHandleHit();
   else if (parityDistanceRun() >= PARITY_DISTANCE && Math.abs(parityPlayer.worldRow - parityPlayer.targetRow) < 0.08) parityBeginChallenge(time);
   paritySyncHud();
 }
@@ -1098,15 +1188,18 @@ function parityDrawField() {
     if (row < 0) continue;
     const top = parityScreenY(row) - PARITY_ROW_HEIGHT / 2;
     const finishZone = row >= PARITY_START_ROW + PARITY_DISTANCE;
-    parityRect(fieldLeft, top, fieldRight - fieldLeft, PARITY_ROW_HEIGHT, finishZone ? parityGame.accent : theme.surface[row % 2]);
+    const finishColor = parityIsAprilFoolsMode() ? "#c43838" : parityGame.accent;
+    parityRect(fieldLeft, top, fieldRight - fieldLeft, PARITY_ROW_HEIGHT, finishZone ? finishColor : theme.surface[row % 2]);
     parityDrawThemePattern(theme, row, top, fieldLeft, fieldRight);
     if (finishZone) {
       for (let x = fieldLeft + 8; x < fieldRight - 8; x += 32) parityRect(x, top + 8, 16, 8, parityGame.secondary);
     }
   }
   parityDrawThemeEdges(theme, fieldLeft, fieldRight);
-  parityDrawCheckpoint(parityScreenY(parityFirstDownLine), parityGame.accent, fieldLeft, fieldRight);
-  parityDrawCheckpoint(parityScreenY(parityFirstDownTarget), theme.detail, fieldLeft, fieldRight);
+  if (!parityIsAprilFoolsMode()) {
+    parityDrawCheckpoint(parityScreenY(parityFirstDownLine), parityGame.accent, fieldLeft, fieldRight);
+    parityDrawCheckpoint(parityScreenY(parityFirstDownTarget), theme.detail, fieldLeft, fieldRight);
+  }
 }
 
 function parityDrawObstacle(object) {
@@ -1302,10 +1395,20 @@ function parityDrawObstacle(object) {
     parityRect(object.x + 29, y, 8, 8, "#8e9a8b");
     return;
   }
-  if (parityGame.obstacle === "Fake Wall") {
-    parityRect(object.x + 2, y + 2, object.width - 4, 28, object.variant % 2 ? "#f05ab5" : "#56d7c9");
-    for (let x = object.x + 7; x < object.x + object.width - 8; x += 14) parityRect(x, y + 10, 8, 4, "#6c4a9e");
-    parityRect(object.x + object.width / 2 - 2, y + 18, 4, 6, "#d8a742");
+  if (parityGame.obstacle === "Prankster") {
+    const pranksterX = object.x + object.width / 2;
+    const leftColor = object.variant % 2 ? "#f05ab5" : "#56d7c9";
+    const rightColor = object.variant % 2 ? "#56d7c9" : "#f05ab5";
+    parityRect(pranksterX - 7, y + 3, 14, 9, "#edc29b");
+    parityRect(pranksterX - 12, y - 2, 10, 7, leftColor);
+    parityRect(pranksterX + 2, y - 2, 10, 7, rightColor);
+    parityRect(pranksterX - 15, y - 5, 5, 5, "#f4d35e");
+    parityRect(pranksterX + 10, y - 5, 5, 5, "#f4d35e");
+    parityRect(pranksterX - 12, y + 11, 24, 12, "#6c4a9e");
+    parityRect(pranksterX - 10, y + 12, 10, 10, leftColor);
+    parityRect(pranksterX, y + 12, 10, 10, rightColor);
+    parityRect(pranksterX - 9, y + 23, 7, 7, rightColor);
+    parityRect(pranksterX + 2, y + 23, 7, 7, leftColor);
     return;
   }
   if (parityGame.obstacle === "Hay Bale") {

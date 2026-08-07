@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260807-marigold-skeletons" />
+    <link rel="stylesheet" href="styles.css?v=20260807-april-fools-reversal" />
   </head>
   <body>
     <main class="game-shell">
@@ -287,7 +287,7 @@
                 <strong id="seasonalGameNumberValue">1 / 4</strong>
               </div>
               <div class="score-card">
-                <span class="label">Yards</span>
+                <span class="label" id="seasonalDistanceLabel">Yards</span>
                 <strong><span id="seasonalDistanceValue">0</span> / <span id="seasonalMilestoneValue">50 yds</span></strong>
               </div>
               <div class="score-card">
@@ -301,7 +301,7 @@
             </div>
             <div class="status-row seasonal-status-row">
               <div class="status-pill">
-                <span class="label">Down</span>
+                <span class="label" id="seasonalDownsLabel">Down</span>
                 <strong id="seasonalDownsValue">1</strong>
               </div>
               <div class="status-pill">
@@ -311,8 +311,8 @@
             </div>
             <div class="instructions seasonal-instructions">
               <h2>How To Play</h2>
-              <p class="keyboard-instructions">Use `WASD` or the arrow keys to move up the field and dodge obstacles.</p>
-              <p class="touch-instructions">Swipe anywhere on the screen to move up the field and dodge obstacles.</p>
+              <p class="keyboard-instructions" id="seasonalKeyboardInstructions">Use `WASD` or the arrow keys to move up the field and dodge obstacles.</p>
+              <p class="touch-instructions" id="seasonalTouchInstructions">Swipe anywhere on the screen to move up the field and dodge obstacles.</p>
               <p id="seasonalProgressInstructions">Reach 50 yards, then complete the power-and-aim challenge to advance.</p>
             </div>
           </aside>
@@ -822,9 +822,9 @@
     </div>
 
     <script src="game.js?v=20260805-restore-original-colors"></script>
-    <script src="seasonal-profile.js?v=20260807-marigold-skeletons"></script>
+    <script src="seasonal-profile.js?v=20260807-april-fools-reversal"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260807-marigold-skeletons"></script>
-    <script src="seasonal-parity.js?v=20260807-marigold-skeletons"></script>
+    <script src="seasonal-games.js?v=20260807-april-fools-reversal"></script>
+    <script src="seasonal-parity.js?v=20260807-april-fools-reversal"></script>
   </body>
 </html>

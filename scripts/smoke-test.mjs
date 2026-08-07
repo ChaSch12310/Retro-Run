@@ -225,7 +225,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-marigold-skeletons/);
+assert.match(html, /20260807-april-fools-reversal/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -510,6 +510,8 @@ function runParityProfile(profileId) {
     "seasonalChallengeStatus", "seasonalChallengeActionButton", "arcadeHomeButton", "gameLibraryScreen",
     "seasonalGameHoliday", "seasonalScoreValue", "seasonalObjectiveValue", "seasonalTimeValue",
     "seasonalLivesValue", "seasonalRouteTrack", "seasonalFinaleValue",
+    "seasonalDistanceLabel", "seasonalDownsLabel",
+    "seasonalKeyboardInstructions", "seasonalTouchInstructions",
   ];
   const elements = new Map(ids.map((id) => [id, new FakeElement(id)]));
   const body = new FakeElement("body");
@@ -572,12 +574,35 @@ globalThis.__parityTest = {
   get state() { return parityState; },
   get level() { return parityLevel; },
   get phase() { return parityChallengePhase; },
+  get pranksterHits() { return parityPranksterHits; },
+  get laneTime() { return parityPranksterLaneTime; },
   get obstacleRows() { return [...new Set(parityObjects.map((object) => object.row))].sort((a, b) => a - b); },
   forceChallenge() { parityBeginChallenge(1000); },
   lockPower() { parityHandleChallengeAction(); },
   setShot(power, aim) { parityChallengePower = power; parityChallengeAim = aim; },
   launch() { parityLaunchChallenge(1000); },
   finishShot() { parityUpdateChallenge(2000); parityUpdateChallenge(4700); },
+  hitPranksters(count) {
+    for (let index = 0; index < count && parityState === "playing"; index += 1) {
+      parityCollisionGrace = 0;
+      parityHandlePranksterHit(parityObjects[index % parityObjects.length]);
+    }
+  },
+  reachFinish() {
+    parityPlayer.worldRow = PARITY_START_ROW + PARITY_DISTANCE;
+    parityPlayer.targetRow = parityPlayer.worldRow;
+    parityPlayer.furthestRow = parityPlayer.worldRow;
+    parityLastFrame = 1000;
+    parityUpdate(1040);
+  },
+  timeOutLane() {
+    parityPlayer.worldRow = 6;
+    parityPlayer.targetRow = 6;
+    parityPranksterLaneRow = 6;
+    parityPranksterLaneTime = 4.99;
+    parityLastFrame = 1000;
+    parityUpdate(1040);
+  },
 };`;
   vm.runInContext(`${seasonalParitySource}\n${hooks}`, parityContext, { filename: "seasonal-parity.js" });
   return { elements, frames, game: parityContext.__parityTest };
@@ -614,7 +639,7 @@ parityHoliday.game.finishShot();
 assert.equal(parityHoliday.game.level, 1);
 assert.equal(parityHoliday.elements.get("seasonalStartButton").textContent, "Next Game");
 
-allSeasonalGameIds.forEach((gameId) => {
+allSeasonalGameIds.filter((gameId) => gameId !== "upside-down-arcade").forEach((gameId) => {
   const profile = runParityProfile(gameId);
   profile.elements.get("seasonalGameShelf").children[0].click();
   profile.elements.get("seasonalStartButton").click();
@@ -625,6 +650,40 @@ allSeasonalGameIds.forEach((gameId) => {
   profile.game.finishShot();
   assert.equal(profile.game.level, 1, `${gameId} custom finale should advance after success`);
 });
+
+const parityAprilHits = runParityProfile("upside-down-arcade");
+parityAprilHits.elements.get("seasonalGameShelf").children[0].click();
+parityAprilHits.elements.get("seasonalStartButton").click();
+assert.equal(parityAprilHits.elements.get("seasonalOpponentValue").textContent, "Prankster");
+assert.equal(parityAprilHits.elements.get("seasonalDistanceLabel").textContent, "Pranksters Hit");
+assert.equal(parityAprilHits.elements.get("seasonalMilestoneValue").textContent, "50 hits");
+assert.equal(parityAprilHits.elements.get("seasonalDownsLabel").textContent, "Lane Time");
+assert.match(parityAprilHits.elements.get("seasonalKeyboardInstructions").textContent, /tag moving pranksters/);
+assert.match(parityAprilHits.elements.get("seasonalTouchInstructions").textContent, /tag moving pranksters/);
+assert.match(parityAprilHits.elements.get("seasonalProgressInstructions").textContent, /Hit 50 pranksters/);
+parityAprilHits.game.hitPranksters(49);
+assert.equal(parityAprilHits.game.pranksterHits, 49);
+assert.equal(parityAprilHits.game.state, "playing");
+parityAprilHits.game.hitPranksters(1);
+assert.equal(parityAprilHits.game.level, 1);
+assert.equal(parityAprilHits.game.state, "menu");
+assert.equal(parityAprilHits.elements.get("seasonalStartButton").textContent, "Next Game");
+
+const parityAprilFinish = runParityProfile("upside-down-arcade");
+parityAprilFinish.elements.get("seasonalGameShelf").children[0].click();
+parityAprilFinish.elements.get("seasonalStartButton").click();
+parityAprilFinish.game.reachFinish();
+assert.equal(parityAprilFinish.game.state, "menu");
+assert.equal(parityAprilFinish.elements.get("seasonalOverlayTitle").textContent, "Wrong-Way Finish");
+assert.equal(parityAprilFinish.elements.get("seasonalStartButton").textContent, "Try Again");
+
+const parityAprilLane = runParityProfile("upside-down-arcade");
+parityAprilLane.elements.get("seasonalGameShelf").children[0].click();
+parityAprilLane.elements.get("seasonalStartButton").click();
+parityAprilLane.game.timeOutLane();
+assert.equal(parityAprilLane.game.state, "menu");
+assert.equal(parityAprilLane.elements.get("seasonalOverlayTitle").textContent, "Lane Timeout");
+assert.equal(parityAprilLane.elements.get("seasonalStartButton").textContent, "Try Again");
 
 const parityChristmasMiss = runParityProfile("sleigh-bell-sprint");
 parityChristmasMiss.elements.get("seasonalGameShelf").children[0].click();
