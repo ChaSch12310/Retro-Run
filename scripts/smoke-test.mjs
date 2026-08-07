@@ -177,12 +177,13 @@ assert.equal((seasonalSource.match(/^  "[a-z0-9-]+": \["/gm) || []).length, 25);
 assert.equal((seasonalSource.match(/^  "[a-z0-9-]+": \{ title:/gm) || []).length, 25);
 assert.match(seasonalSource, /"sleigh-bell-sprint": \["New York", "London", "Paris", "Tokyo"\]/);
 assert.match(seasonalSource, /obstacle: "Police Helicopter"/);
+assert.match(seasonalSource, /obstacle: "Greek Soldier"/);
 assert.match(seasonalSource, /title: "Rooftop Landing"/);
-assert.match(seasonalSource, /Santa drops through the chimney/);
+assert.match(seasonalSource, /Santa hops down the chimney and pulls the present bag after him/);
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-holiday-worlds/);
+assert.match(html, /20260807-holiday-storybook/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -208,6 +209,12 @@ assert.match(seasonalParitySource, /parityChallengePhase = "power"/);
 assert.match(seasonalParitySource, /parityChallengePhase = "aim"/);
 assert.match(seasonalParitySource, /function parityNearestSafeRow/);
 assert.match(seasonalParitySource, /function parityUpdateChallenge/);
+assert.match(seasonalParitySource, /function parityDrawChristmasSanta/);
+assert.match(seasonalParitySource, /function parityDrawChristmasBag/);
+assert.match(seasonalParitySource, /parityGame\.obstacle === "Greek Soldier"/);
+assert.match(seasonalParitySource, /"menorah-light-quest": \{ surface: \["#b99a68", "#aa8959"\][^\n]+decor: "ancient-city"/);
+assert.doesNotMatch(seasonalParitySource, /parityGame\.obstacle === "Ice"/);
+assert.doesNotMatch(seasonalParitySource, /fillText\(parityGame\.monogram/);
 const seasonalPlayerTypes = [...seasonalSource.matchAll(/player:\s*"([^"]+)"/g)].map((match) => match[1]);
 assert.equal(seasonalPlayerTypes.length, 25);
 assert.ok(!seasonalPlayerTypes.includes("runner"));
@@ -525,7 +532,7 @@ globalThis.__parityTest = {
   lockPower() { parityHandleChallengeAction(); },
   setShot(power, aim) { parityChallengePower = power; parityChallengeAim = aim; },
   launch() { parityLaunchChallenge(1000); },
-  finishShot() { parityUpdateChallenge(2000); parityUpdateChallenge(3300); },
+  finishShot() { parityUpdateChallenge(2000); parityUpdateChallenge(4700); },
 };`;
   vm.runInContext(`${seasonalParitySource}\n${hooks}`, parityContext, { filename: "seasonal-parity.js" });
   return { elements, frames, game: parityContext.__parityTest };

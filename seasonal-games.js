@@ -21,14 +21,14 @@ const SEASONAL_GAMES = [
     id: "menorah-light-quest",
     title: "Menorah Light Quest",
     holiday: "Hanukkah",
-    description: "Collect candles and oil while crossing icy neighborhoods, then light the menorah.",
+    description: "Collect candles and oil while weaving past Greek soldiers, then light the menorah.",
     objective: "Lights",
     target: 9,
     time: 75,
     distance: 1450,
     behavior: "light",
     player: "menorah-carrier",
-    obstacle: "Ice",
+    obstacle: "Greek Soldier",
     accent: "#4e8fe6",
     secondary: "#f2d36b",
     sky: "#102d57",
@@ -488,7 +488,7 @@ const SEASONAL_STAGE_SETS = {
 };
 
 const SEASONAL_FINALES = {
-  "sleigh-bell-sprint": { title: "Rooftop Landing", instruction: "Line up with the glowing roof and press up to land.", target: "Roof", success: "The sleigh lands and Santa drops through the chimney!" },
+  "sleigh-bell-sprint": { title: "Rooftop Landing", instruction: "Line up with the glowing roof and press up to land.", target: "Roof", success: "Santa hops down the chimney and pulls the present bag after him!" },
   "menorah-light-quest": { title: "Light the Menorah", instruction: "Line up with the center candle and press up to light it.", target: "Candle", success: "The menorah shines across the neighborhood!" },
   "seven-principles-journey": { title: "Community Circle", instruction: "Line up with the open place and press up to join the circle.", target: "Circle", success: "The community challenge is complete!" },
   "pumpkin-panic": { title: "Seal the Haunted Gate", instruction: "Line up with the moonlit lock and press up.", target: "Gate", success: "The haunted gate slams shut behind you!" },

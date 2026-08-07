@@ -87,7 +87,7 @@ const PARITY_FINALE_MISSES = {
 
 const PARITY_FIELD_THEMES = {
   "sleigh-bell-sprint": { surface: ["#244e76", "#1e456b"], edge: "#132c4a", detail: "#dcecf2", decor: "skyline" },
-  "menorah-light-quest": { surface: ["#b8d8e8", "#a5cddd"], edge: "#e7f2f7", detail: "#4e8fe6", decor: "snow" },
+  "menorah-light-quest": { surface: ["#b99a68", "#aa8959"], edge: "#725438", detail: "#f2d36b", decor: "ancient-city" },
   "seven-principles-journey": { surface: ["#a77446", "#98663d"], edge: "#242024", detail: "#4ca45b", decor: "community" },
   "pumpkin-panic": { surface: ["#44364d", "#392d44"], edge: "#20172f", detail: "#f47a28", decor: "haunted" },
   "turkey-trot-trouble": { surface: ["#725246", "#67483d"], edge: "#9d6d46", detail: "#f1b84b", decor: "parade" },
@@ -550,7 +550,8 @@ function parityUpdateChallenge(time) {
       parityChallengeStatus.textContent = parityChallengeMade ? parityFinale().success : "Missed!";
       parityChallengeStatus.classList.add(parityChallengeMade ? "made" : "missed");
     }
-  } else if (parityChallengePhase === "result" && time - parityChallengeResultAt >= 1200) {
+  } else if (parityChallengePhase === "result"
+    && time - parityChallengeResultAt >= (parityGame.id === "sleigh-bell-sprint" && parityChallengeMade ? 2600 : 1200)) {
     parityFinishChallengeResult();
   }
 }
@@ -614,15 +615,34 @@ function parityDrawFinalePerson(x, y, shirt = parityGame.accent, pants = "#17233
   parityFinaleRect(x + 2, y + 4, 6, 9, pants);
 }
 
+function parityDrawChristmasSleigh(x, y, showBag = true) {
+  parityFinaleRect(x - 20, y - 5, 38, 9, "#d9473f");
+  parityFinaleRect(x - 16, y + 4, 38, 3, "#f4f0d9");
+  if (showBag) parityFinaleRect(x + 7, y - 14, 10, 11, "#b88735");
+}
+
+function parityDrawChristmasSanta(x, y) {
+  parityFinaleRect(x - 5, y - 16, 10, 8, "#edc29b");
+  parityFinaleRect(x - 7, y - 20, 13, 4, "#f4f0d9");
+  parityFinaleRect(x - 9, y - 8, 18, 12, "#d9473f");
+  parityFinaleRect(x - 8, y + 4, 6, 9, "#27384d");
+  parityFinaleRect(x + 2, y + 4, 6, 9, "#27384d");
+  parityFinaleRect(x + 5, y - 6, 5, 8, "#f4f0d9");
+}
+
+function parityDrawChristmasBag(x, y) {
+  parityFinaleRect(x - 8, y - 9, 16, 18, "#b88735");
+  parityFinaleRect(x - 5, y - 12, 10, 5, "#f3cf58");
+  parityFinaleRect(x - 2, y - 7, 4, 12, "#8a642d");
+}
+
 function parityDrawFinaleActor(x, y) {
   const player = parityGame.player;
   if (player === "sleigh") {
-    parityFinaleRect(x - 20, y - 5, 38, 9, "#d9473f");
-    parityFinaleRect(x - 16, y + 4, 38, 3, "#f4f0d9");
+    parityDrawChristmasSleigh(x, y);
     parityFinaleRect(x - 7, y - 17, 12, 14, "#d9473f");
     parityFinaleRect(x - 5, y - 24, 9, 8, "#edc29b");
     parityFinaleRect(x - 7, y - 27, 13, 4, "#f4f0d9");
-    parityFinaleRect(x + 7, y - 14, 10, 11, "#b88735");
     return;
   }
   if (player === "turkey") {
@@ -902,12 +922,39 @@ function parityDrawFinaleScene(time = performance.now()) {
   let x = 240 + parityChallengeAim * 1.35 * eased;
   let y = 145 - eased * 70 - Math.sin(flight * Math.PI) * 38;
   if (parityChallengePhase === "result") {
-    const resultProgress = Math.max(0, Math.min(1, (time - parityChallengeResultAt) / 1200));
+    const resultDuration = parityGame.id === "sleigh-bell-sprint" && parityChallengeMade ? 2600 : 1200;
+    const resultProgress = Math.max(0, Math.min(1, (time - parityChallengeResultAt) / resultDuration));
     if (parityChallengeMade) {
       x += (240 - x) * resultProgress;
       if (parityGame.id === "sleigh-bell-sprint") {
-        x += 40 * resultProgress;
-        y += 58 * resultProgress;
+        const landProgress = Math.min(1, resultProgress / 0.2);
+        const sleighX = x + (205 - x) * landProgress;
+        const sleighY = y + (86 - y) * landProgress;
+        if (resultProgress < 0.18) parityDrawFinaleActor(sleighX, sleighY);
+        else parityDrawChristmasSleigh(sleighX, sleighY, resultProgress < 0.7);
+        if (resultProgress >= 0.18 && resultProgress < 0.78) {
+          const exitProgress = Math.max(0, Math.min(1, (resultProgress - 0.18) / 0.18));
+          const hopProgress = Math.max(0, Math.min(1, (resultProgress - 0.36) / 0.3));
+          const chimneyProgress = Math.max(0, Math.min(1, (resultProgress - 0.66) / 0.12));
+          const santaX = 205 + exitProgress * 18 + hopProgress * 56;
+          const santaY = 69 - exitProgress * 8 - Math.sin(hopProgress * Math.PI) * 22 + chimneyProgress * 37;
+          parityDrawChristmasSanta(santaX, santaY);
+        }
+        if (resultProgress >= 0.7) {
+          const bagProgress = Math.max(0, Math.min(1, (resultProgress - 0.7) / 0.3));
+          const bagX = 216 + bagProgress * 66;
+          const bagY = 72 - Math.sin(bagProgress * Math.PI) * 23 + bagProgress * 5;
+          parityChallengeContext.strokeStyle = "#f3cf58";
+          parityChallengeContext.lineWidth = 2;
+          parityChallengeContext.beginPath();
+          parityChallengeContext.moveTo(282, 52);
+          parityChallengeContext.lineTo(bagX, bagY - 8);
+          parityChallengeContext.stroke();
+          if (bagProgress < 0.94) parityDrawChristmasBag(bagX, bagY);
+        }
+        parityFinaleRect(270, 58, 24, 27, "#7b332c");
+        parityFinaleRect(266, 54, 32, 7, "#f4f0d9");
+        return;
       } else if (parityGame.id === "turkey-trot-trouble") {
         y -= Math.sin(resultProgress * Math.PI) * 24;
       } else {
@@ -969,6 +1016,11 @@ function parityDrawThemePattern(theme, row, top, fieldLeft, fieldRight) {
     for (let x = fieldLeft + 12; x < fieldRight - 10; x += 74) parityRect(x, top + 35, 44, 4, "rgba(255,255,255,0.34)");
   } else if (theme.decor === "school") {
     for (let x = fieldLeft; x < fieldRight; x += 58) parityRect(x, top + 29, 52, 3, "rgba(246,243,222,0.24)");
+  } else if (theme.decor === "ancient-city") {
+    for (let x = fieldLeft + (row % 2) * 24; x < fieldRight; x += 56) {
+      parityRect(x, top + 7, 42, 3, "rgba(78,55,36,0.25)");
+      parityRect(x + 18, top + 10, 3, 22, "rgba(78,55,36,0.2)");
+    }
   }
   parityRect(fieldLeft, top, width, 2, "rgba(246,243,222,0.18)");
 }
@@ -1018,6 +1070,13 @@ function parityDrawThemeEdges(theme, fieldLeft, fieldRight) {
     } else if (theme.decor === "arcade") {
       parityRect(4, y, 30, 9, y % 68 ? parityGame.accent : theme.detail);
       parityRect(fieldRight + 4, y, 30, 9, y % 68 ? theme.detail : parityGame.secondary);
+    } else if (theme.decor === "ancient-city") {
+      parityRect(2, y + 2, 34, 27, y % 68 ? "#9a784f" : "#85623f");
+      parityRect(fieldRight + 2, y + 2, 36, 27, y % 68 ? "#85623f" : "#9a784f");
+      parityRect(9, y + 11, 9, 18, "#3e3028");
+      parityRect(fieldRight + 21, y + 11, 9, 18, "#3e3028");
+      parityRect(23, y + 6, 7, 7, parityGame.accent);
+      parityRect(fieldRight + 8, y + 6, 7, 7, parityGame.secondary);
     }
   }
   parityRect(fieldLeft, 0, 4, PARITY_HEIGHT, theme.detail);
@@ -1043,15 +1102,6 @@ function parityDrawField() {
     parityDrawThemePattern(theme, row, top, fieldLeft, fieldRight);
     if (finishZone) {
       for (let x = fieldLeft + 8; x < fieldRight - 8; x += 32) parityRect(x, top + 8, 16, 8, parityGame.secondary);
-    }
-    if (row === 27) {
-      parityRect(228, top + 12, 84, 36, theme.edge);
-      parityRect(234, top + 17, 72, 26, parityGame.accent);
-      parityContext.fillStyle = parityGame.secondary;
-      parityContext.font = "bold 18px monospace";
-      parityContext.textAlign = "center";
-      parityContext.fillText(parityGame.monogram, 270, top + 37);
-      parityContext.textAlign = "start";
     }
   }
   parityDrawThemeEdges(theme, fieldLeft, fieldRight);
@@ -1084,16 +1134,26 @@ function parityDrawObstacle(object) {
     parityRect(chefX + 12, y + 3, 9, 4, "#aab6bc");
     return;
   }
-  if (parityGame.obstacle === "Ice") {
-    parityContext.fillStyle = object.variant % 2 ? "#c8ebf5" : "#8fc9e6";
+  if (parityGame.obstacle === "Greek Soldier") {
+    const soldierX = object.x + object.width / 2;
+    const armor = object.variant % 2 ? "#b57a35" : "#d09a43";
+    parityRect(soldierX - 6, y + 3, 12, 9, "#c98c62");
+    parityRect(soldierX - 10, y - 2, 20, 6, armor);
+    parityRect(soldierX - 4, y - 7, 8, 6, "#b33a37");
+    parityRect(soldierX - 11, y + 11, 22, 15, "#f4f0d9");
+    parityRect(soldierX - 8, y + 11, 16, 6, colors.body);
+    parityRect(soldierX - 8, y + 25, 6, 5, "#70472d");
+    parityRect(soldierX + 2, y + 25, 6, 5, "#70472d");
+    parityRect(soldierX - 19, y + 9, 12, 17, colors.body);
+    parityRect(soldierX - 17, y + 12, 8, 11, armor);
+    parityRect(soldierX + 15, y - 4, 3, 34, "#69462d");
+    parityContext.fillStyle = armor;
     parityContext.beginPath();
-    parityContext.moveTo(object.x + 3, y + 27);
-    parityContext.lineTo(object.x + 13, y + 6);
-    parityContext.lineTo(object.x + 30, y + 12);
-    parityContext.lineTo(object.x + 43, y + 3);
-    parityContext.lineTo(object.x + object.width - 3, y + 27);
+    parityContext.moveTo(soldierX + 11, y - 4);
+    parityContext.lineTo(soldierX + 22, y - 4);
+    parityContext.lineTo(soldierX + 17, y - 11);
+    parityContext.closePath();
     parityContext.fill();
-    parityRect(object.x + 16, y + 10, 7, 7, "#eaf7fb");
     return;
   }
   if (parityGame.obstacle === "Barrier") {
