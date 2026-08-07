@@ -138,6 +138,9 @@ assert.match(seasonalProfile, /holiday-season/);
 assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_RELEASE_NAME/);
 assert.match(seasonalDeploymentSource, /releaseName \? `\$\{releaseName\} - \$\{deployment\.message\}`/);
+assert.match(seasonalDeploymentSource, /Current Retro Run/);
+assert.match(seasonalDeploymentSource, /RETRO_RUN_SEASONAL_PROFILE: "standard"/);
+assert.match(seasonalDeploymentSource, /if \(!requestedProfile\)/);
 assert.doesNotMatch(seasonalDeploymentSource, /--tag\b|--preview-alias/);
 assert.equal((seasonalDeploymentList.match(/\bprofile:/g) || []).length, 6);
 [

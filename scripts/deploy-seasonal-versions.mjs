@@ -42,4 +42,22 @@ for (const deployment of deployments) {
   ]);
 }
 
-process.stdout.write(`\nUploaded ${deployments.length} seasonal Cloudflare versions.\n`);
+if (!requestedProfile) {
+  const currentVersionMessage = releaseName ? `${releaseName} - Current Retro Run` : "Current Retro Run";
+  process.stdout.write(`\n=== ${currentVersionMessage} ===\n`);
+  await run("pnpm", ["run", "build"], {
+    RETRO_RUN_SEASONAL_PROFILE: "standard",
+  });
+  await run("pnpm", [
+    "exec",
+    "wrangler",
+    "versions",
+    "upload",
+    "--strict",
+    "--message",
+    currentVersionMessage,
+  ]);
+}
+
+const currentVersionCount = requestedProfile ? 0 : 1;
+process.stdout.write(`\nUploaded ${deployments.length} seasonal and ${currentVersionCount} current Cloudflare versions.\n`);
