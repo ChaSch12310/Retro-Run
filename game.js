@@ -53,6 +53,7 @@ const runnerSelectTitleEl = document.getElementById("runnerSelectTitle");
 const seasonYearValueEl = document.getElementById("seasonYearValue");
 const seasonRecordValueEl = document.getElementById("seasonRecordValue");
 const fanSupportValueEl = document.getElementById("fanSupportValue");
+const fanTrendValueEl = document.getElementById("fanTrendValue");
 const fanMoodLabelEl = document.getElementById("fanMoodLabel");
 const fanMeterFillEl = document.getElementById("fanMeterFill");
 const fanSummaryTextEl = document.getElementById("fanSummaryText");
@@ -1031,6 +1032,7 @@ const DEFAULT_FRANCHISE = {
   wins: 0,
   losses: 0,
   fans: 52,
+  lastFanChange: 0,
   championships: 0,
   bestRecord: 0,
   lastResult: "Season opener ahead.",
@@ -1307,6 +1309,7 @@ function restartSeason() {
   currentLevel = seasonStart;
   franchise.wins = 0;
   franchise.losses = 0;
+  franchise.lastFanChange = 0;
   franchise.lastResult = isBasketballMode()
     ? `Season ${franchise.year} has been reset. Fans are ready for another title chase.`
     : isSoccerMode()
@@ -1580,6 +1583,7 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
     coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
     morale: clamp(savedNumber(parsed.morale, DEFAULT_FRANCHISE.morale), 0, 100),
+    lastFanChange: clamp(savedNumber(parsed.lastFanChange, 0), -15, 15),
     stadiumQuality: clamp(savedNumber(parsed.stadiumQuality, DEFAULT_FRANCHISE.stadiumQuality), 0, 100),
     trainingQuality: clamp(savedNumber(parsed.trainingQuality, DEFAULT_FRANCHISE.trainingQuality), 0, 100),
     scoutingQuality: clamp(savedNumber(parsed.scoutingQuality, DEFAULT_FRANCHISE.scoutingQuality), 0, 100),
@@ -2318,16 +2322,33 @@ function activeFeatureCount(season = franchise.year) {
 }
 
 function fanChangeForGame(result, tries) {
+  const attempts = Math.max(1, Number(tries) || 1);
   let change = result === "W"
-    ? tries <= 3 ? 8 : tries <= 6 ? 6 : 4
-    : -4;
+    ? attempts <= 2 ? 8 : attempts <= 4 ? 6 : attempts <= 7 ? 4 : 2
+    : attempts <= 13 ? -3 : attempts <= 17 ? -5 : -7;
+  const recentResults = franchise.history
+    .filter((entry) => Number(entry.season) === franchise.year)
+    .slice(-2)
+    .map((entry) => entry.result);
+  if (recentResults.length === 2 && recentResults.every((recentResult) => recentResult === result)) {
+    change += result === "W" ? 2 : -2;
+  }
   if (franchise.year >= 2) {
     change += franchise.morale >= 75 ? 1 : franchise.morale < 35 ? -1 : 0;
   }
   if (franchise.year >= 3) {
     change += Math.round((franchise.stadiumQuality - 50) / 25);
   }
-  return clamp(change, -7, 10);
+  return clamp(change, -10, 12);
+}
+
+function seasonFanChange(wins, losses) {
+  if (wins === GAMES_PER_SEASON) return 8;
+  if (wins >= 10) return 5;
+  if (wins >= 8) return 3;
+  if (wins >= 6) return 1;
+  if (wins >= losses) return 0;
+  return -3;
 }
 
 function moraleChangeForGame(result, tries) {
@@ -2654,6 +2675,7 @@ function finishOffseason() {
   franchise.year = nextSeason;
   franchise.wins = 0;
   franchise.losses = 0;
+  franchise.lastFanChange = 0;
   franchise.coach.seasons += 1;
   franchise.rosterUnlocked = nextSeason >= 2;
   franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
@@ -3831,7 +3853,6 @@ function missFieldGoal(reason) {
   gameState = "gameover";
   fieldGoalPanelEl.hidden = true;
   fieldGoalDeadline = 0;
-  franchise.fans = clamp(franchise.fans - 4, 15, 99);
   franchise.lastResult = isBasketballMode()
     ? `Missed the deciding basket against the ${currentTeam().name}.`
     : isDodgeballMode()
@@ -4011,7 +4032,6 @@ function rowIsSafeForReset(row) {
 
 function gameOver(reason) {
   gameState = "gameover";
-  franchise.fans = clamp(franchise.fans - 4, 15, 99);
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale - 1, 0, 100);
   }
@@ -4062,8 +4082,13 @@ function completeLevel() {
   }
   franchise.completedGames += 1;
   franchise.bestRecord = Math.max(franchise.bestRecord, franchise.wins);
-  const fanChange = fanChangeForGame(result, tries);
-  franchise.fans = clamp(franchise.fans + fanChange, 15, 99);
+  const seasonWrapped = seasonCheckpointLevel % GAMES_PER_SEASON === 0;
+  const gameFanChange = fanChangeForGame(result, tries);
+  const seasonFinishChange = seasonWrapped ? seasonFanChange(franchise.wins, franchise.losses) : 0;
+  const previousFanSupport = franchise.fans;
+  franchise.fans = clamp(franchise.fans + gameFanChange + seasonFinishChange, 15, 99);
+  const fanChange = franchise.fans - previousFanSupport;
+  franchise.lastFanChange = fanChange;
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
   }
@@ -4080,11 +4105,9 @@ function completeLevel() {
   });
   franchise.history = franchise.history.slice(-24);
   delete franchise.attemptsByGame[gameKey];
-  const seasonWrapped = seasonCheckpointLevel % GAMES_PER_SEASON === 0;
   if (seasonWrapped) {
     franchise.championships += 1;
-    franchise.lastResult = `Season ${franchise.year} finished with a title run at ${franchise.wins}-${franchise.losses}.`;
-    franchise.fans = clamp(franchise.fans + 8, 15, 99);
+    franchise.lastResult = `Season ${franchise.year} finished ${franchise.wins}-${franchise.losses}. Fan support ${fanChange >= 0 ? "+" : ""}${fanChange} from the final game and season record.`;
     franchise.seasonArchive.push({
       season: seasonYear,
       wins: franchise.wins,
@@ -4676,6 +4699,11 @@ function renderFranchiseDashboard() {
   seasonYearValueEl.textContent = franchise.offseason ? `${dashboardSeason} Final` : franchise.year;
   seasonRecordValueEl.textContent = `${franchise.wins}-${franchise.losses}`;
   fanSupportValueEl.textContent = `${franchise.fans}%`;
+  const latestFanChange = Number(franchise.lastFanChange) || 0;
+  fanTrendValueEl.textContent = latestFanChange > 0
+    ? `+${latestFanChange}`
+    : latestFanChange < 0 ? String(latestFanChange) : "EVEN";
+  fanTrendValueEl.className = `fan-trend ${latestFanChange > 0 ? "up" : latestFanChange < 0 ? "down" : "neutral"}`;
   fanMoodLabelEl.textContent = mood.label;
   fanSummaryTextEl.textContent = franchise.lastResult || mood.summary;
   fanMeterFillEl.style.width = `${franchise.fans}%`;

@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260807-ski-course-presentation/);
+assert.match(html, /game\.js\?v=20260817-performance-driven-fans/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,7 +225,8 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260807-ski-course-presentation/);
+assert.match(html, /20260817-performance-driven-fans/);
+assert.match(html, /id="fanTrendValue"/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -1033,6 +1034,8 @@ globalThis.__retroRunTest = {
   get morale() { return franchise.morale; },
   get stadiumQuality() { return franchise.stadiumQuality; },
   get frontOfficeCredits() { return franchise.frontOfficeCredits; },
+  get fans() { return franchise.fans; },
+  get lastFanChange() { return franchise.lastFanChange; },
   get offseason() { return franchise.offseason; },
   get offseasonEventTypes() { return franchise.offseason?.events.map((event) => event.type) || []; },
   get offseasonView() {
@@ -1080,6 +1083,7 @@ globalThis.__retroRunTest = {
   },
   setManagement(values) { Object.assign(franchise, values); },
   fanChangeForGame,
+  seasonFanChange,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1961,7 +1965,28 @@ assert.equal(game.migrateSeasonCheckpoint(21, {
   seasonLength: 12,
 }), 21);
 
+game.setManagement({ year: 1, history: [], morale: 55, stadiumQuality: 50 });
+assert.equal(game.fanChangeForGame("W", 1), 8);
+assert.equal(game.fanChangeForGame("W", 9), 2);
+assert.equal(game.fanChangeForGame("L", 11), -3);
+assert.equal(game.fanChangeForGame("L", 18), -7);
+game.setManagement({
+  history: [
+    { season: 1, week: 1, result: "W" },
+    { season: 1, week: 2, result: "W" },
+  ],
+});
+assert.equal(game.fanChangeForGame("W", 1), 10);
+assert.equal(game.seasonFanChange(12, 0), 8);
+assert.equal(game.seasonFanChange(9, 3), 3);
+assert.equal(game.seasonFanChange(4, 8), -3);
+game.setManagement({ fans: 52, lastFanChange: 0, history: [] });
 game.completeSeasonForTest(1, 8, 3, 2);
+assert.equal(game.fans, 63);
+assert.equal(game.lastFanChange, 11);
+assert.equal(elements.get("fanSupportValue").textContent, "63%");
+assert.equal(elements.get("fanTrendValue").textContent, "+11");
+assert.equal(elements.get("fanTrendValue").className, "fan-trend up");
 assert.equal(game.seasonYear, 1);
 assert.equal(game.seasonCheckpointLevel, 12);
 assert.equal(game.gameState, "levelComplete");

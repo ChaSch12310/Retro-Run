@@ -3285,6 +3285,32 @@ body[data-game="dodgeball"] .soccer-keeper::after {
   height: 100%;
   width: 50%;
   background: linear-gradient(90deg, #c84d33, #e2bb4f 55%, #69b76c);
+  transition: width 450ms steps(6, end);
+}
+
+.fan-support-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.fan-trend {
+  padding: 2px 5px;
+  border: 2px solid currentColor;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.fan-trend.up {
+  color: #7bd77d;
+}
+
+.fan-trend.down {
+  color: #ef765f;
+}
+
+.fan-trend.neutral {
+  color: #dce7d2;
 }
 
 .franchise-module p,
