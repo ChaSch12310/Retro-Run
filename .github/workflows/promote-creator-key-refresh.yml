@@ -1,0 +1,63 @@
+name: Creator Key Refresh Production
+
+run-name: Creator Key Refresh production promotion
+
+on:
+  schedule:
+    - cron: "0 0 19 8 *"
+      timezone: "America/Chicago"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-run-production-release
+  cancel-in-progress: false
+
+jobs:
+  promote-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check one-time release date
+        id: release-window
+        shell: bash
+        run: |
+          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-08-19" ]]; then
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+            echo "Creator Key Refresh is scheduled for production now."
+          else
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping because this one-time release date has passed."
+          fi
+
+      - name: Check out Retro Run
+        if: steps.release-window.outputs.promote == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        if: steps.release-window.outputs.promote == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.release-window.outputs.promote == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.release-window.outputs.promote == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Promote Creator Key Refresh
+        if: steps.release-window.outputs.promote == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm exec wrangler versions deploy
+          "2a101a7c-3563-4e68-b494-4583617c1b4c@100%"
+          --yes
+          --message "Creator Key Refresh - Production"

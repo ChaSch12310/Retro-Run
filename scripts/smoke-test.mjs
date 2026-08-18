@@ -115,6 +115,10 @@ const holidayWorkflow = fs.readFileSync(
   new URL("../.github/workflows/holiday-release-schedule.yml", import.meta.url),
   "utf8"
 );
+const creatorKeyPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-creator-key-refresh.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -182,6 +186,12 @@ assert.match(holidayWorkflow, /RETRO_RUN_SEASONAL_PROFILE: \$\{\{ steps\.release
 assert.match(holidayWorkflow, /wrangler deploy/);
 assert.match(holidayWorkflow, /--strict/);
 assert.match(holidayWorkflow, /--keep-vars/);
+assert.match(creatorKeyPromotionWorkflow, /name: Creator Key Refresh Production/);
+assert.match(creatorKeyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(creatorKeyPromotionWorkflow, /2026-08-19/);
+assert.match(creatorKeyPromotionWorkflow, /2a101a7c-3563-4e68-b494-4583617c1b4c@100%/);
+assert.match(creatorKeyPromotionWorkflow, /--yes/);
+assert.match(creatorKeyPromotionWorkflow, /Creator Key Refresh - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
