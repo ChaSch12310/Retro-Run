@@ -1013,7 +1013,7 @@ const legacySeasonStorageKey = "gridiron-dash-season-progress";
 const legacyFranchiseStorageKey = "gridiron-dash-franchise";
 const MAX_FRANCHISE_SLOTS = 5;
 const CREATOR_USERNAME = "creator";
-const CREATOR_PASSWORD = "creation";
+const CREATOR_PASSWORD_HASH = "bc6bfd848ebd7819c9a82bf124d65e7f739d08e002601e23bb906aacd40a3d81";
 const CREATOR_MAX_ATTEMPTS = 3;
 const CREATOR_INVINCIBLE_POWER = 101;
 const FIELD_GOAL_DURATION_MS = 30000;
@@ -2178,12 +2178,21 @@ function populateCreatorRunnerOptions() {
   loadCreatorRunnerFields(creatorEditingRunnerId);
 }
 
-function unlockCreatorTools(event) {
+async function sha256(value) {
+  const encoded = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function unlockCreatorTools(event) {
   event.preventDefault();
   const username = creatorUsernameInputEl.value.trim();
   const password = creatorPasswordInputEl.value;
+  const passwordMatches = await sha256(password) === CREATOR_PASSWORD_HASH;
 
-  if (username === CREATOR_USERNAME && password === CREATOR_PASSWORD) {
+  if (username === CREATOR_USERNAME && passwordMatches) {
     populateCreatorRunnerOptions();
     creatorSeasonInputEl.value = franchise.year;
     creatorGameInputEl.value = currentSeasonWeek();

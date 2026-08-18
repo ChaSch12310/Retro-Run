@@ -85,7 +85,7 @@ class FakeElement {
   }
 
   submit() {
-    this.listeners.get("submit")?.({ preventDefault() {} });
+    return this.listeners.get("submit")?.({ preventDefault() {} });
   }
 
   dispatch(type) {
@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260818-media-day-momentum/);
+assert.match(html, /game\.js\?v=20260818-creator-key-refresh/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,7 +225,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260818-media-day-momentum/);
+assert.match(html, /20260818-creator-key-refresh/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);
@@ -948,6 +948,8 @@ const context = vm.createContext({
   Date,
   JSON,
   performance: { now: () => 1000 },
+  crypto,
+  TextEncoder,
   requestAnimationFrame() {},
   localStorage: {
     getItem(key) { return storage.has(key) ? storage.get(key) : null; },
@@ -1337,8 +1339,14 @@ elements.get("creatorCancelButton").click();
 assert.equal(elements.get("creatorModal").hidden, true);
 elements.get("creatorTrigger").click();
 elements.get("creatorUsernameInput").value = "creator";
-elements.get("creatorPasswordInput").value = "creation";
-elements.get("creatorLoginForm").submit();
+elements.get("creatorPasswordInput").value = "wrong-password";
+await elements.get("creatorLoginForm").submit();
+assert.equal(elements.get("creatorLoginForm").hidden, false);
+assert.equal(elements.get("creatorLevelsForm").hidden, true);
+assert.match(elements.get("creatorMessage").textContent, /Access denied/);
+assert.equal(elements.get("creatorAttemptsText").textContent, "2 Tries");
+elements.get("creatorPasswordInput").value = elements.get("creatorUsernameInput").value;
+await elements.get("creatorLoginForm").submit();
 assert.equal(elements.get("creatorRunnerSelect").children.length, 5);
 assert.equal(elements.get("creatorRunnerSelect").value, game.activeRunnerId);
 assert.equal(elements.get("creatorRunnerNameInput").value, game.roster[0].name);
@@ -1376,8 +1384,8 @@ assert.equal(elements.get("seasonStatusValue").textContent, "Week 7 of 12");
 assert.equal(elements.get("creatorModal").hidden, true);
 elements.get("creatorTrigger").click();
 elements.get("creatorUsernameInput").value = "creator";
-elements.get("creatorPasswordInput").value = "creation";
-elements.get("creatorLoginForm").submit();
+elements.get("creatorPasswordInput").value = elements.get("creatorUsernameInput").value;
+await elements.get("creatorLoginForm").submit();
 assert.equal(elements.get("creatorAutoScoreInput").checked, true);
 const editedBackupId = game.roster[1].id;
 elements.get("creatorRunnerSelect").value = editedBackupId;
