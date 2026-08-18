@@ -54,6 +54,8 @@ const seasonYearValueEl = document.getElementById("seasonYearValue");
 const seasonRecordValueEl = document.getElementById("seasonRecordValue");
 const fanSupportValueEl = document.getElementById("fanSupportValue");
 const fanTrendValueEl = document.getElementById("fanTrendValue");
+const teamFundsValueEl = document.getElementById("teamFundsValue");
+const lastRevenueValueEl = document.getElementById("lastRevenueValue");
 const fanMoodLabelEl = document.getElementById("fanMoodLabel");
 const fanMeterFillEl = document.getElementById("fanMeterFill");
 const fanSummaryTextEl = document.getElementById("fanSummaryText");
@@ -1002,6 +1004,9 @@ const FIELD_GOAL_FLIGHT_MS = 900;
 const FIELD_GOAL_RESULT_MS = 650;
 const GAMES_PER_SEASON = 12;
 const LEGACY_GAMES_PER_SEASON = 18;
+const MAX_FANS = 3000;
+const LEGACY_FAN_SCALE = 30;
+const TICKET_REVENUE_PER_100_FANS = 5;
 const COACH_POOL = [
   { name: "A. Stone", trait: "Players' Coach", baseRating: 58 },
   { name: "M. Price", trait: "Game Planner", baseRating: 61 },
@@ -1031,8 +1036,11 @@ const DEFAULT_FRANCHISE = {
   year: 1,
   wins: 0,
   losses: 0,
-  fans: 52,
+  fans: 1500,
+  fanCapacity: MAX_FANS,
   lastFanChange: 0,
+  teamFunds: 0,
+  lastGameRevenue: 0,
   championships: 0,
   bestRecord: 0,
   lastResult: "Season opener ahead.",
@@ -1479,6 +1487,19 @@ function savedNumber(value, fallback) {
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
+function formatNumber(value) {
+  return Math.round(Number(value) || 0).toLocaleString("en-US");
+}
+
+function formatMoney(value) {
+  return `$${formatNumber(value)}`;
+}
+
+function gameRevenueForFans(fans) {
+  const attendanceBlocks = Math.floor(clamp(Number(fans) || 0, 0, MAX_FANS) / 100);
+  return attendanceBlocks * TICKET_REVENUE_PER_100_FANS;
+}
+
 function migrateSeasonCheckpoint(rawCheckpoint, rawFranchise = {}, rawSlot = {}) {
   const checkpoint = Math.max(0, Number(rawCheckpoint) || 0);
   const savedSeasonLength = Math.max(
@@ -1540,9 +1561,17 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     parsed.seasonCheckpointLevel,
     parsed
   );
+  const savedFans = savedNumber(parsed.fans, DEFAULT_FRANCHISE.fans);
+  const usesLegacyFanScale = Number(parsed.fanCapacity) !== MAX_FANS && savedFans <= 100;
+  const fanScale = usesLegacyFanScale ? LEGACY_FAN_SCALE : 1;
   const migratedHistory = (Array.isArray(parsed.history) ? parsed.history : [])
     .filter((entry) => Number(entry?.week) <= GAMES_PER_SEASON)
-    .slice(-24);
+    .slice(-24)
+    .map((entry) => ({
+      ...entry,
+      fanChange: Math.round((Number(entry.fanChange) || 0) * fanScale),
+      revenue: Math.max(0, Math.round(Number(entry.revenue) || 0)),
+    }));
   const migratedAttempts = Object.entries(
     parsed.attemptsByGame && typeof parsed.attemptsByGame === "object"
       ? parsed.attemptsByGame
@@ -1567,7 +1596,11 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     ...DEFAULT_FRANCHISE,
     ...parsed,
     history: migratedHistory,
-    seasonArchive: Array.isArray(parsed.seasonArchive) ? parsed.seasonArchive.slice(-20) : [],
+    seasonArchive: (Array.isArray(parsed.seasonArchive) ? parsed.seasonArchive : []).slice(-20).map((entry) => ({
+      ...entry,
+      fans: clamp(Math.round(savedNumber(entry.fans, 0) * fanScale), 0, MAX_FANS),
+      teamFunds: Math.max(0, Math.round(savedNumber(entry.teamFunds, 0))),
+    })),
     attemptsByGame: migratedAttempts,
     seasonBests: parsed.seasonBests && typeof parsed.seasonBests === "object"
       ? parsed.seasonBests
@@ -1582,8 +1615,12 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     rosterUnlocked: Boolean(parsed.rosterUnlocked || Number(parsed.year) > 1 || roster.length > 1),
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
     coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
+    fans: clamp(Math.round(savedFans * fanScale), 0, MAX_FANS),
+    fanCapacity: MAX_FANS,
     morale: clamp(savedNumber(parsed.morale, DEFAULT_FRANCHISE.morale), 0, 100),
-    lastFanChange: clamp(savedNumber(parsed.lastFanChange, 0), -15, 15),
+    lastFanChange: clamp(Math.round(savedNumber(parsed.lastFanChange, 0) * fanScale), -MAX_FANS, MAX_FANS),
+    teamFunds: Math.max(0, Math.round(savedNumber(parsed.teamFunds, 0))),
+    lastGameRevenue: Math.max(0, Math.round(savedNumber(parsed.lastGameRevenue, 0))),
     stadiumQuality: clamp(savedNumber(parsed.stadiumQuality, DEFAULT_FRANCHISE.stadiumQuality), 0, 100),
     trainingQuality: clamp(savedNumber(parsed.trainingQuality, DEFAULT_FRANCHISE.trainingQuality), 0, 100),
     scoutingQuality: clamp(savedNumber(parsed.scoutingQuality, DEFAULT_FRANCHISE.scoutingQuality), 0, 100),
@@ -2339,16 +2376,16 @@ function fanChangeForGame(result, tries) {
   if (franchise.year >= 3) {
     change += Math.round((franchise.stadiumQuality - 50) / 25);
   }
-  return clamp(change, -10, 12);
+  return clamp(change, -10, 12) * LEGACY_FAN_SCALE;
 }
 
 function seasonFanChange(wins, losses) {
-  if (wins === GAMES_PER_SEASON) return 8;
-  if (wins >= 10) return 5;
-  if (wins >= 8) return 3;
-  if (wins >= 6) return 1;
+  if (wins === GAMES_PER_SEASON) return 240;
+  if (wins >= 10) return 150;
+  if (wins >= 8) return 90;
+  if (wins >= 6) return 30;
   if (wins >= losses) return 0;
-  return -3;
+  return -90;
 }
 
 function moraleChangeForGame(result, tries) {
@@ -2433,7 +2470,7 @@ function offseasonEventView(event) {
       choices: [
         { id: "trust", title: "Trust the Coach", description: "+6 morale · continuity matters" },
         { id: "staff", title: "Upgrade the Staff", description: "Costs 1 credit · +5 coach rating · +3 morale", cost: 1 },
-        { id: "new-coach", title: "Hire a New Voice", description: "New coach · +2 morale · -1 fan support" },
+        { id: "new-coach", title: "Hire a New Voice", description: "New coach · +2 morale · -30 fans" },
       ],
     };
   }
@@ -2443,9 +2480,9 @@ function offseasonEventView(event) {
       title: "Set Expectations",
       text: "Reporters ask what supporters should expect next season. Your answer will shape the locker room and public mood.",
       choices: [
-        { id: "bold", title: "Promise a Title", description: "+6 fans · -2 morale from pressure" },
-        { id: "team-first", title: "Praise the Team", description: "+6 morale · +2 fans" },
-        { id: "honest", title: "Stay Realistic", description: "+3 morale · +3 fans" },
+        { id: "bold", title: "Promise a Title", description: "+180 fans · -2 morale from pressure" },
+        { id: "team-first", title: "Praise the Team", description: "+6 morale · +60 fans" },
+        { id: "honest", title: "Stay Realistic", description: "+3 morale · +90 fans" },
       ],
     };
   }
@@ -2455,9 +2492,9 @@ function offseasonEventView(event) {
       title: "Choose the Offseason Focus",
       text: "Players have one open week before camp. Decide what the team does with it.",
       choices: [
-        { id: "community", title: "Community Event", description: "+7 fans · +1 morale" },
+        { id: "community", title: "Community Event", description: "+210 fans · +1 morale" },
         { id: "practice", title: "Extra Practice", description: "+5 training quality · -3 morale" },
-        { id: "rest", title: "Give the Team Rest", description: "+7 morale · -1 fan support" },
+        { id: "rest", title: "Give the Team Rest", description: "+7 morale · -30 fans" },
       ],
     };
   }
@@ -2467,9 +2504,9 @@ function offseasonEventView(event) {
       title: "Improve Game Day",
       text: "The venue needs a plan. Better facilities produce stronger crowds and faster fan growth after wins.",
       choices: [
-        { id: "renovate", title: "Renovate the Stadium", description: "Costs 2 credits · +12 stadium · +3 fans", cost: 2 },
-        { id: "fan-zone", title: "Build a Fan Zone", description: "Costs 1 credit · +6 stadium · +6 fans", cost: 1 },
-        { id: "save", title: "Save the Budget", description: "+2 front-office credits · -2 fans" },
+        { id: "renovate", title: "Renovate the Stadium", description: "Costs 2 credits · +12 stadium · +90 fans", cost: 2 },
+        { id: "fan-zone", title: "Build a Fan Zone", description: "Costs 1 credit · +6 stadium · +180 fans", cost: 1 },
+        { id: "save", title: "Save the Budget", description: "+2 front-office credits · -60 fans" },
       ],
     };
   }
@@ -2492,9 +2529,9 @@ function offseasonEventView(event) {
       title: "Grow the Franchise",
       text: "The city offers three ways to expand the team's reach beyond game day.",
       choices: [
-        { id: "youth", title: "Youth Sports Camp", description: "+6 fans · +4 morale" },
-        { id: "international", title: "International Tour", description: "Costs 1 credit · +9 fans", cost: 1 },
-        { id: "sponsor", title: "Local Sponsor", description: "+3 credits · -3 fans" },
+        { id: "youth", title: "Youth Sports Camp", description: "+180 fans · +4 morale" },
+        { id: "international", title: "International Tour", description: "Costs 1 credit · +270 fans", cost: 1 },
+        { id: "sponsor", title: "Local Sponsor", description: "+3 credits · -90 fans" },
       ],
     };
   }
@@ -2557,40 +2594,40 @@ function applyOffseasonChoice(choiceId) {
     if (choiceId === "new-coach") {
       franchise.coach = createCoach(`${currentHomeTeam().name}-${offseason.completedSeason + 1}-new`);
       franchise.morale += 2;
-      franchise.fans -= 1;
+      franchise.fans -= 30;
     }
   } else if (event.type === "press") {
     if (choiceId === "bold") {
-      franchise.fans += 6;
+      franchise.fans += 180;
       franchise.morale -= 2;
     } else if (choiceId === "team-first") {
       franchise.morale += 6;
-      franchise.fans += 2;
+      franchise.fans += 60;
     } else {
       franchise.morale += 3;
-      franchise.fans += 3;
+      franchise.fans += 90;
     }
   } else if (event.type === "scenario") {
     if (choiceId === "community") {
-      franchise.fans += 7;
+      franchise.fans += 210;
       franchise.morale += 1;
     } else if (choiceId === "practice") {
       franchise.trainingQuality += 5;
       franchise.morale -= 3;
     } else {
       franchise.morale += 7;
-      franchise.fans -= 1;
+      franchise.fans -= 30;
     }
   } else if (event.type === "stadium") {
     if (choiceId === "renovate") {
       franchise.stadiumQuality += 12;
-      franchise.fans += 3;
+      franchise.fans += 90;
     } else if (choiceId === "fan-zone") {
       franchise.stadiumQuality += 6;
-      franchise.fans += 6;
+      franchise.fans += 180;
     } else {
       franchise.frontOfficeCredits += 2;
-      franchise.fans -= 2;
+      franchise.fans -= 60;
     }
   } else if (event.type === "facility") {
     if (choiceId === "training") franchise.trainingQuality += 12;
@@ -2602,13 +2639,13 @@ function applyOffseasonChoice(choiceId) {
     if (choiceId === "fundamentals") franchise.morale += 2;
   } else if (event.type === "community") {
     if (choiceId === "youth") {
-      franchise.fans += 6;
+      franchise.fans += 180;
       franchise.morale += 4;
     } else if (choiceId === "international") {
-      franchise.fans += 9;
+      franchise.fans += 270;
     } else {
       franchise.frontOfficeCredits += 3;
-      franchise.fans -= 3;
+      franchise.fans -= 90;
     }
   } else if (event.type === "roster" && choiceId !== "keep") {
     const prospect = event.prospects.find((entry) => entry.id === choiceId);
@@ -2628,7 +2665,7 @@ function applyOffseasonChoice(choiceId) {
     }, `runner-${franchise.roster.length + 1}`);
     franchise.roster.push(draftedRunner);
     franchise.rosterUnlocked = true;
-    franchise.fans += 3;
+    franchise.fans += 90;
   } else if (choiceId === "keep") {
     franchise.morale += 5;
   } else {
@@ -2644,10 +2681,10 @@ function applyOffseasonChoice(choiceId) {
       upgrades: 0,
     };
     franchise.morale = Math.max(franchise.morale, 58);
-    franchise.fans += 3;
+    franchise.fans += 90;
   }
 
-  franchise.fans = clamp(franchise.fans, 15, 99);
+  franchise.fans = clamp(franchise.fans, 0, MAX_FANS);
   franchise.morale = clamp(franchise.morale, 0, 100);
   franchise.stadiumQuality = clamp(franchise.stadiumQuality, 0, 100);
   franchise.trainingQuality = clamp(franchise.trainingQuality, 0, 100);
@@ -2699,13 +2736,13 @@ function finishOffseason() {
 }
 
 function fanMood() {
-  if (franchise.fans >= 80) {
+  if (franchise.fans >= 2400) {
     return { label: "Electric", summary: "The stadium is packed and your city expects a title run." };
   }
-  if (franchise.fans >= 65) {
+  if (franchise.fans >= 1950) {
     return { label: "Hot", summary: "Fans are buying in and the buzz around the team keeps rising." };
   }
-  if (franchise.fans >= 45) {
+  if (franchise.fans >= 1350) {
     return { label: "Steady", summary: "Support is solid, but a couple more wins would really wake up the crowd." };
   }
   return { label: "Restless", summary: "The fan base needs a statement game to believe again." };
@@ -3750,6 +3787,7 @@ function tutorialSlides() {
         : `Your ${currentHomeTeam().name} play a 12-game season, beginning against ${teams[0].name}.`,
       items: [
         "Finishing in 10 attempts or fewer records a win; taking more than 10 records a loss.",
+        "Better results grow your crowd toward 3,000 fans. Every 100 fans earn $5 in ticket revenue after a completed game.",
         skiing
           ? "The schedule shows the previous two, current, and next two mountain courses."
           : "The schedule shows the previous two, current, and next two matchups.",
@@ -4086,9 +4124,12 @@ function completeLevel() {
   const gameFanChange = fanChangeForGame(result, tries);
   const seasonFinishChange = seasonWrapped ? seasonFanChange(franchise.wins, franchise.losses) : 0;
   const previousFanSupport = franchise.fans;
-  franchise.fans = clamp(franchise.fans + gameFanChange + seasonFinishChange, 15, 99);
+  franchise.fans = clamp(franchise.fans + gameFanChange + seasonFinishChange, 0, MAX_FANS);
   const fanChange = franchise.fans - previousFanSupport;
   franchise.lastFanChange = fanChange;
+  const gameRevenue = gameRevenueForFans(franchise.fans);
+  franchise.lastGameRevenue = gameRevenue;
+  franchise.teamFunds += gameRevenue;
   if (franchise.year >= 2) {
     franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
   }
@@ -4102,17 +4143,19 @@ function completeLevel() {
     result,
     tries,
     fanChange,
+    revenue: gameRevenue,
   });
   franchise.history = franchise.history.slice(-24);
   delete franchise.attemptsByGame[gameKey];
   if (seasonWrapped) {
     franchise.championships += 1;
-    franchise.lastResult = `Season ${franchise.year} finished ${franchise.wins}-${franchise.losses}. Fan support ${fanChange >= 0 ? "+" : ""}${fanChange} from the final game and season record.`;
+    franchise.lastResult = `Season ${franchise.year} finished ${franchise.wins}-${franchise.losses}. Fan support ${fanChange >= 0 ? "+" : ""}${formatNumber(fanChange)} and ${formatMoney(gameRevenue)} earned.`;
     franchise.seasonArchive.push({
       season: seasonYear,
       wins: franchise.wins,
       losses: franchise.losses,
       fans: franchise.fans,
+      teamFunds: franchise.teamFunds,
       morale: franchise.morale,
       championship: true,
     });
@@ -4144,7 +4187,7 @@ function completeLevel() {
       : isBasketballMode()
         ? `You survived the ${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`
         : `You escaped ${isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isSkiingMode() || isDodgeballMode() ? "" : "the "}${beatenTeam.name}, but it took ${tries} tries and the fans are frustrated.`;
-    franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${fanChange}.`;
+    franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${formatNumber(fanChange)}. Ticket revenue ${formatMoney(gameRevenue)}.`;
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
@@ -4631,7 +4674,8 @@ function renderOffseasonPanel() {
   offseasonEventTextEl.textContent = view.text;
   offseasonSummaryEl.innerHTML = `
     <span>Record ${offseason.wins}-${offseason.losses}</span>
-    <span>Fans ${franchise.fans}%</span>
+    <span>Fans ${formatNumber(franchise.fans)} / ${formatNumber(MAX_FANS)}</span>
+    <span>Funds ${formatMoney(franchise.teamFunds)}</span>
     <span>Credits ${franchise.frontOfficeCredits}</span>
   `;
   offseasonChoicesEl.innerHTML = "";
@@ -4698,15 +4742,17 @@ function renderFranchiseDashboard() {
 
   seasonYearValueEl.textContent = franchise.offseason ? `${dashboardSeason} Final` : franchise.year;
   seasonRecordValueEl.textContent = `${franchise.wins}-${franchise.losses}`;
-  fanSupportValueEl.textContent = `${franchise.fans}%`;
+  fanSupportValueEl.textContent = formatNumber(franchise.fans);
   const latestFanChange = Number(franchise.lastFanChange) || 0;
   fanTrendValueEl.textContent = latestFanChange > 0
-    ? `+${latestFanChange}`
-    : latestFanChange < 0 ? String(latestFanChange) : "EVEN";
+    ? `+${formatNumber(latestFanChange)}`
+    : latestFanChange < 0 ? `-${formatNumber(Math.abs(latestFanChange))}` : "EVEN";
   fanTrendValueEl.className = `fan-trend ${latestFanChange > 0 ? "up" : latestFanChange < 0 ? "down" : "neutral"}`;
   fanMoodLabelEl.textContent = mood.label;
   fanSummaryTextEl.textContent = franchise.lastResult || mood.summary;
-  fanMeterFillEl.style.width = `${franchise.fans}%`;
+  teamFundsValueEl.textContent = formatMoney(franchise.teamFunds);
+  lastRevenueValueEl.textContent = `LAST ${formatMoney(franchise.lastGameRevenue)}`;
+  fanMeterFillEl.style.width = `${(franchise.fans / MAX_FANS) * 100}%`;
   seasonStatusValueEl.textContent = franchise.offseason
     ? "Offseason"
     : `Week ${currentSeasonWeek()} of ${GAMES_PER_SEASON}`;

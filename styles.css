@@ -3209,7 +3209,7 @@ body[data-game="dodgeball"] .soccer-keeper::after {
 
 .season-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -3291,7 +3291,19 @@ body[data-game="dodgeball"] .soccer-keeper::after {
 .fan-support-value {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+}
+
+.fan-support-value strong {
+  white-space: nowrap;
+}
+
+.fan-capacity {
+  color: #dce7d2;
+  font-size: 0.6rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .fan-trend {
@@ -3299,6 +3311,7 @@ body[data-game="dodgeball"] .soccer-keeper::after {
   border: 2px solid currentColor;
   font-size: 0.62rem;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .fan-trend.up {
@@ -3311,6 +3324,19 @@ body[data-game="dodgeball"] .soccer-keeper::after {
 
 .fan-trend.neutral {
   color: #dce7d2;
+}
+
+.team-funds-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.team-funds-value span {
+  color: #7bd77d;
+  font-size: 0.6rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .franchise-module p,

@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260817-performance-driven-fans/);
+assert.match(html, /game\.js\?v=20260818-crowd-based-revenue/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,8 +225,10 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260817-performance-driven-fans/);
+assert.match(html, /20260818-crowd-based-revenue/);
 assert.match(html, /id="fanTrendValue"/);
+assert.match(html, /id="teamFundsValue"/);
+assert.match(html, /id="lastRevenueValue"/);
 assert.match(html, /id="seasonalCanvas" width="540" height="720"/);
 assert.match(html, /id="seasonalChallengeCanvas" width="480" height="150"/);
 assert.match(html, /class="seasonal-stage play-panel"[^>]*>\s*<div class="canvas-frame">/s);
@@ -1036,6 +1038,8 @@ globalThis.__retroRunTest = {
   get frontOfficeCredits() { return franchise.frontOfficeCredits; },
   get fans() { return franchise.fans; },
   get lastFanChange() { return franchise.lastFanChange; },
+  get teamFunds() { return franchise.teamFunds; },
+  get lastGameRevenue() { return franchise.lastGameRevenue; },
   get offseason() { return franchise.offseason; },
   get offseasonEventTypes() { return franchise.offseason?.events.map((event) => event.type) || []; },
   get offseasonView() {
@@ -1084,6 +1088,7 @@ globalThis.__retroRunTest = {
   setManagement(values) { Object.assign(franchise, values); },
   fanChangeForGame,
   seasonFanChange,
+  gameRevenueForFans,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1173,7 +1178,12 @@ assert.equal(migratedSoccerSave.attemptsByGame["1-2-Argentina"], 3);
 assert.match(migratedSoccerSave.lastResult, /France/);
 assert.equal(game.normalizeFranchise({ creatorAutoScore: true }).creatorAutoScore, true);
 assert.equal(game.normalizeFranchise({}).creatorAutoScore, false);
+assert.equal(game.normalizeFranchise({}).fans, 1500);
 const migratedManagementSave = game.normalizeFranchise({
+  fans: 52,
+  lastFanChange: 8,
+  history: [{ season: 1, week: 1, result: "W", fanChange: 8 }],
+  seasonArchive: [{ season: 1, fans: 80 }],
   morale: 0,
   stadiumQuality: 0,
   trainingQuality: 0,
@@ -1184,6 +1194,22 @@ assert.ok(migratedManagementSave.coach.name);
 assert.equal(migratedManagementSave.morale, 0);
 assert.equal(migratedManagementSave.stadiumQuality, 0);
 assert.equal(migratedManagementSave.frontOfficeCredits, 0);
+assert.equal(migratedManagementSave.fans, 1560);
+assert.equal(migratedManagementSave.lastFanChange, 240);
+assert.equal(migratedManagementSave.history[0].fanChange, 240);
+assert.equal(migratedManagementSave.seasonArchive[0].fans, 2400);
+assert.equal(migratedManagementSave.teamFunds, 0);
+const currentEconomySave = game.normalizeFranchise({
+  fans: 2240,
+  fanCapacity: 3000,
+  lastFanChange: 180,
+  teamFunds: 18450,
+  lastGameRevenue: 11200,
+});
+assert.equal(currentEconomySave.fans, 2240);
+assert.equal(currentEconomySave.lastFanChange, 180);
+assert.equal(currentEconomySave.teamFunds, 18450);
+assert.equal(currentEconomySave.lastGameRevenue, 11200);
 assert.equal(migratedManagementSave.roster.length, 1);
 assert.equal(migratedManagementSave.activePlayerId, migratedManagementSave.player.id);
 const migratedOffseasonSave = game.normalizeFranchise({
@@ -1704,7 +1730,8 @@ assert.match(game.tutorial[0].items[0], /50 gates/);
 assert.match(game.tutorial[0].items[1], /rocks, pine trees/);
 assert.match(game.tutorial[4].text, /12-course season/);
 assert.match(game.tutorial[4].text, /beginning at/);
-assert.match(game.tutorial[4].items[1], /mountain courses/);
+assert.match(game.tutorial[4].items[1], /3,000 fans/);
+assert.match(game.tutorial[4].items[2], /mountain courses/);
 assert.match(elements.get("keyboardInstructions").textContent, /avoid rocks, trees/);
 assert.match(elements.get("touchInstructions").textContent, /avoid rocks, trees/);
 game.selectFranchiseSlot(0);
@@ -1966,27 +1993,37 @@ assert.equal(game.migrateSeasonCheckpoint(21, {
 }), 21);
 
 game.setManagement({ year: 1, history: [], morale: 55, stadiumQuality: 50 });
-assert.equal(game.fanChangeForGame("W", 1), 8);
-assert.equal(game.fanChangeForGame("W", 9), 2);
-assert.equal(game.fanChangeForGame("L", 11), -3);
-assert.equal(game.fanChangeForGame("L", 18), -7);
+assert.equal(game.fanChangeForGame("W", 1), 240);
+assert.equal(game.fanChangeForGame("W", 9), 60);
+assert.equal(game.fanChangeForGame("L", 11), -90);
+assert.equal(game.fanChangeForGame("L", 18), -210);
 game.setManagement({
   history: [
     { season: 1, week: 1, result: "W" },
     { season: 1, week: 2, result: "W" },
   ],
 });
-assert.equal(game.fanChangeForGame("W", 1), 10);
-assert.equal(game.seasonFanChange(12, 0), 8);
-assert.equal(game.seasonFanChange(9, 3), 3);
-assert.equal(game.seasonFanChange(4, 8), -3);
-game.setManagement({ fans: 52, lastFanChange: 0, history: [] });
+assert.equal(game.fanChangeForGame("W", 1), 300);
+assert.equal(game.seasonFanChange(12, 0), 240);
+assert.equal(game.seasonFanChange(9, 3), 90);
+assert.equal(game.seasonFanChange(4, 8), -90);
+assert.equal(game.gameRevenueForFans(0), 0);
+assert.equal(game.gameRevenueForFans(99), 0);
+assert.equal(game.gameRevenueForFans(100), 5);
+assert.equal(game.gameRevenueForFans(1500), 75);
+assert.equal(game.gameRevenueForFans(1560), 75);
+assert.equal(game.gameRevenueForFans(3000), 150);
+game.setManagement({ fans: 1500, lastFanChange: 0, teamFunds: 0, lastGameRevenue: 0, history: [] });
 game.completeSeasonForTest(1, 8, 3, 2);
-assert.equal(game.fans, 63);
-assert.equal(game.lastFanChange, 11);
-assert.equal(elements.get("fanSupportValue").textContent, "63%");
-assert.equal(elements.get("fanTrendValue").textContent, "+11");
+assert.equal(game.fans, 1830);
+assert.equal(game.lastFanChange, 330);
+assert.equal(game.lastGameRevenue, 90);
+assert.equal(game.teamFunds, 90);
+assert.equal(elements.get("fanSupportValue").textContent, "1,830");
+assert.equal(elements.get("fanTrendValue").textContent, "+330");
 assert.equal(elements.get("fanTrendValue").className, "fan-trend up");
+assert.equal(elements.get("teamFundsValue").textContent, "$90");
+assert.equal(elements.get("lastRevenueValue").textContent, "LAST $90");
 assert.equal(game.seasonYear, 1);
 assert.equal(game.seasonCheckpointLevel, 12);
 assert.equal(game.gameState, "levelComplete");
