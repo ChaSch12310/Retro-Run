@@ -73,14 +73,17 @@ const featureTierValueEl = document.getElementById("featureTierValue");
 const coachRoleLabelEl = document.getElementById("coachRoleLabel");
 const coachNameValueEl = document.getElementById("coachNameValue");
 const coachRatingValueEl = document.getElementById("coachRatingValue");
+const coachHireButtonEl = document.getElementById("coachHireButton");
 const moraleOperationEl = document.getElementById("moraleOperation");
 const teamMoraleValueEl = document.getElementById("teamMoraleValue");
 const teamMoraleSummaryEl = document.getElementById("teamMoraleSummary");
 const stadiumOperationEl = document.getElementById("stadiumOperation");
 const venueQualityLabelEl = document.getElementById("venueQualityLabel");
 const stadiumQualityValueEl = document.getElementById("stadiumQualityValue");
+const stadiumUpgradeButtonEl = document.getElementById("stadiumUpgradeButton");
 const trainingOperationEl = document.getElementById("trainingOperation");
 const trainingQualityValueEl = document.getElementById("trainingQualityValue");
+const trainingUpgradeButtonEl = document.getElementById("trainingUpgradeButton");
 const scoutingOperationEl = document.getElementById("scoutingOperation");
 const scoutingQualityValueEl = document.getElementById("scoutingQualityValue");
 const frontOfficeCreditsValueEl = document.getElementById("frontOfficeCreditsValue");
@@ -1007,6 +1010,11 @@ const LEGACY_GAMES_PER_SEASON = 18;
 const MAX_FANS = 3000;
 const LEGACY_FAN_SCALE = 30;
 const TICKET_REVENUE_PER_100_FANS = 5;
+const STADIUM_UPGRADE_STEP = 10;
+const TRAINING_UPGRADE_STEP = 10;
+const STADIUM_FAN_BONUS = 60;
+const TRAINING_MORALE_BONUS = 5;
+const STAFF_MORALE_BONUS = 4;
 const COACH_POOL = [
   { name: "A. Stone", trait: "Players' Coach", baseRating: 58 },
   { name: "M. Price", trait: "Game Planner", baseRating: 61 },
@@ -1498,6 +1506,99 @@ function formatMoney(value) {
 function gameRevenueForFans(fans) {
   const attendanceBlocks = Math.floor(clamp(Number(fans) || 0, 0, MAX_FANS) / 100);
   return attendanceBlocks * TICKET_REVENUE_PER_100_FANS;
+}
+
+function venueQualityName() {
+  if (isWaterPoloMode()) return "Aquatic Center";
+  if (isDodgeballMode()) return "Gym";
+  if (isSurfingMode()) return "Beach Base";
+  if (isSkiingMode()) return "Mountain Base";
+  if (isBaseballMode()) return "Ballpark";
+  if (isBasketballMode() || isHockeyMode()) return "Arena";
+  return "Stadium";
+}
+
+function stadiumUpgradeCost(quality = franchise.stadiumQuality) {
+  const completedTiers = Math.max(0, Math.floor((Number(quality) - 50) / STADIUM_UPGRADE_STEP));
+  return 300 + completedTiers * 100;
+}
+
+function trainingUpgradeCost(quality = franchise.trainingQuality) {
+  const completedTiers = Math.max(0, Math.floor((Number(quality) - 45) / TRAINING_UPGRADE_STEP));
+  return 250 + completedTiers * 75;
+}
+
+function coachStaffCost(rating = franchise.coach.rating) {
+  const completedTiers = Math.max(0, Math.floor((Number(rating) - 55) / 5));
+  return 350 + completedTiers * 75;
+}
+
+function spendTeamFunds(cost) {
+  if (franchise.teamFunds < cost) {
+    return false;
+  }
+  franchise.teamFunds -= cost;
+  return true;
+}
+
+function purchaseStadiumUpgrade() {
+  if (franchise.stadiumQuality >= 100) {
+    return false;
+  }
+  const cost = stadiumUpgradeCost();
+  if (!spendTeamFunds(cost)) {
+    return false;
+  }
+  const previousFans = franchise.fans;
+  franchise.stadiumQuality = clamp(franchise.stadiumQuality + STADIUM_UPGRADE_STEP, 0, 100);
+  franchise.fans = clamp(franchise.fans + STADIUM_FAN_BONUS, 0, MAX_FANS);
+  franchise.lastFanChange = franchise.fans - previousFans;
+  franchise.lastResult = `${venueQualityName()} upgraded to ${franchise.stadiumQuality}%. Fan support rose by ${formatNumber(franchise.lastFanChange)}.`;
+  saveFranchise();
+  renderFranchiseDashboard();
+  return true;
+}
+
+function purchaseTrainingUpgrade() {
+  if (franchise.trainingQuality >= 100) {
+    return false;
+  }
+  const cost = trainingUpgradeCost();
+  if (!spendTeamFunds(cost)) {
+    return false;
+  }
+  franchise.trainingQuality = clamp(franchise.trainingQuality + TRAINING_UPGRADE_STEP, 0, 100);
+  franchise.morale = clamp(franchise.morale + TRAINING_MORALE_BONUS, 0, 100);
+  franchise.lastResult = `Training upgraded to ${franchise.trainingQuality}%. Team morale rose to ${franchise.morale}%.`;
+  saveFranchise();
+  renderFranchiseDashboard();
+  return true;
+}
+
+function hireCoachAndStaff() {
+  if (franchise.coach.rating >= 99) {
+    return false;
+  }
+  const cost = coachStaffCost();
+  if (!spendTeamFunds(cost)) {
+    return false;
+  }
+  const currentCoach = franchise.coach;
+  const availableProfiles = COACH_POOL.filter((profile) => profile.name !== currentCoach.name);
+  const seed = textSeed(`${franchise.team?.name}-${franchise.completedGames}-${franchise.teamFunds}-${currentCoach.name}`);
+  const profile = availableProfiles[Math.floor(seededRandom(seed + 6.2) * availableProfiles.length)];
+  const improvedRating = clamp(Math.max(currentCoach.rating + 5, profile.baseRating), 35, 99);
+  franchise.coach = {
+    name: profile.name,
+    trait: profile.trait,
+    rating: improvedRating,
+    seasons: 0,
+  };
+  franchise.morale = clamp(franchise.morale + STAFF_MORALE_BONUS, 0, 100);
+  franchise.lastResult = `${franchise.coach.name} and a new staff joined the team. Coach rating is now ${franchise.coach.rating}.`;
+  saveFranchise();
+  renderFranchiseDashboard();
+  return true;
 }
 
 function migrateSeasonCheckpoint(rawCheckpoint, rawFranchise = {}, rawSlot = {}) {
@@ -2373,9 +2474,7 @@ function fanChangeForGame(result, tries) {
   if (franchise.year >= 2) {
     change += franchise.morale >= 75 ? 1 : franchise.morale < 35 ? -1 : 0;
   }
-  if (franchise.year >= 3) {
-    change += Math.round((franchise.stadiumQuality - 50) / 25);
-  }
+  change += Math.max(0, Math.floor((franchise.stadiumQuality - 50) / STADIUM_UPGRADE_STEP));
   return clamp(change, -10, 12) * LEGACY_FAN_SCALE;
 }
 
@@ -2391,7 +2490,11 @@ function seasonFanChange(wins, losses) {
 function moraleChangeForGame(result, tries) {
   const resultChange = result === "W" ? (tries <= 5 ? 5 : 3) : -6;
   const coachSupport = franchise.coach.rating >= 72 ? 2 : franchise.coach.rating >= 60 ? 1 : 0;
-  return resultChange + coachSupport;
+  const trainingSupport = Math.min(
+    3,
+    Math.max(0, Math.floor((franchise.trainingQuality - 45) / TRAINING_UPGRADE_STEP))
+  );
+  return resultChange + coachSupport + trainingSupport;
 }
 
 function draftArchetype(speed, power, cut) {
@@ -3788,6 +3891,7 @@ function tutorialSlides() {
       items: [
         "Finishing in 10 attempts or fewer records a win; taking more than 10 records a loss.",
         "Better results grow your crowd toward 3,000 fans. Every 100 fans earn $5 in ticket revenue after a completed game.",
+        "Spend Team Funds in the franchise hub on your venue, training facilities, and coaching staff.",
         skiing
           ? "The schedule shows the previous two, current, and next two mountain courses."
           : "The schedule shows the previous two, current, and next two matchups.",
@@ -4694,37 +4798,40 @@ function renderOffseasonPanel() {
 }
 
 function renderTeamOperations() {
-  const displaySeason = franchise.offseason?.completedSeason || franchise.year;
-  featureTierValueEl.textContent = displaySeason >= 2 ? "Roster Active" : "Core Staff";
+  featureTierValueEl.textContent = `${formatMoney(franchise.teamFunds)} Available`;
   coachRoleLabelEl.textContent = isSoccerMode() ? "Manager" : "Head Coach";
   coachNameValueEl.textContent = franchise.coach.name;
   coachRatingValueEl.textContent = `Rating ${franchise.coach.rating} · ${franchise.coach.trait}`;
-  moraleOperationEl.hidden = true;
-  stadiumOperationEl.hidden = true;
-  trainingOperationEl.hidden = true;
+  moraleOperationEl.hidden = false;
+  stadiumOperationEl.hidden = false;
+  trainingOperationEl.hidden = false;
   scoutingOperationEl.hidden = true;
-  venueQualityLabelEl.textContent = isWaterPoloMode()
-    ? "Aquatic Center Quality"
-    : isDodgeballMode()
-      ? "Gym Quality"
-    : isSurfingMode()
-      ? "Beach Base Quality"
-      : isSkiingMode()
-        ? "Mountain Base Quality"
-        : isBaseballMode()
-          ? "Ballpark Quality"
-    : isBasketballMode() || isHockeyMode()
-      ? "Arena Quality"
-      : "Stadium Quality";
+  venueQualityLabelEl.textContent = `${venueQualityName()} Quality`;
   teamMoraleValueEl.textContent = `${franchise.morale}%`;
   teamMoraleSummaryEl.textContent = moraleMood();
   stadiumQualityValueEl.textContent = `${franchise.stadiumQuality}%`;
   trainingQualityValueEl.textContent = `${franchise.trainingQuality}%`;
   scoutingQualityValueEl.textContent = `${franchise.scoutingQuality}%`;
   frontOfficeCreditsValueEl.textContent = franchise.frontOfficeCredits;
-  nextFeatureTextEl.textContent = displaySeason < 2
-    ? "Finish Season 1 to unlock runner selection and injuries."
-    : "Roster and injuries are active. No additional management systems unlock in later seasons.";
+  const stadiumMaxed = franchise.stadiumQuality >= 100;
+  const trainingMaxed = franchise.trainingQuality >= 100;
+  const coachMaxed = franchise.coach.rating >= 99;
+  const stadiumCost = stadiumUpgradeCost();
+  const trainingCost = trainingUpgradeCost();
+  const staffCost = coachStaffCost();
+  stadiumUpgradeButtonEl.disabled = stadiumMaxed || franchise.teamFunds < stadiumCost;
+  trainingUpgradeButtonEl.disabled = trainingMaxed || franchise.teamFunds < trainingCost;
+  coachHireButtonEl.disabled = coachMaxed || franchise.teamFunds < staffCost;
+  stadiumUpgradeButtonEl.textContent = stadiumMaxed
+    ? "Venue Maxed"
+    : `Upgrade Venue · ${formatMoney(stadiumCost)}`;
+  trainingUpgradeButtonEl.textContent = trainingMaxed
+    ? "Training Maxed"
+    : `Upgrade Training · ${formatMoney(trainingCost)}`;
+  coachHireButtonEl.textContent = coachMaxed
+    ? "Staff Maxed"
+    : `Hire Coach & Staff · ${formatMoney(staffCost)}`;
+  nextFeatureTextEl.textContent = "Purchases use Team Funds and are permanently saved to this franchise.";
 }
 
 function renderFranchiseDashboard() {
@@ -7338,6 +7445,9 @@ startButton.addEventListener("click", () => {
 restartSeasonButton.addEventListener("click", restartSeason);
 switchFranchiseButton.addEventListener("click", openFranchiseSlots);
 eraseSaveButton.addEventListener("click", eraseActiveSave);
+stadiumUpgradeButtonEl.addEventListener("click", purchaseStadiumUpgrade);
+trainingUpgradeButtonEl.addEventListener("click", purchaseTrainingUpgrade);
+coachHireButtonEl.addEventListener("click", hireCoachAndStaff);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
 creatorTriggerEl.addEventListener("click", openCreatorTools);
 arcadeHomeButtonEl.addEventListener("click", openGameLibrary);

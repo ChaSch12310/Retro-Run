@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260818-crowd-based-revenue" />
+    <link rel="stylesheet" href="styles.css?v=20260818-franchise-investment-center" />
   </head>
   <body>
     <main class="game-shell">
@@ -674,29 +674,39 @@
 
               <div class="franchise-module team-operations" id="teamOperationsPanel">
                 <div class="module-head">
-                  <h3>Team Staff</h3>
-                  <span id="featureTierValue">Core Staff</span>
+                  <h3>Franchise Investments</h3>
+                  <span id="featureTierValue">Team Funds</span>
                 </div>
                 <div class="operations-grid">
-                  <div class="operation-card">
+                  <div class="operation-card management-upgrade-card">
                     <span id="coachRoleLabel">Head Coach</span>
                     <strong id="coachNameValue">A. Stone</strong>
                     <small id="coachRatingValue">Rating 58 · Players' Coach</small>
+                    <small>New staff raises coach rating and morale</small>
+                    <button class="management-buy-button" id="coachHireButton" type="button">
+                      Hire Coach &amp; Staff · $350
+                    </button>
                   </div>
-                  <div class="operation-card" id="moraleOperation" hidden>
+                  <div class="operation-card" id="moraleOperation">
                     <span>Team Morale</span>
                     <strong id="teamMoraleValue">55%</strong>
                     <small id="teamMoraleSummary">Locked in</small>
                   </div>
-                  <div class="operation-card" id="stadiumOperation" hidden>
+                  <div class="operation-card management-upgrade-card" id="stadiumOperation">
                     <span id="venueQualityLabel">Stadium Quality</span>
                     <strong id="stadiumQualityValue">50%</strong>
-                    <small>Improves fan growth</small>
+                    <small>Boosts fans now and after future games</small>
+                    <button class="management-buy-button" id="stadiumUpgradeButton" type="button">
+                      Upgrade Stadium · $300
+                    </button>
                   </div>
-                  <div class="operation-card" id="trainingOperation" hidden>
+                  <div class="operation-card management-upgrade-card" id="trainingOperation">
                     <span>Training Facility</span>
                     <strong id="trainingQualityValue">45%</strong>
-                    <small>Improves development</small>
+                    <small>Raises morale now and after future games</small>
+                    <button class="management-buy-button" id="trainingUpgradeButton" type="button">
+                      Upgrade Training · $250
+                    </button>
                   </div>
                   <div class="operation-card" id="scoutingOperation" hidden>
                     <span>Scouting Department</span>
@@ -709,7 +719,7 @@
                     <small>Earned between seasons</small>
                   </div>
                 </div>
-                <p id="nextFeatureText">Finish Season 1 to unlock the runner roster and injuries.</p>
+                <p id="nextFeatureText">Spend Team Funds on permanent franchise improvements.</p>
               </div>
 
               <div class="runner-select" id="runnerSelectPanel">
@@ -832,10 +842,10 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260818-crowd-based-revenue"></script>
-    <script src="seasonal-profile.js?v=20260818-crowd-based-revenue"></script>
+    <script src="game.js?v=20260818-franchise-investment-center"></script>
+    <script src="seasonal-profile.js?v=20260818-franchise-investment-center"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260818-crowd-based-revenue"></script>
-    <script src="seasonal-parity.js?v=20260818-crowd-based-revenue"></script>
+    <script src="seasonal-games.js?v=20260818-franchise-investment-center"></script>
+    <script src="seasonal-parity.js?v=20260818-franchise-investment-center"></script>
   </body>
 </html>
