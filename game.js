@@ -91,6 +91,8 @@ const nextFeatureTextEl = document.getElementById("nextFeatureText");
 const runnerFeatureRoleEl = document.getElementById("runnerFeatureRole");
 const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
+const runnerMoraleValueEl = document.getElementById("runnerMoraleValue");
+const runnerMoraleMoodEl = document.getElementById("runnerMoraleMood");
 const upgradePanelEl = document.getElementById("upgradePanel");
 const upgradeActionsEl = document.getElementById("upgradeActions");
 const creatorTriggerEl = document.getElementById("creatorTrigger");
@@ -1569,7 +1571,8 @@ function purchaseTrainingUpgrade() {
   }
   franchise.trainingQuality = clamp(franchise.trainingQuality + TRAINING_UPGRADE_STEP, 0, 100);
   franchise.morale = clamp(franchise.morale + TRAINING_MORALE_BONUS, 0, 100);
-  franchise.lastResult = `Training upgraded to ${franchise.trainingQuality}%. Team morale rose to ${franchise.morale}%.`;
+  adjustRosterMorale(3);
+  franchise.lastResult = `Training upgraded to ${franchise.trainingQuality}%. Team morale is ${franchise.morale}% and every runner gained 3 morale.`;
   saveFranchise();
   renderFranchiseDashboard();
   return true;
@@ -1595,7 +1598,8 @@ function hireCoachAndStaff() {
     seasons: 0,
   };
   franchise.morale = clamp(franchise.morale + STAFF_MORALE_BONUS, 0, 100);
-  franchise.lastResult = `${franchise.coach.name} and a new staff joined the team. Coach rating is now ${franchise.coach.rating}.`;
+  adjustRosterMorale(2);
+  franchise.lastResult = `${franchise.coach.name} and a new staff joined the team. Coach rating is ${franchise.coach.rating}, and every runner gained 2 morale.`;
   saveFranchise();
   renderFranchiseDashboard();
   return true;
@@ -2138,6 +2142,7 @@ function createFranchisePlayer(forcedName = null) {
     speedBonus: 0,
     upgrades: 0,
     injuredGames: 0,
+    morale: 55,
     appearance: { ...DEFAULT_PLAYER_APPEARANCE },
   };
 }
@@ -2182,6 +2187,7 @@ function normalizeFranchisePlayer(rawPlayer, fallbackId = "starter") {
     ...playerProfile,
     id: String(playerProfile.id || fallbackId).slice(0, 40),
     injuredGames: Math.max(0, Math.round(Number(playerProfile.injuredGames) || 0)),
+    morale: clamp(savedNumber(playerProfile.morale, 55), 0, 100),
     appearance: normalizePlayerAppearance(playerProfile.appearance),
   };
 }
@@ -2249,6 +2255,12 @@ function recoverInjuredRunners() {
   });
 }
 
+function adjustRosterMorale(change) {
+  (franchise.roster || []).forEach((runner) => {
+    runner.morale = clamp(savedNumber(runner.morale, 55) + change, 0, 100);
+  });
+}
+
 function injuryRoleName() {
   if (isSurfingMode()) return "surfer";
   if (isSkiingMode()) return "skier";
@@ -2269,6 +2281,7 @@ function injureCurrentRunner(gamesOut = 2) {
     return false;
   }
   injuredRunner.injuredGames = clamp(Math.round(gamesOut), 1, 3);
+  injuredRunner.morale = clamp(savedNumber(injuredRunner.morale, 55) - 8, 0, 100);
   franchise.activePlayerId = replacement.id;
   franchise.player = replacement;
   return true;
@@ -2497,6 +2510,26 @@ function moraleChangeForGame(result, tries) {
   return resultChange + coachSupport + trainingSupport;
 }
 
+function playerMoraleChangeForGame(runner, result, tries) {
+  const active = runner.id === franchise.activePlayerId;
+  const resultChange = result === "W"
+    ? active ? (tries <= 5 ? 5 : 3) : 2
+    : active ? -6 : -2;
+  const teamSupport = franchise.morale >= 75 ? 1 : franchise.morale < 35 ? -1 : 0;
+  const coachSupport = franchise.coach.rating >= 70 ? 1 : 0;
+  return resultChange + teamSupport + coachSupport;
+}
+
+function applyPlayerMoraleForGame(result, tries) {
+  (franchise.roster || []).forEach((runner) => {
+    runner.morale = clamp(
+      savedNumber(runner.morale, 55) + playerMoraleChangeForGame(runner, result, tries),
+      0,
+      100
+    );
+  });
+}
+
 function draftArchetype(speed, power, cut) {
   if (speed >= power && speed >= cut) {
     return isSurfingMode() ? "Speed Surfer" : isSkiingMode() ? "Downhill Racer" : isBaseballMode() ? "Leadoff Runner" : isDodgeballMode() ? "Quick Thrower" : isLacrosseMode() ? "Dodging Attack" : isBasketballMode() ? "Transition Guard" : isSoccerMode() ? "Pace Forward" : isHockeyMode() ? "Speed Winger" : isWaterPoloMode() ? "Counter Driver" : "Speed Back";
@@ -2519,12 +2552,14 @@ function buildDraftProspects(
     const speed = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 1) * 15), 45, 88);
     const power = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 2) * 15), 45, 88);
     const cut = clamp(baseline + Math.floor(seededRandom(seed + index * 19.1 + 3) * 15), 45, 88);
+    const morale = clamp(50 + Math.floor(seededRandom(seed + index * 19.1 + 4) * 21), 0, 100);
     return {
       id: `prospect-${index}`,
       name: DRAFT_NAME_POOL[(nameIndex + index) % DRAFT_NAME_POOL.length],
       speed,
       power,
       cut,
+      morale,
       archetype: draftArchetype(speed, power, cut),
     };
   });
@@ -2643,7 +2678,7 @@ function offseasonEventView(event) {
   const prospectChoices = rosterHasRoom ? event.prospects.map((prospect) => ({
     id: prospect.id,
     title: `${prospect.name} · ${prospect.archetype}`,
-    description: `SPD ${prospect.speed} · PWR ${prospect.power} · ${thirdRating} ${prospect.cut}`,
+    description: `SPD ${prospect.speed} · PWR ${prospect.power} · ${thirdRating} ${prospect.cut} · MOR ${prospect.morale}`,
   })) : [];
   return {
     type: event.type === "roster" && event.prospects ? (franchise.rosterUnlocked ? "Roster Review" : "Roster Unlocked") : "Draft Night",
@@ -2771,6 +2806,7 @@ function applyOffseasonChoice(choiceId) {
     franchise.fans += 90;
   } else if (choiceId === "keep") {
     franchise.morale += 5;
+    adjustRosterMorale(3);
   } else {
     const prospect = event.prospects.find((entry) => entry.id === choiceId);
     franchise.player = {
@@ -2820,6 +2856,7 @@ function finishOffseason() {
   franchise.rosterUnlocked = nextSeason >= 2;
   franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
   franchise.morale = clamp(franchise.morale + (franchise.coach.rating >= 70 ? 3 : 1), 0, 100);
+  adjustRosterMorale(franchise.coach.rating >= 70 ? 2 : 1);
   const introduction = featureIntroductionForSeason(nextSeason);
   if (introduction) {
     franchise.featureLog.push(`Season ${nextSeason}: ${introduction.names.join(" and ")}`);
@@ -3898,6 +3935,7 @@ function tutorialSlides() {
         `Progress is saved to the active ${soccer || lacrosse ? "national-team" : surfing || skiing ? "tour" : "franchise"} slot after every game.`,
         "Restart Season resets that season's record and progress but keeps player upgrades.",
         "After Season 1, the runner roster and injuries unlock. No additional management systems are added in later seasons.",
+        "Team Morale measures the whole franchise. Every runner also has individual morale affected by results, staff, training, and injuries.",
       ],
     },
   ];
@@ -4174,9 +4212,7 @@ function rowIsSafeForReset(row) {
 
 function gameOver(reason) {
   gameState = "gameover";
-  if (franchise.year >= 2) {
-    franchise.morale = clamp(franchise.morale - 1, 0, 100);
-  }
+  franchise.morale = clamp(franchise.morale - 1, 0, 100);
   franchise.lastResult = isSkiingMode()
     ? `${reason} at ${currentTeam().name}. Supporters want a better response.`
     : isSoccerMode() || isWaterPoloMode() || isLacrosseMode() || isSurfingMode() || isDodgeballMode()
@@ -4234,9 +4270,8 @@ function completeLevel() {
   const gameRevenue = gameRevenueForFans(franchise.fans);
   franchise.lastGameRevenue = gameRevenue;
   franchise.teamFunds += gameRevenue;
-  if (franchise.year >= 2) {
-    franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
-  }
+  franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
+  applyPlayerMoraleForGame(result, tries);
   franchise.history = franchise.history.filter(
     (entry) => !(entry.season === seasonYear && entry.week === week)
   );
@@ -4755,6 +4790,14 @@ function moraleMood() {
   return "Fractured";
 }
 
+function playerMoraleMood(value) {
+  const morale = savedNumber(value, 55);
+  if (morale >= 80) return "Inspired";
+  if (morale >= 60) return "Confident";
+  if (morale >= 40) return "Steady";
+  return "Frustrated";
+}
+
 function renderOffseasonPanel() {
   const offseason = franchise.offseason;
   const showOffseason = Boolean(offseason) && !pendingUpgrade;
@@ -4867,6 +4910,9 @@ function renderFranchiseDashboard() {
 
   runnerFeatureRoleEl.textContent = runner.archetype;
   runnerFeatureNameEl.textContent = runner.name;
+  runnerMoraleValueEl.textContent = `${runner.morale}%`;
+  runnerMoraleMoodEl.textContent = playerMoraleMood(runner.morale);
+  runnerMoraleMoodEl.className = `runner-morale-mood ${runner.morale >= 60 ? "high" : runner.morale < 40 ? "low" : "steady"}`;
   runnerFeatureTextEl.textContent = runnerFeatureSummary(runner);
 
   seasonScheduleEl.innerHTML = "";
@@ -4897,7 +4943,7 @@ function runnerFeatureSummary(runner) {
   const role = isDodgeballMode() ? "thrower" : isSurfingMode() ? "surfer" : isSkiingMode() ? "skier" : isBaseballMode() ? "baserunner" : isLacrosseMode() ? "attacker" : isBasketballMode() ? "guard" : isSoccerMode() ? "forward" : isHockeyMode() ? "winger" : isWaterPoloMode() ? "driver" : "back";
   const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
   const health = runner.injuredGames > 0 ? ` Injured for ${runner.injuredGames} more game${runner.injuredGames === 1 ? "" : "s"}.` : " Healthy and ready.";
-  return `${runner.name} is your active ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}.${health}`;
+  return `${runner.name} is your active ${role}. SPD ${runner.speed}, PWR ${runner.power}, ${thirdRating} ${runner.cut}, upgrades ${runner.upgrades}. Morale ${runner.morale}% (${playerMoraleMood(runner.morale)}).${health}`;
 }
 
 function upgradeDisplayCopy(upgrade) {
@@ -7311,6 +7357,7 @@ function renderRunnerCards() {
         <span class="runner-power-stat${selected ? " active-runner-power" : ""}"${selected && creatorAccessUsesRunnerPower() ? ' title="Open Creator Tools"' : ""}>PWR ${candidate.power}</span>
         <span>${thirdRating} ${candidate.cut}</span>
       </div>
+      <span class="runner-morale ${candidate.morale >= 60 ? "high" : candidate.morale < 40 ? "low" : "steady"}">Morale ${candidate.morale} · ${playerMoraleMood(candidate.morale)}</span>
       <span class="runner-health">${injured ? `Injured · ${candidate.injuredGames} game${candidate.injuredGames === 1 ? "" : "s"}` : selected ? "Active Starter" : "Healthy · Select"}</span>
     `;
     card.addEventListener("click", (event) => {

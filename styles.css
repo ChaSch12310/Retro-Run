@@ -3936,6 +3936,48 @@ body[data-game="water-polo"] .preview-helmet {
   font-weight: 700;
 }
 
+.runner-card .runner-morale {
+  padding: 5px 7px;
+  background: #10263a;
+  border-left: 4px solid #d6dfc7;
+  font-weight: 900;
+}
+
+.runner-card .runner-morale.high,
+.runner-morale-mood.high {
+  color: #9ad89a;
+  border-color: #68b878;
+}
+
+.runner-card .runner-morale.low,
+.runner-morale-mood.low {
+  color: #ff9b8f;
+  border-color: #c94d45;
+}
+
+.runner-morale-strip {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  color: #d6dfc7;
+  background: #0f2133;
+  border: 2px solid #07131f;
+  text-transform: uppercase;
+}
+
+.runner-morale-strip span,
+.runner-morale-strip small {
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.runner-morale-strip strong {
+  color: var(--team-accent);
+}
+
 body[data-device="mobile"] .runner-card.selected .runner-power-stat {
   padding: 4px 3px;
   color: var(--team-accent);

@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260818-franchise-investment-center/);
+assert.match(html, /game\.js\?v=20260818-two-level-morale/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,7 +225,9 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260818-franchise-investment-center/);
+assert.match(html, /20260818-two-level-morale/);
+assert.match(html, /id="runnerMoraleValue"/);
+assert.match(html, /id="runnerMoraleMood"/);
 assert.match(html, /id="stadiumUpgradeButton"/);
 assert.match(html, /id="trainingUpgradeButton"/);
 assert.match(html, /id="coachHireButton"/);
@@ -974,6 +976,7 @@ globalThis.__retroRunTest = {
   get runnerNumber() { return currentRunner().appearance.number; },
   get runnerPower() { return currentRunner().power; },
   get runnerUpgrades() { return currentRunner().upgrades; },
+  get runnerMorale() { return currentRunner().morale; },
   get pendingUpgrade() { return pendingUpgrade; },
   get pendingUpgradeChoices() { return [...franchise.pendingUpgradeChoices]; },
   get activeRunnerId() { return currentRunner().id; },
@@ -1100,6 +1103,8 @@ globalThis.__retroRunTest = {
   purchaseTrainingUpgrade,
   hireCoachAndStaff,
   moraleChangeForGame,
+  playerMoraleChangeForGame,
+  playerMoraleMood,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1200,6 +1205,7 @@ const migratedManagementSave = game.normalizeFranchise({
   trainingQuality: 0,
   scoutingQuality: 0,
   frontOfficeCredits: 0,
+  player: { id: "starter", name: "M. Low", morale: 0 },
 });
 assert.ok(migratedManagementSave.coach.name);
 assert.equal(migratedManagementSave.morale, 0);
@@ -1210,6 +1216,8 @@ assert.equal(migratedManagementSave.lastFanChange, 240);
 assert.equal(migratedManagementSave.history[0].fanChange, 240);
 assert.equal(migratedManagementSave.seasonArchive[0].fans, 2400);
 assert.equal(migratedManagementSave.teamFunds, 0);
+assert.equal(migratedManagementSave.player.morale, 0);
+assert.equal(game.normalizeFranchise({}).player.morale, 55);
 const currentEconomySave = game.normalizeFranchise({
   fans: 2240,
   fanCapacity: 3000,
@@ -2024,6 +2032,7 @@ assert.equal(game.gameRevenueForFans(100), 5);
 assert.equal(game.gameRevenueForFans(1500), 75);
 assert.equal(game.gameRevenueForFans(1560), 75);
 assert.equal(game.gameRevenueForFans(3000), 150);
+game.setRunnerRatings({ morale: 55 });
 game.setManagement({
   fans: 1500,
   lastFanChange: 0,
@@ -2045,6 +2054,7 @@ assert.equal(game.trainingUpgradeCost(), 250);
 assert.equal(game.purchaseTrainingUpgrade(), true);
 assert.equal(game.trainingQuality, 55);
 assert.equal(game.morale, 60);
+assert.equal(game.runnerMorale, 58);
 assert.equal(game.teamFunds, 1450);
 const previousCoachName = game.coach.name;
 const previousCoachRating = game.coach.rating;
@@ -2053,6 +2063,7 @@ assert.equal(game.hireCoachAndStaff(), true);
 assert.notEqual(game.coach.name, previousCoachName);
 assert.ok(game.coach.rating >= previousCoachRating + 5);
 assert.equal(game.morale, 64);
+assert.equal(game.runnerMorale, 60);
 assert.equal(game.teamFunds, 1100);
 assert.ok(game.moraleChangeForGame("W", 2) >= 7);
 assert.equal(elements.get("moraleOperation").hidden, false);
@@ -2072,11 +2083,16 @@ game.setManagement({
   trainingQuality: 45,
   morale: 55,
 });
+game.setRunnerRatings({ morale: 55 });
 game.completeSeasonForTest(1, 8, 3, 2);
 assert.equal(game.fans, 1830);
 assert.equal(game.lastFanChange, 330);
 assert.equal(game.lastGameRevenue, 90);
 assert.equal(game.teamFunds, 90);
+assert.ok(game.morale > 55);
+assert.ok(game.runnerMorale > 55);
+assert.match(elements.get("runnerMoraleValue").textContent, /%/);
+assert.match(elements.get("runnerGrid").children[0].innerHTML, /Morale/);
 assert.equal(elements.get("fanSupportValue").textContent, "1,830");
 assert.equal(elements.get("fanTrendValue").textContent, "+330");
 assert.equal(elements.get("fanTrendValue").className, "fan-trend up");
@@ -2095,6 +2111,7 @@ assert.equal(elements.get("offseasonPanel").hidden, false);
 assert.equal(body.classList.contains("offseason-active"), true);
 assert.equal(game.offseasonView.type, "Roster Unlocked");
 assert.equal(game.offseasonView.choices.length, 3);
+assert.match(game.offseasonView.choices[0].description, /MOR/);
 const originalRunnerId = game.activeRunnerId;
 const draftedChoice = game.offseasonView.choices[0];
 game.chooseOffseason(draftedChoice.id);
@@ -2111,12 +2128,14 @@ assert.match(elements.get("runnerSelectionStatus").textContent, /2 Healthy/);
 const draftedRunnerId = game.roster.find((runner) => runner.id !== originalRunnerId).id;
 assert.equal(game.selectRunner(draftedRunnerId), true);
 assert.equal(game.activeRunnerId, draftedRunnerId);
+const draftedMoraleBeforeInjury = game.runnerMorale;
 assert.equal(game.injureActiveRunner(2), true);
 assert.equal(game.activeRunnerId, originalRunnerId);
 assert.equal(game.gameState, "gameover");
 assert.equal(elements.get("overlayTitle").textContent, "Player Injured");
 assert.equal(elements.get("startButton").textContent, "Try Again");
 assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 2);
+assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).morale, draftedMoraleBeforeInjury - 8);
 assert.equal(game.selectRunner(draftedRunnerId), false);
 assert.equal(elements.get("runnerGrid").children.some((card) => card.className.includes("injured")), true);
 game.recoverRunners();
@@ -2124,6 +2143,10 @@ assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injured
 game.recoverRunners();
 assert.equal(game.roster.find((runner) => runner.id === draftedRunnerId).injuredGames, 0);
 assert.equal(game.selectRunner(draftedRunnerId), true);
+assert.equal(game.playerMoraleMood(85), "Inspired");
+assert.equal(game.playerMoraleMood(65), "Confident");
+assert.equal(game.playerMoraleMood(45), "Steady");
+assert.equal(game.playerMoraleMood(25), "Frustrated");
 
 game.beginTestOffseason(2, 8, 4, "L");
 assert.deepEqual([...game.offseasonEventTypes], ["roster"]);

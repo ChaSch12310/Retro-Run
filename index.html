@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260818-franchise-investment-center" />
+    <link rel="stylesheet" href="styles.css?v=20260818-two-level-morale" />
   </head>
   <body>
     <main class="game-shell">
@@ -682,7 +682,7 @@
                     <span id="coachRoleLabel">Head Coach</span>
                     <strong id="coachNameValue">A. Stone</strong>
                     <small id="coachRatingValue">Rating 58 · Players' Coach</small>
-                    <small>New staff raises coach rating and morale</small>
+                    <small>Raises coach rating, team morale, and player morale</small>
                     <button class="management-buy-button" id="coachHireButton" type="button">
                       Hire Coach &amp; Staff · $350
                     </button>
@@ -703,7 +703,7 @@
                   <div class="operation-card management-upgrade-card" id="trainingOperation">
                     <span>Training Facility</span>
                     <strong id="trainingQualityValue">45%</strong>
-                    <small>Raises morale now and after future games</small>
+                    <small>Raises team and player morale</small>
                     <button class="management-buy-button" id="trainingUpgradeButton" type="button">
                       Upgrade Training · $250
                     </button>
@@ -736,6 +736,11 @@
                   <span id="runnerFeatureRole">Speed</span>
                 </div>
                 <strong id="runnerFeatureName">J. Blaze</strong>
+                <div class="runner-morale-strip">
+                  <span>Player Morale</span>
+                  <strong id="runnerMoraleValue">55%</strong>
+                  <small id="runnerMoraleMood">Steady</small>
+                </div>
                 <p id="runnerFeatureText">Explosive in space and perfect for stretch runs.</p>
               </div>
 
@@ -842,10 +847,10 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260818-franchise-investment-center"></script>
-    <script src="seasonal-profile.js?v=20260818-franchise-investment-center"></script>
+    <script src="game.js?v=20260818-two-level-morale"></script>
+    <script src="seasonal-profile.js?v=20260818-two-level-morale"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260818-franchise-investment-center"></script>
-    <script src="seasonal-parity.js?v=20260818-franchise-investment-center"></script>
+    <script src="seasonal-games.js?v=20260818-two-level-morale"></script>
+    <script src="seasonal-parity.js?v=20260818-two-level-morale"></script>
   </body>
 </html>
