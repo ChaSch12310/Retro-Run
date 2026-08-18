@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260818-five-player-depth-chart/);
+assert.match(html, /game\.js\?v=20260818-media-day-momentum/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,8 +225,9 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260818-five-player-depth-chart/);
+assert.match(html, /20260818-media-day-momentum/);
 assert.match(html, /id="betweenGamePanel"/);
+assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);
 assert.match(html, /id="runnerMoraleValue"/);
 assert.match(html, /id="runnerMoraleMood"/);
@@ -985,6 +986,8 @@ globalThis.__retroRunTest = {
   get pendingUpgradeChoices() { return [...franchise.pendingUpgradeChoices]; },
   get pendingProblem() { return franchise.pendingProblem ? { ...franchise.pendingProblem } : null; },
   get problemHistory() { return franchise.problemHistory.map((entry) => ({ ...entry })); },
+  get pendingPressConference() { return franchise.pendingPressConference ? { ...franchise.pendingPressConference } : null; },
+  get pressConferenceHistory() { return franchise.pressConferenceHistory.map((entry) => ({ ...entry })); },
   get activeRunnerId() { return currentRunner().id; },
   get rosterUnlocked() { return franchise.rosterUnlocked; },
   get roster() { return franchise.roster.map((runner) => ({ ...runner })); },
@@ -1112,6 +1115,7 @@ globalThis.__retroRunTest = {
   playerMoraleChangeForGame,
   playerMoraleMood,
   shouldCreateBetweenGameProblem,
+  shouldCreatePressConference,
   triggerProblem(problemId = "equipment-trouble", week = 3) {
     franchise.pendingProblem = { id: problemId, season: franchise.year, week };
     seasonCheckpointLevel = currentSeasonStartLevel() + week;
@@ -1120,6 +1124,15 @@ globalThis.__retroRunTest = {
     updateStartOverlay();
   },
   chooseProblem: applyBetweenGameChoice,
+  triggerPressConference(conferenceId = "tough-result", week = 2) {
+    franchise.pendingProblem = null;
+    franchise.pendingPressConference = { id: conferenceId, season: franchise.year, week };
+    seasonCheckpointLevel = currentSeasonStartLevel() + week;
+    currentLevel = seasonCheckpointLevel;
+    gameState = "levelComplete";
+    updateStartOverlay();
+  },
+  choosePressConference: applyPressConferenceChoice,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1236,11 +1249,17 @@ assert.equal(game.normalizeFranchise({}).player.morale, 55);
 const migratedProblemSave = game.normalizeFranchise({
   pendingProblem: { id: "travel-delay", season: 2, week: 6 },
   problemHistory: [{ season: 1, week: 3, problem: "Test", choice: "Test" }],
+  pendingPressConference: { id: "tough-result", season: 2, week: 5 },
+  pressConferenceHistory: [{ season: 1, week: 2, conference: "Test", choice: "Test", fanChange: 60 }],
 });
 assert.equal(migratedProblemSave.pendingProblem.id, "travel-delay");
 assert.equal(migratedProblemSave.pendingProblem.week, 6);
 assert.equal(migratedProblemSave.problemHistory.length, 1);
+assert.equal(migratedProblemSave.pendingPressConference.id, "tough-result");
+assert.equal(migratedProblemSave.pendingPressConference.week, 5);
+assert.equal(migratedProblemSave.pressConferenceHistory.length, 1);
 assert.equal(game.normalizeFranchise({ pendingProblem: { id: "missing" } }).pendingProblem, null);
+assert.equal(game.normalizeFranchise({ pendingPressConference: { id: "missing" } }).pendingPressConference, null);
 const currentEconomySave = game.normalizeFranchise({
   fans: 2240,
   fanCapacity: 3000,
@@ -2112,6 +2131,32 @@ assert.equal(game.shouldCreateBetweenGameProblem(6, false), true);
 assert.equal(game.shouldCreateBetweenGameProblem(9, false), true);
 assert.equal(game.shouldCreateBetweenGameProblem(2, false), false);
 assert.equal(game.shouldCreateBetweenGameProblem(12, true), false);
+assert.equal(game.shouldCreatePressConference(2, false), true);
+assert.equal(game.shouldCreatePressConference(5, false), true);
+assert.equal(game.shouldCreatePressConference(8, false), true);
+assert.equal(game.shouldCreatePressConference(11, false), true);
+assert.equal(game.shouldCreatePressConference(3, false), false);
+assert.equal(game.shouldCreatePressConference(12, true), false);
+game.setManagement({ fans: 1500, lastFanChange: 0 });
+game.triggerPressConference("tough-result", 2);
+assert.equal(game.pendingPressConference.id, "tough-result");
+assert.equal(elements.get("betweenGamePanel").hidden, false);
+assert.equal(elements.get("betweenGameHeading").textContent, "Press Conference");
+assert.equal(elements.get("betweenGameChoices").children.length, 3);
+assert.equal(elements.get("startButton").textContent, "Answer Press");
+assert.equal(elements.get("startButton").disabled, true);
+assert.equal(game.choosePressConference("blame-crowd"), true);
+assert.equal(game.pendingPressConference, null);
+assert.equal(game.fans, 1320);
+assert.equal(game.lastFanChange, -180);
+assert.equal(game.pressConferenceHistory.at(-1).choice, "Blame the Crowd");
+assert.equal(game.pressConferenceHistory.at(-1).fanChange, -180);
+assert.equal(elements.get("betweenGamePanel").hidden, true);
+assert.equal(elements.get("startButton").textContent, "Next Game");
+game.triggerPressConference("supporter-spotlight", 5);
+assert.equal(game.choosePressConference("thank-supporters"), true);
+assert.equal(game.fans, 1470);
+assert.equal(game.lastFanChange, 150);
 game.triggerProblem("equipment-trouble", 3);
 assert.equal(game.pendingProblem.id, "equipment-trouble");
 assert.equal(elements.get("betweenGamePanel").hidden, false);

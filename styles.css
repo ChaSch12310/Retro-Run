@@ -3493,6 +3493,17 @@ body.offseason-active .offseason-choices {
   text-transform: uppercase;
 }
 
+.between-game-panel.press-conference {
+  border-color: #70c8e8;
+  background:
+    repeating-linear-gradient(90deg, rgba(112, 200, 232, 0.04) 0 6px, transparent 6px 12px),
+    #10283e;
+}
+
+.between-game-panel.press-conference h4 {
+  color: #70c8e8;
+}
+
 .problem-kicker {
   margin: 0 !important;
   color: #9ad89a !important;
@@ -3521,7 +3532,7 @@ body.offseason-active .offseason-choices {
 
 .problem-choices {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
 }
 
