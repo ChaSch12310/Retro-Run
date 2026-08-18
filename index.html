@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260818-two-level-morale" />
+    <link rel="stylesheet" href="styles.css?v=20260818-between-game-decisions" />
   </head>
   <body>
     <main class="game-shell">
@@ -722,6 +722,18 @@
                 <p id="nextFeatureText">Spend Team Funds on permanent franchise improvements.</p>
               </div>
 
+              <div class="franchise-module between-game-panel" id="betweenGamePanel" hidden>
+                <div class="module-head">
+                  <h3>Between-Game Problem</h3>
+                  <span id="betweenGameWeek">Week 3 Decision</span>
+                </div>
+                <p class="problem-kicker" id="betweenGameCategory">Locker Room</p>
+                <h4 id="betweenGameTitle">Locker Room Split</h4>
+                <p id="betweenGameText">Resolve the issue before the next game.</p>
+                <div class="problem-status" id="betweenGameStatus"></div>
+                <div class="problem-choices" id="betweenGameChoices"></div>
+              </div>
+
               <div class="runner-select" id="runnerSelectPanel">
                 <div class="runner-select-head">
                   <h3 id="runnerSelectTitle">Featured Player</h3>
@@ -847,10 +859,10 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260818-two-level-morale"></script>
-    <script src="seasonal-profile.js?v=20260818-two-level-morale"></script>
+    <script src="game.js?v=20260818-between-game-decisions"></script>
+    <script src="seasonal-profile.js?v=20260818-between-game-decisions"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260818-two-level-morale"></script>
-    <script src="seasonal-parity.js?v=20260818-two-level-morale"></script>
+    <script src="seasonal-games.js?v=20260818-between-game-decisions"></script>
+    <script src="seasonal-parity.js?v=20260818-between-game-decisions"></script>
   </body>
 </html>

@@ -88,6 +88,13 @@ const scoutingOperationEl = document.getElementById("scoutingOperation");
 const scoutingQualityValueEl = document.getElementById("scoutingQualityValue");
 const frontOfficeCreditsValueEl = document.getElementById("frontOfficeCreditsValue");
 const nextFeatureTextEl = document.getElementById("nextFeatureText");
+const betweenGamePanelEl = document.getElementById("betweenGamePanel");
+const betweenGameWeekEl = document.getElementById("betweenGameWeek");
+const betweenGameCategoryEl = document.getElementById("betweenGameCategory");
+const betweenGameTitleEl = document.getElementById("betweenGameTitle");
+const betweenGameTextEl = document.getElementById("betweenGameText");
+const betweenGameStatusEl = document.getElementById("betweenGameStatus");
+const betweenGameChoicesEl = document.getElementById("betweenGameChoices");
 const runnerFeatureRoleEl = document.getElementById("runnerFeatureRole");
 const runnerFeatureNameEl = document.getElementById("runnerFeatureName");
 const runnerFeatureTextEl = document.getElementById("runnerFeatureText");
@@ -1041,6 +1048,68 @@ const SEASON_FEATURES = [
 ];
 const MAX_ROSTER_SIZE = 4;
 const RUNNER_INJURY_CHANCE = 0.08;
+const BETWEEN_GAME_PROBLEMS = [
+  {
+    id: "locker-room-split",
+    category: "Locker Room",
+    title: "Locker Room Split",
+    text: "A disagreement has divided the team after the last game.",
+    choices: [
+      { id: "team-meeting", title: "Hold a Team Meeting", description: "Clear the air together.", effects: { teamMorale: 5, playerMorale: 2 } },
+      { id: "back-player", title: "Back the Active Player", description: "Build up your starter, even if the room dislikes it.", effects: { teamMorale: -3, playerMorale: 7 } },
+    ],
+  },
+  {
+    id: "equipment-trouble",
+    category: "Equipment",
+    title: "Equipment Trouble",
+    text: "The active player reports damaged equipment before the next matchup.",
+    choices: [
+      { id: "replace-gear", title: "Replace the Gear", description: "Buy reliable equipment immediately.", cost: 100, effects: { teamMorale: 1, playerMorale: 5, money: -100 } },
+      { id: "patch-gear", title: "Patch It Up", description: "Save the money, but make the player work with it.", effects: { playerMorale: -5 } },
+    ],
+  },
+  {
+    id: "travel-delay",
+    category: "Team Travel",
+    title: "Travel Plans Collapse",
+    text: "The team could arrive late unless the front office finds another route.",
+    choices: [
+      { id: "new-travel", title: "Book New Travel", description: "Keep preparation on schedule.", cost: 125, effects: { teamMorale: 4, allPlayerMorale: 1, money: -125 } },
+      { id: "wait-it-out", title: "Wait It Out", description: "Accept the delay and protect Team Funds.", effects: { teamMorale: -4, playerMorale: -2 } },
+    ],
+  },
+  {
+    id: "sponsor-pressure",
+    category: "Business",
+    title: "Sponsor Pressure",
+    text: "A sponsor offers quick money but wants your active player at a tiring event.",
+    choices: [
+      { id: "take-deal", title: "Take the Deal", description: "Add revenue, but lose focus.", effects: { teamMorale: -1, playerMorale: -3, money: 150 } },
+      { id: "protect-team", title: "Protect the Team", description: "Turn down the money and stay focused.", effects: { teamMorale: 3, playerMorale: 2 } },
+    ],
+  },
+  {
+    id: "community-request",
+    category: "Community",
+    title: "Community Request",
+    text: "Local fans ask the team to host a youth event before the next game.",
+    choices: [
+      { id: "host-event", title: "Host the Event", description: "Invest in the community and the locker room.", cost: 75, effects: { teamMorale: 4, allPlayerMorale: 2, money: -75 } },
+      { id: "decline-event", title: "Decline the Request", description: "Keep the schedule clear, but disappoint the team.", effects: { teamMorale: -3 } },
+    ],
+  },
+  {
+    id: "practice-dispute",
+    category: "Training",
+    title: "Practice Dispute",
+    text: "The active player and staff disagree about this week's workload.",
+    choices: [
+      { id: "short-practice", title: "Short, Sharp Practice", description: "Keep everyone fresh and focused.", effects: { teamMorale: 2, playerMorale: 3 } },
+      { id: "hard-practice", title: "Demand Extra Work", description: "Push the player hard despite team concerns.", effects: { teamMorale: -2, playerMorale: 5 } },
+    ],
+  },
+];
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
   year: 1,
@@ -1065,6 +1134,8 @@ const DEFAULT_FRANCHISE = {
   activePlayerId: null,
   rosterUnlocked: false,
   pendingUpgradeChoices: [],
+  pendingProblem: null,
+  problemHistory: [],
   coach: null,
   morale: 55,
   stadiumQuality: 50,
@@ -1346,6 +1417,8 @@ function restartSeason() {
   delete franchise.seasonBests[String(franchise.year)];
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
+  franchise.pendingProblem = null;
+  franchise.problemHistory = franchise.problemHistory.filter((entry) => entry.season !== franchise.year);
   franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
   recomputeBestDistance();
   saveFranchise();
@@ -1489,6 +1562,21 @@ function normalizeOffseason(rawOffseason, context = {}) {
     index: 0,
     events: [{ type: "roster", prospects }],
     decisions: [],
+  };
+}
+
+function betweenGameProblemById(problemId) {
+  return BETWEEN_GAME_PROBLEMS.find((problem) => problem.id === problemId) || null;
+}
+
+function normalizePendingProblem(rawProblem) {
+  if (!rawProblem || typeof rawProblem !== "object" || !betweenGameProblemById(rawProblem.id)) {
+    return null;
+  }
+  return {
+    id: String(rawProblem.id),
+    season: Math.max(1, Math.round(savedNumber(rawProblem.season, 1))),
+    week: clamp(Math.round(savedNumber(rawProblem.week, 1)), 1, GAMES_PER_SEASON),
   };
 }
 
@@ -1719,6 +1807,8 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     activePlayerId: playerProfile.id,
     rosterUnlocked: Boolean(parsed.rosterUnlocked || Number(parsed.year) > 1 || roster.length > 1),
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
+    pendingProblem: normalizePendingProblem(parsed.pendingProblem),
+    problemHistory: Array.isArray(parsed.problemHistory) ? parsed.problemHistory.slice(-12) : [],
     coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
     fans: clamp(Math.round(savedFans * fanScale), 0, MAX_FANS),
     fanCapacity: MAX_FANS,
@@ -1898,7 +1988,9 @@ function selectFranchiseSlot(index) {
     franchise.pendingUpgradeChoices = [];
   }
   pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
-  gameState = pendingUpgrade ? "levelComplete" : franchise.offseason ? "offseason" : "menu";
+  gameState = pendingUpgrade || franchise.pendingProblem
+    ? "levelComplete"
+    : franchise.offseason ? "offseason" : "menu";
   if (!pendingUpgrade && slot?.franchise?.pendingUpgradeChoices?.length) {
     saveFranchise();
   }
@@ -2528,6 +2620,60 @@ function applyPlayerMoraleForGame(result, tries) {
       100
     );
   });
+}
+
+function shouldCreateBetweenGameProblem(week, seasonWrapped) {
+  return !seasonWrapped && week % 3 === 0;
+}
+
+function createBetweenGameProblem(season, week) {
+  const seed = textSeed(`${franchise.team?.name}-${season}-${week}`);
+  const problem = BETWEEN_GAME_PROBLEMS[seed % BETWEEN_GAME_PROBLEMS.length];
+  return { id: problem.id, season, week };
+}
+
+function problemEffectSummary(effects = {}) {
+  const parts = [];
+  if (effects.teamMorale) parts.push(`Team Morale ${effects.teamMorale > 0 ? "+" : ""}${effects.teamMorale}`);
+  if (effects.playerMorale) parts.push(`Active Player ${effects.playerMorale > 0 ? "+" : ""}${effects.playerMorale}`);
+  if (effects.allPlayerMorale) parts.push(`All Players ${effects.allPlayerMorale > 0 ? "+" : ""}${effects.allPlayerMorale}`);
+  if (effects.money) parts.push(`Funds ${effects.money > 0 ? "+" : "-"}${formatMoney(Math.abs(effects.money))}`);
+  return parts.join(" · ");
+}
+
+function applyBetweenGameChoice(choiceId) {
+  const pending = franchise.pendingProblem;
+  const problem = betweenGameProblemById(pending?.id);
+  const choice = problem?.choices.find((entry) => entry.id === choiceId);
+  if (!pending || !problem || !choice || (choice.cost || 0) > franchise.teamFunds) {
+    return false;
+  }
+
+  const effects = choice.effects || {};
+  franchise.morale = clamp(franchise.morale + (effects.teamMorale || 0), 0, 100);
+  if (effects.allPlayerMorale) {
+    adjustRosterMorale(effects.allPlayerMorale);
+  }
+  if (effects.playerMorale) {
+    const runner = currentRunner();
+    runner.morale = clamp(savedNumber(runner.morale, 55) + effects.playerMorale, 0, 100);
+  }
+  franchise.teamFunds = Math.max(0, franchise.teamFunds + (effects.money || 0));
+  franchise.problemHistory.push({
+    season: pending.season,
+    week: pending.week,
+    problem: problem.title,
+    choice: choice.title,
+    effects: problemEffectSummary(effects),
+  });
+  franchise.problemHistory = franchise.problemHistory.slice(-12);
+  franchise.pendingProblem = null;
+  franchise.lastResult = `${problem.title}: ${choice.title}. ${problemEffectSummary(effects)}.`;
+  gameState = "levelComplete";
+  saveFranchise();
+  updateStartOverlay();
+  updateHud();
+  return true;
 }
 
 function draftArchetype(speed, power, cut) {
@@ -3936,6 +4082,7 @@ function tutorialSlides() {
         "Restart Season resets that season's record and progress but keeps player upgrades.",
         "After Season 1, the runner roster and injuries unlock. No additional management systems are added in later seasons.",
         "Team Morale measures the whole franchise. Every runner also has individual morale affected by results, staff, training, and injuries.",
+        "After Weeks 3, 6, and 9, resolve a franchise problem that can change Team Funds, Team Morale, or Player Morale.",
       ],
     },
   ];
@@ -4330,6 +4477,7 @@ function completeLevel() {
   }
   saveFranchise();
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
+  nextOpponentNameEl.textContent = nextTeam.name;
   overlayTitleEl.textContent = isDodgeballMode() ? "Knockout!" : isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Run Scored!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
   overlayTextEl.textContent = seasonWrapped
       ? (isDodgeballMode()
@@ -4372,16 +4520,23 @@ function completeLevel() {
           : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
   pendingUpgrade = result === "W" && !runnerHasMaxRating(currentRunner());
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
+  franchise.pendingProblem = shouldCreateBetweenGameProblem(week, seasonWrapped)
+    ? createBetweenGameProblem(seasonYear, week)
+    : null;
   if (pendingUpgrade) {
     gameState = "levelComplete";
   }
   saveFranchise();
-  startButton.textContent = pendingUpgrade ? "Choose Upgrade" : seasonWrapped ? "Complete Offseason" : "Next Game";
-  startButton.disabled = pendingUpgrade;
+  startButton.textContent = pendingUpgrade
+    ? "Choose Upgrade"
+    : franchise.pendingProblem ? "Resolve Problem" : seasonWrapped ? "Complete Offseason" : "Next Game";
+  startButton.disabled = pendingUpgrade || Boolean(franchise.pendingProblem);
   startButton.hidden = seasonWrapped && !pendingUpgrade;
   homepagePanelEl.hidden = false;
   renderUpgradeOptions();
+  renderBetweenGameProblem();
   renderOffseasonPanel();
+  renderRunnerCards();
   renderFranchiseDashboard();
   showOverlay();
 }
@@ -4394,6 +4549,10 @@ function advanceLevel() {
   if (franchise.offseason) {
     gameState = "offseason";
     renderOffseasonPanel();
+    return;
+  }
+  if (franchise.pendingProblem) {
+    renderBetweenGameProblem();
     return;
   }
   pendingUpgrade = false;
@@ -4679,6 +4838,7 @@ function updateStartOverlay() {
   renderUpgradeOptions();
   renderFranchiseDashboard();
   renderOffseasonPanel();
+  renderBetweenGameProblem();
 
   if (!franchise.setupComplete) {
     overlayTitleEl.textContent = soccer || lacrosse ? "Create National Team" : dodgeball ? "Create Dodgeball Team" : waterPolo ? "Create Water Polo Club" : surfing ? "Create Surf Team" : skiing ? "Create Ski Team" : "Create Franchise";
@@ -4707,10 +4867,20 @@ function updateStartOverlay() {
     overlayTextEl.textContent = `Choose one upgrade for ${runner.name} before continuing.`;
     startButton.textContent = "Choose Upgrade";
     startButton.disabled = true;
+  } else if (franchise.pendingProblem) {
+    const problem = betweenGameProblemById(franchise.pendingProblem.id);
+    overlayTitleEl.textContent = "Decision Required";
+    overlayTextEl.textContent = `${problem.title} must be resolved before the next game.`;
+    startButton.textContent = "Resolve Problem";
+    startButton.disabled = true;
   } else if (franchise.offseason) {
     overlayTitleEl.textContent = `Season ${franchise.offseason.completedSeason} Complete`;
     overlayTextEl.textContent = "Make each offseason decision, finish the draft, and prepare the next season.";
     startButton.hidden = true;
+  } else if (gameState === "levelComplete" && seasonCheckpointLevel > currentSeasonStartLevel()) {
+    overlayTitleEl.textContent = "Game Complete";
+    overlayTextEl.textContent = `Preparation is complete. Next up: ${nextOpponent.name}.`;
+    startButton.textContent = "Next Game";
   } else if (seasonCheckpointLevel > currentSeasonStartLevel()) {
     overlayTitleEl.textContent = "Resume Season";
     overlayTextEl.textContent = skiing
@@ -4803,7 +4973,7 @@ function renderOffseasonPanel() {
   const showOffseason = Boolean(offseason) && !pendingUpgrade;
   offseasonPanelEl.hidden = !showOffseason;
   document.body.classList.toggle("offseason-active", showOffseason && !slotSelectOpen && !gameLibraryOpen);
-  restartSeasonButton.disabled = Boolean(offseason);
+  restartSeasonButton.disabled = Boolean(offseason || franchise.pendingProblem);
   if (!showOffseason) {
     return;
   }
@@ -4837,6 +5007,39 @@ function renderOffseasonPanel() {
     }</span>`;
     button.addEventListener("click", () => applyOffseasonChoice(choice.id));
     offseasonChoicesEl.appendChild(button);
+  });
+}
+
+function renderBetweenGameProblem() {
+  const pending = franchise.pendingProblem;
+  const problem = betweenGameProblemById(pending?.id);
+  const showProblem = Boolean(problem) && !pendingUpgrade && !franchise.offseason;
+  betweenGamePanelEl.hidden = !showProblem;
+  if (!showProblem) {
+    return;
+  }
+
+  betweenGameWeekEl.textContent = `After Week ${pending.week}`;
+  betweenGameCategoryEl.textContent = problem.category;
+  betweenGameTitleEl.textContent = problem.title;
+  betweenGameTextEl.textContent = problem.text;
+  betweenGameStatusEl.innerHTML = `
+    <span>Team Morale ${franchise.morale}%</span>
+    <span>${currentRunner().name} ${currentRunner().morale}%</span>
+    <span>Funds ${formatMoney(franchise.teamFunds)}</span>
+  `;
+  betweenGameChoicesEl.innerHTML = "";
+  problem.choices.forEach((choice) => {
+    const button = document.createElement("button");
+    const unaffordable = (choice.cost || 0) > franchise.teamFunds;
+    button.type = "button";
+    button.className = "problem-choice";
+    button.disabled = unaffordable;
+    button.innerHTML = `<strong>${choice.title}</strong><span>${choice.description}</span><small>${problemEffectSummary(choice.effects)}${
+      unaffordable ? " · Not enough Team Funds" : ""
+    }</small>`;
+    button.addEventListener("click", () => applyBetweenGameChoice(choice.id));
+    betweenGameChoicesEl.appendChild(button);
   });
 }
 
@@ -5055,16 +5258,9 @@ function applyUpgrade(upgrade) {
   franchise.lastResult = `${runner.name} earned a ${display.title.toLowerCase()} after the last win.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
-  startButton.disabled = false;
-  startButton.textContent = franchise.offseason ? "Complete Offseason" : "Next Game";
   saveFranchise();
-  if (franchise.offseason) {
-    gameState = "offseason";
-    updateStartOverlay();
-  }
-  renderRunnerCards();
-  renderFranchiseDashboard();
-  renderUpgradeOptions();
+  gameState = franchise.offseason ? "offseason" : "levelComplete";
+  updateStartOverlay();
 }
 
 function render(time) {

@@ -122,7 +122,7 @@ assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260818-two-level-morale/);
+assert.match(html, /game\.js\?v=20260818-between-game-decisions/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -225,7 +225,9 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260818-two-level-morale/);
+assert.match(html, /20260818-between-game-decisions/);
+assert.match(html, /id="betweenGamePanel"/);
+assert.match(html, /id="betweenGameChoices"/);
 assert.match(html, /id="runnerMoraleValue"/);
 assert.match(html, /id="runnerMoraleMood"/);
 assert.match(html, /id="stadiumUpgradeButton"/);
@@ -979,6 +981,8 @@ globalThis.__retroRunTest = {
   get runnerMorale() { return currentRunner().morale; },
   get pendingUpgrade() { return pendingUpgrade; },
   get pendingUpgradeChoices() { return [...franchise.pendingUpgradeChoices]; },
+  get pendingProblem() { return franchise.pendingProblem ? { ...franchise.pendingProblem } : null; },
+  get problemHistory() { return franchise.problemHistory.map((entry) => ({ ...entry })); },
   get activeRunnerId() { return currentRunner().id; },
   get rosterUnlocked() { return franchise.rosterUnlocked; },
   get roster() { return franchise.roster.map((runner) => ({ ...runner })); },
@@ -1105,6 +1109,15 @@ globalThis.__retroRunTest = {
   moraleChangeForGame,
   playerMoraleChangeForGame,
   playerMoraleMood,
+  shouldCreateBetweenGameProblem,
+  triggerProblem(problemId = "equipment-trouble", week = 3) {
+    franchise.pendingProblem = { id: problemId, season: franchise.year, week };
+    seasonCheckpointLevel = currentSeasonStartLevel() + week;
+    currentLevel = seasonCheckpointLevel;
+    gameState = "levelComplete";
+    updateStartOverlay();
+  },
+  chooseProblem: applyBetweenGameChoice,
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1218,6 +1231,14 @@ assert.equal(migratedManagementSave.seasonArchive[0].fans, 2400);
 assert.equal(migratedManagementSave.teamFunds, 0);
 assert.equal(migratedManagementSave.player.morale, 0);
 assert.equal(game.normalizeFranchise({}).player.morale, 55);
+const migratedProblemSave = game.normalizeFranchise({
+  pendingProblem: { id: "travel-delay", season: 2, week: 6 },
+  problemHistory: [{ season: 1, week: 3, problem: "Test", choice: "Test" }],
+});
+assert.equal(migratedProblemSave.pendingProblem.id, "travel-delay");
+assert.equal(migratedProblemSave.pendingProblem.week, 6);
+assert.equal(migratedProblemSave.problemHistory.length, 1);
+assert.equal(game.normalizeFranchise({ pendingProblem: { id: "missing" } }).pendingProblem, null);
 const currentEconomySave = game.normalizeFranchise({
   fans: 2240,
   fanCapacity: 3000,
@@ -2066,6 +2087,39 @@ assert.equal(game.morale, 64);
 assert.equal(game.runnerMorale, 60);
 assert.equal(game.teamFunds, 1100);
 assert.ok(game.moraleChangeForGame("W", 2) >= 7);
+assert.equal(game.shouldCreateBetweenGameProblem(3, false), true);
+assert.equal(game.shouldCreateBetweenGameProblem(6, false), true);
+assert.equal(game.shouldCreateBetweenGameProblem(9, false), true);
+assert.equal(game.shouldCreateBetweenGameProblem(2, false), false);
+assert.equal(game.shouldCreateBetweenGameProblem(12, true), false);
+game.triggerProblem("equipment-trouble", 3);
+assert.equal(game.pendingProblem.id, "equipment-trouble");
+assert.equal(elements.get("betweenGamePanel").hidden, false);
+assert.equal(elements.get("betweenGameChoices").children.length, 2);
+assert.equal(elements.get("betweenGameChoices").children[0].disabled, false);
+assert.equal(elements.get("startButton").textContent, "Resolve Problem");
+assert.equal(elements.get("startButton").disabled, true);
+assert.equal(game.chooseProblem("replace-gear"), true);
+assert.equal(game.pendingProblem, null);
+assert.equal(game.teamFunds, 1000);
+assert.equal(game.morale, 65);
+assert.equal(game.runnerMorale, 65);
+assert.equal(game.problemHistory.at(-1).choice, "Replace the Gear");
+assert.equal(elements.get("betweenGamePanel").hidden, true);
+assert.equal(elements.get("startButton").textContent, "Next Game");
+game.setManagement({ teamFunds: 0 });
+game.triggerProblem("equipment-trouble", 6);
+assert.equal(elements.get("betweenGameChoices").children[0].disabled, true);
+assert.equal(game.chooseProblem("replace-gear"), false);
+assert.equal(game.pendingProblem.id, "equipment-trouble");
+assert.equal(game.chooseProblem("patch-gear"), true);
+assert.equal(game.runnerMorale, 60);
+game.triggerProblem("sponsor-pressure", 9);
+assert.equal(game.chooseProblem("take-deal"), true);
+assert.equal(game.teamFunds, 150);
+assert.equal(game.morale, 64);
+assert.equal(game.runnerMorale, 57);
+assert.equal(game.problemHistory.at(-1).effects.includes("Funds +$150"), true);
 assert.equal(elements.get("moraleOperation").hidden, false);
 assert.equal(elements.get("stadiumOperation").hidden, false);
 assert.equal(elements.get("trainingOperation").hidden, false);
@@ -2092,7 +2146,7 @@ assert.equal(game.teamFunds, 90);
 assert.ok(game.morale > 55);
 assert.ok(game.runnerMorale > 55);
 assert.match(elements.get("runnerMoraleValue").textContent, /%/);
-assert.match(elements.get("runnerGrid").children[0].innerHTML, /Morale/);
+assert.match(elements.get("runnerGrid").children[0].innerHTML, new RegExp(`Morale ${game.runnerMorale}`));
 assert.equal(elements.get("fanSupportValue").textContent, "1,830");
 assert.equal(elements.get("fanTrendValue").textContent, "+330");
 assert.equal(elements.get("fanTrendValue").className, "fan-trend up");
