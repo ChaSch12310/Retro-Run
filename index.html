@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260818-between-game-decisions" />
+    <link rel="stylesheet" href="styles.css?v=20260818-five-player-depth-chart" />
   </head>
   <body>
     <main class="game-shell">
@@ -809,6 +809,16 @@
         </form>
 
         <form id="creatorLevelsForm" class="creator-form" hidden>
+          <div class="creator-player-fields">
+            <label class="setup-field">
+              <span class="label">Edit Player</span>
+              <select id="creatorRunnerSelect" aria-label="Player to edit"></select>
+            </label>
+            <label class="setup-field">
+              <span class="label">Player Name</span>
+              <input id="creatorRunnerNameInput" type="text" maxlength="24" autocomplete="off" />
+            </label>
+          </div>
           <label class="setup-field">
             <span class="label">Speed</span>
             <input id="creatorSpeedInput" type="number" min="1" max="100" />
@@ -859,10 +869,10 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260818-between-game-decisions"></script>
-    <script src="seasonal-profile.js?v=20260818-between-game-decisions"></script>
+    <script src="game.js?v=20260818-five-player-depth-chart"></script>
+    <script src="seasonal-profile.js?v=20260818-five-player-depth-chart"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260818-between-game-decisions"></script>
-    <script src="seasonal-parity.js?v=20260818-between-game-decisions"></script>
+    <script src="seasonal-games.js?v=20260818-five-player-depth-chart"></script>
+    <script src="seasonal-parity.js?v=20260818-five-player-depth-chart"></script>
   </body>
 </html>

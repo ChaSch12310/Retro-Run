@@ -109,6 +109,8 @@ const creatorLoginFormEl = document.getElementById("creatorLoginForm");
 const creatorLevelsFormEl = document.getElementById("creatorLevelsForm");
 const creatorUsernameInputEl = document.getElementById("creatorUsernameInput");
 const creatorPasswordInputEl = document.getElementById("creatorPasswordInput");
+const creatorRunnerSelectEl = document.getElementById("creatorRunnerSelect");
+const creatorRunnerNameInputEl = document.getElementById("creatorRunnerNameInput");
 const creatorSpeedInputEl = document.getElementById("creatorSpeedInput");
 const creatorPowerInputEl = document.getElementById("creatorPowerInput");
 const creatorCutInputEl = document.getElementById("creatorCutInput");
@@ -997,6 +999,13 @@ const DEFAULT_PLAYER_APPEARANCE = {
   hair: "#302218",
   number: 7,
 };
+const STARTING_PLAYER_APPEARANCES = [
+  { skin: "#efc79d", hair: "#302218", number: 7 },
+  { skin: "#8d5524", hair: "#1d1712", number: 22 },
+  { skin: "#c68642", hair: "#3c2415", number: 34 },
+  { skin: "#f1c27d", hair: "#8b5a2b", number: 11 },
+  { skin: "#6f3b20", hair: "#17120f", number: 28 },
+];
 
 const legacyStorageKey = "gridiron-dash-best";
 const legacySeasonStorageKey = "gridiron-dash-season-progress";
@@ -1044,9 +1053,10 @@ const DRAFT_NAME_POOL = [
   "R. Miles",
 ];
 const SEASON_FEATURES = [
-  { season: 2, names: ["Runner Roster", "Injuries"] },
+  { season: 2, names: ["Injuries"] },
 ];
-const MAX_ROSTER_SIZE = 4;
+const STARTING_ROSTER_SIZE = 5;
+const MAX_ROSTER_SIZE = 8;
 const RUNNER_INJURY_CHANCE = 0.08;
 const BETWEEN_GAME_PROBLEMS = [
   {
@@ -1132,7 +1142,7 @@ const DEFAULT_FRANCHISE = {
   player: null,
   roster: [],
   activePlayerId: null,
-  rosterUnlocked: false,
+  rosterUnlocked: true,
   pendingUpgradeChoices: [],
   pendingProblem: null,
   problemHistory: [],
@@ -1174,6 +1184,7 @@ let pendingUpgrade = false;
 let swipeStart = null;
 let creatorAttemptsRemaining = CREATOR_MAX_ATTEMPTS;
 let creatorReturnGameState = null;
+let creatorEditingRunnerId = null;
 let gameLibraryOpen = true;
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
@@ -1437,16 +1448,12 @@ function createFranchiseFromForm() {
 
   franchise.setupComplete = true;
   franchise.team = { name: teamName, primary, secondary };
-  const starter = {
-    ...resetPlayerToBaseline(franchise.player || createFranchisePlayer(runnerName)),
-    id: "starter",
-    name: runnerName,
-    appearance,
-  };
+  const roster = createStartingRoster(runnerName, appearance);
+  const starter = roster[0];
   franchise.player = starter;
-  franchise.roster = [starter];
+  franchise.roster = roster;
   franchise.activePlayerId = starter.id;
-  franchise.rosterUnlocked = false;
+  franchise.rosterUnlocked = true;
   franchise.lastResult = isBasketballMode()
     ? "Basketball franchise created. Time to take the court."
     : isSoccerMode()
@@ -1718,7 +1725,8 @@ function migrateSeasonCheckpoint(rawCheckpoint, rawFranchise = {}, rawSlot = {})
 
 function createDefaultFranchise(forcedName = null) {
   const defaultTeam = currentGameMode().homeTeam;
-  const playerProfile = createFranchisePlayer(forcedName);
+  const roster = createStartingRoster(forcedName);
+  const playerProfile = roster[0];
   return {
     ...DEFAULT_FRANCHISE,
     history: [],
@@ -1727,11 +1735,11 @@ function createDefaultFranchise(forcedName = null) {
     seasonBests: {},
     team: { ...defaultTeam },
     player: playerProfile,
-    roster: [playerProfile],
+    roster,
     activePlayerId: playerProfile.id,
-    rosterUnlocked: false,
+    rosterUnlocked: true,
     coach: createCoach(`${defaultTeam.name}-${playerProfile.name}`),
-    featureLog: ["Season 1: Featured Player"],
+    featureLog: ["Season 1: Five-Player Roster"],
     pendingUpgradeChoices: [],
     seasonCheckpointLevel: 0,
     savedAt: Date.now(),
@@ -1744,9 +1752,9 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
   const savedRoster = Array.isArray(parsed.roster) && parsed.roster.length > 0
     ? parsed.roster
     : [parsed.player];
-  const roster = savedRoster
+  const roster = ensureStartingRoster(savedRoster
     .slice(0, MAX_ROSTER_SIZE)
-    .map((playerProfile, index) => normalizeFranchisePlayer(playerProfile, index === 0 ? "starter" : `runner-${index + 1}`));
+    .map((playerProfile, index) => normalizeFranchisePlayer(playerProfile, index === 0 ? "starter" : `runner-${index + 1}`)));
   const requestedActiveId = String(parsed.activePlayerId || parsed.player?.id || roster[0].id);
   const playerProfile = roster.find((runner) => runner.id === requestedActiveId) || roster[0];
   const teamProfile = parsed.team || { ...defaultTeam };
@@ -1805,7 +1813,7 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     player: playerProfile,
     roster,
     activePlayerId: playerProfile.id,
-    rosterUnlocked: Boolean(parsed.rosterUnlocked || Number(parsed.year) > 1 || roster.length > 1),
+    rosterUnlocked: true,
     pendingUpgradeChoices: Array.isArray(parsed.pendingUpgradeChoices) ? parsed.pendingUpgradeChoices : [],
     pendingProblem: normalizePendingProblem(parsed.pendingProblem),
     problemHistory: Array.isArray(parsed.problemHistory) ? parsed.problemHistory.slice(-12) : [],
@@ -1820,7 +1828,7 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     trainingQuality: clamp(savedNumber(parsed.trainingQuality, DEFAULT_FRANCHISE.trainingQuality), 0, 100),
     scoutingQuality: clamp(savedNumber(parsed.scoutingQuality, DEFAULT_FRANCHISE.scoutingQuality), 0, 100),
     frontOfficeCredits: Math.max(0, savedNumber(parsed.frontOfficeCredits, DEFAULT_FRANCHISE.frontOfficeCredits)),
-    featureLog: Array.isArray(parsed.featureLog) ? parsed.featureLog.slice(-8) : ["Season 1: Featured Player"],
+    featureLog: Array.isArray(parsed.featureLog) ? parsed.featureLog.slice(-8) : ["Season 1: Five-Player Roster"],
     offseason: normalizeOffseason(parsed.offseason, parsed),
     creatorStaticKicking: Boolean(parsed.creatorStaticKicking),
     creatorAutoScore: Boolean(parsed.creatorAutoScore),
@@ -2026,7 +2034,7 @@ function eraseActiveSave() {
   updateHud();
 }
 
-function openCreatorTools() {
+function openCreatorTools(requestedRunnerId = null) {
   if (gameLibraryOpen) {
     return;
   }
@@ -2036,6 +2044,9 @@ function openCreatorTools() {
     return;
   }
 
+  creatorEditingRunnerId = typeof requestedRunnerId === "string" && franchise.roster.some((runner) => runner.id === requestedRunnerId)
+    ? requestedRunnerId
+    : currentRunner().id;
   creatorReturnGameState = gameState;
   if (gameState === "playing") {
     gameState = "creatorTools";
@@ -2052,10 +2063,10 @@ function openCreatorTools() {
 }
 
 function openCreatorToolsFromRunnerPower(runnerId) {
-  if (!creatorAccessUsesRunnerPower() || runnerId !== currentRunner().id) {
+  if (!creatorAccessUsesRunnerPower() || !franchise.roster.some((runner) => runner.id === runnerId)) {
     return false;
   }
-  openCreatorTools();
+  openCreatorTools(runnerId);
   return !creatorModalEl.hidden;
 }
 
@@ -2065,10 +2076,36 @@ function closeCreatorTools() {
     gameState = creatorReturnGameState || "menu";
   }
   creatorReturnGameState = null;
+  creatorEditingRunnerId = null;
 }
 
 function updateCreatorAttemptsText() {
   creatorAttemptsTextEl.textContent = `${creatorAttemptsRemaining} ${creatorAttemptsRemaining === 1 ? "Try" : "Tries"}`;
+}
+
+function creatorEditingRunner() {
+  return franchise.roster.find((runner) => runner.id === creatorEditingRunnerId) || currentRunner();
+}
+
+function loadCreatorRunnerFields(runnerId) {
+  const runner = franchise.roster.find((candidate) => candidate.id === runnerId) || currentRunner();
+  creatorEditingRunnerId = runner.id;
+  creatorRunnerSelectEl.value = runner.id;
+  creatorRunnerNameInputEl.value = runner.name;
+  creatorSpeedInputEl.value = runner.speed;
+  creatorPowerInputEl.value = runner.power;
+  creatorCutInputEl.value = runner.cut;
+}
+
+function populateCreatorRunnerOptions() {
+  creatorRunnerSelectEl.innerHTML = "";
+  franchise.roster.forEach((runner, index) => {
+    const option = document.createElement("option");
+    option.value = runner.id;
+    option.textContent = `${index + 1}. ${runner.name}${runner.id === franchise.activePlayerId ? " (Active)" : ""}`;
+    creatorRunnerSelectEl.appendChild(option);
+  });
+  loadCreatorRunnerFields(creatorEditingRunnerId);
 }
 
 function unlockCreatorTools(event) {
@@ -2077,10 +2114,7 @@ function unlockCreatorTools(event) {
   const password = creatorPasswordInputEl.value;
 
   if (username === CREATOR_USERNAME && password === CREATOR_PASSWORD) {
-    const runner = currentRunner();
-    creatorSpeedInputEl.value = runner.speed;
-    creatorPowerInputEl.value = runner.power;
-    creatorCutInputEl.value = runner.cut;
+    populateCreatorRunnerOptions();
     creatorSeasonInputEl.value = franchise.year;
     creatorGameInputEl.value = currentSeasonWeek();
     creatorStaticKickingInputEl.checked = franchise.creatorStaticKicking;
@@ -2108,7 +2142,7 @@ function unlockCreatorTools(event) {
 
 function saveCreatorLevels(event) {
   event.preventDefault();
-  const runner = currentRunner();
+  const runner = creatorEditingRunner();
   const requestedSeason = Number.parseInt(creatorSeasonInputEl.value, 10);
   const requestedGame = Number.parseInt(creatorGameInputEl.value, 10);
   const targetSeason = clamp(Number.isFinite(requestedSeason) ? requestedSeason : franchise.year, 1, 999);
@@ -2116,6 +2150,8 @@ function saveCreatorLevels(event) {
   const targetCheckpoint = (targetSeason - 1) * GAMES_PER_SEASON + targetGame - 1;
   const progressChanged = targetSeason !== franchise.year || targetCheckpoint !== seasonCheckpointLevel;
 
+  const editedName = creatorRunnerNameInputEl.value.trim().replace(/[<>]/g, "").slice(0, 24);
+  runner.name = editedName || runner.name;
   runner.speed = clamp(Math.round(Number(creatorSpeedInputEl.value) || runner.speed), 1, 100);
   runner.power = clamp(
     Math.round(Number(creatorPowerInputEl.value) || runner.power),
@@ -2237,6 +2273,57 @@ function createFranchisePlayer(forcedName = null) {
     morale: 55,
     appearance: { ...DEFAULT_PLAYER_APPEARANCE },
   };
+}
+
+function createStartingRoster(forcedName = null, starterAppearance = null) {
+  const firstName = String(forcedName || "").trim() || PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
+  const availableNames = PLAYER_NAME_POOL.filter((name) => name.toLowerCase() !== firstName.toLowerCase());
+  const offset = availableNames.length > 0 ? textSeed(firstName) % availableNames.length : 0;
+  const orderedNames = availableNames.map((_, index) => availableNames[(index + offset) % availableNames.length]);
+  const names = [firstName, ...orderedNames].slice(0, STARTING_ROSTER_SIZE);
+
+  while (names.length < STARTING_ROSTER_SIZE) {
+    names.push(`Reserve ${names.length + 1}`);
+  }
+
+  return names.map((name, index) => ({
+    ...createFranchisePlayer(name),
+    id: index === 0 ? "starter" : `runner-${index + 1}`,
+    appearance: normalizePlayerAppearance(
+      index === 0 && starterAppearance
+        ? starterAppearance
+        : STARTING_PLAYER_APPEARANCES[index]
+    ),
+  }));
+}
+
+function ensureStartingRoster(savedRoster) {
+  const roster = Array.isArray(savedRoster) ? savedRoster.slice(0, MAX_ROSTER_SIZE) : [];
+  if (roster.length === 0) {
+    return createStartingRoster();
+  }
+
+  const usedNames = new Set(roster.map((runner) => String(runner.name || "").trim().toLowerCase()));
+  const usedIds = new Set(roster.map((runner) => runner.id));
+  const offset = textSeed(roster[0].name || "starter") % PLAYER_NAME_POOL.length;
+  const candidates = PLAYER_NAME_POOL.map((_, index) => PLAYER_NAME_POOL[(index + offset) % PLAYER_NAME_POOL.length]);
+
+  while (roster.length < STARTING_ROSTER_SIZE) {
+    const index = roster.length;
+    const name = candidates.find((candidate) => !usedNames.has(candidate.toLowerCase())) || `Reserve ${index + 1}`;
+    let idNumber = index + 1;
+    while (usedIds.has(`runner-${idNumber}`)) idNumber += 1;
+    const runner = {
+      ...createFranchisePlayer(name),
+      id: `runner-${idNumber}`,
+      appearance: normalizePlayerAppearance(STARTING_PLAYER_APPEARANCES[index]),
+    };
+    roster.push(runner);
+    usedNames.add(name.toLowerCase());
+    usedIds.add(runner.id);
+  }
+
+  return roster;
 }
 
 function normalizePlayerAppearance(rawAppearance) {
@@ -2380,6 +2467,9 @@ function injureCurrentRunner(gamesOut = 2) {
 }
 
 function maybeTriggerRunnerInjury(reason) {
+  if (franchise.year < 2) {
+    return false;
+  }
   if (Math.random() >= RUNNER_INJURY_CHANCE) {
     return false;
   }
@@ -2999,7 +3089,7 @@ function finishOffseason() {
   franchise.losses = 0;
   franchise.lastFanChange = 0;
   franchise.coach.seasons += 1;
-  franchise.rosterUnlocked = nextSeason >= 2;
+  franchise.rosterUnlocked = true;
   franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
   franchise.morale = clamp(franchise.morale + (franchise.coach.rating >= 70 ? 3 : 1), 0, 100);
   adjustRosterMorale(franchise.coach.rating >= 70 ? 2 : 1);
@@ -3010,7 +3100,7 @@ function finishOffseason() {
   }
   franchise.offseason = null;
   franchise.lastResult = introduction
-    ? `Offseason complete. Season ${nextSeason} unlocks your runner roster and injuries. Choose a healthy starter before each game.`
+    ? `Offseason complete. Season ${nextSeason} unlocks injuries. Your five-player roster is ready for the next game.`
     : `Offseason complete. Season ${nextSeason} begins with the same roster and injury systems.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
@@ -4012,7 +4102,7 @@ function tutorialSlides() {
     {
       badge: "Power",
       title: `Build Your ${athlete[0].toUpperCase()}${athlete.slice(1)}`,
-      text: `Your featured ${athlete} has Speed, Power, and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut"} ratings.`,
+      text: `Each ${athlete} on your five-player roster has Speed, Power, and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut"} ratings.`,
       items: [
         `Speed and ${basketball ? "Handles" : hockey || waterPolo || surfing || skiing || lacrosse || dodgeball ? "Agility" : baseball ? "Baserunning" : "Cut"} upgrades can add bonus movement burst to your ${athlete}.`,
         dodgeball
@@ -4080,7 +4170,7 @@ function tutorialSlides() {
           : "The schedule shows the previous two, current, and next two matchups.",
         `Progress is saved to the active ${soccer || lacrosse ? "national-team" : surfing || skiing ? "tour" : "franchise"} slot after every game.`,
         "Restart Season resets that season's record and progress but keeps player upgrades.",
-        "After Season 1, the runner roster and injuries unlock. No additional management systems are added in later seasons.",
+        "Your five-player roster is available immediately, and you can choose the active runner before every game. Injuries unlock after Season 1.",
         "Team Morale measures the whole franchise. Every runner also has individual morale affected by results, staff, training, and injuries.",
         "After Weeks 3, 6, and 9, resolve a franchise problem that can change Team Funds, Team Morale, or Player Morale.",
       ],
@@ -7528,12 +7618,10 @@ function hideOverlay() {
 function renderRunnerCards() {
   const runner = currentRunner();
   const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
-  const roster = franchise.rosterUnlocked ? franchise.roster : [runner];
+  const roster = franchise.roster;
   const healthyCount = roster.filter((candidate) => candidate.injuredGames <= 0).length;
-  runnerSelectTitleEl.textContent = franchise.rosterUnlocked ? "Runner Roster" : "Featured Player";
-  runnerSelectionStatusEl.textContent = franchise.rosterUnlocked
-    ? `${healthyCount} Healthy · ${roster.length} Total`
-    : "Roster Unlocks After Season 1";
+  runnerSelectTitleEl.textContent = "Runner Roster";
+  runnerSelectionStatusEl.textContent = `${healthyCount} Healthy · ${roster.length} Total · Select Before Game`;
   runnerGridEl.innerHTML = "";
   roster.forEach((candidate) => {
     const selected = candidate.id === runner.id;
@@ -7541,7 +7629,7 @@ function renderRunnerCards() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = `runner-card${selected ? " selected" : ""}${injured ? " injured" : ""}`;
-    card.disabled = injured || pendingUpgrade || (!franchise.rosterUnlocked && !(selected && creatorAccessUsesRunnerPower()));
+    card.disabled = injured || pendingUpgrade;
     card.setAttribute("aria-pressed", String(selected));
     card.innerHTML = `
       <div class="runner-top">
@@ -7550,7 +7638,7 @@ function renderRunnerCards() {
       </div>
       <div class="runner-meta">
         <span>SPD ${candidate.speed}</span>
-        <span class="runner-power-stat${selected ? " active-runner-power" : ""}"${selected && creatorAccessUsesRunnerPower() ? ' title="Open Creator Tools"' : ""}>PWR ${candidate.power}</span>
+        <span class="runner-power-stat${creatorAccessUsesRunnerPower() ? " active-runner-power" : ""}"${creatorAccessUsesRunnerPower() ? ' title="Open Creator Tools for this player"' : ""}>PWR ${candidate.power}</span>
         <span>${thirdRating} ${candidate.cut}</span>
       </div>
       <span class="runner-morale ${candidate.morale >= 60 ? "high" : candidate.morale < 40 ? "low" : "steady"}">Morale ${candidate.morale} · ${playerMoraleMood(candidate.morale)}</span>
@@ -7560,9 +7648,6 @@ function renderRunnerCards() {
       const powerTarget = event.target?.closest?.(".runner-power-stat");
       if (powerTarget && openCreatorToolsFromRunnerPower(candidate.id)) {
         event.preventDefault();
-        return;
-      }
-      if (!franchise.rosterUnlocked) {
         return;
       }
       selectRunner(candidate.id);
@@ -7703,6 +7788,7 @@ arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 ].forEach((input) => input.addEventListener("input", updateCharacterPreview));
 creatorLoginFormEl.addEventListener("submit", unlockCreatorTools);
 creatorLevelsFormEl.addEventListener("submit", saveCreatorLevels);
+creatorRunnerSelectEl.addEventListener("change", () => loadCreatorRunnerFields(creatorRunnerSelectEl.value));
 creatorStaticKickingInputEl.addEventListener("input", updateCreatorSliderModeUi);
 creatorAutoScoreInputEl.addEventListener("input", updateCreatorAutoScoreUi);
 creatorCancelButtonEl.addEventListener("click", closeCreatorTools);
