@@ -2265,6 +2265,11 @@ async function submitCloudAccount(event) {
       method: "POST",
       body: JSON.stringify({ email, username, passcode }),
     });
+    if (result.requiresVerification) {
+      accountPasscodeInputEl.value = "";
+      accountMessageEl.textContent = `Confirmation sent to ${result.email}. Open the link to finish signing up.`;
+      return;
+    }
     cloudAccount = { email: result.email, username: result.username };
     cloudSyncState = "syncing";
     accountPasscodeInputEl.value = "";
@@ -2301,6 +2306,15 @@ async function signOutCloudAccount() {
 async function initializeCloudAccount() {
   setAccountMode("signin");
   renderCloudAccount();
+  let emailConfirmationStatus = "";
+  if (typeof window !== "undefined" && window.location?.href) {
+    const currentUrl = new URL(window.location.href);
+    emailConfirmationStatus = currentUrl.searchParams.get("email") || "";
+    if (emailConfirmationStatus) {
+      currentUrl.searchParams.delete("email");
+      window.history?.replaceState?.({}, "", currentUrl.toString());
+    }
+  }
   if (typeof fetch !== "function") return;
   try {
     const session = await accountApi("/api/auth/session");
@@ -2309,6 +2323,16 @@ async function initializeCloudAccount() {
       cloudSyncState = "syncing";
       renderCloudAccount();
       await syncCloudSaves();
+      if (emailConfirmationStatus === "confirmed") {
+        accountSignedInMessageEl.textContent = "Email confirmed. All game libraries are synced.";
+        accountModalEl.hidden = false;
+      }
+    } else if (emailConfirmationStatus) {
+      accountMessageEl.textContent = emailConfirmationStatus === "expired"
+        ? "That confirmation link expired. Create the account again to receive a new link."
+        : "That confirmation link is not valid.";
+      accountMessageEl.classList.add("error");
+      accountModalEl.hidden = false;
     }
   } catch {
     setCloudSyncStatus("Offline - local saves", "error");

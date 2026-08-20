@@ -115,6 +115,14 @@ const accountWranglerConfig = fs.readFileSync(
   new URL("../wrangler.account.jsonc", import.meta.url),
   "utf8"
 );
+const emailTestAccountConfig = fs.readFileSync(
+  new URL("../wrangler.account-email-test.jsonc", import.meta.url),
+  "utf8"
+);
+const emailTestSiteConfig = fs.readFileSync(
+  new URL("../wrangler.email-test.jsonc", import.meta.url),
+  "utf8"
+);
 const workerSource = fs.readFileSync(new URL("../worker.js", import.meta.url), "utf8");
 const siteWorkerSource = fs.readFileSync(new URL("../site-worker.js", import.meta.url), "utf8");
 const holidayWorkflow = fs.readFileSync(
@@ -137,10 +145,15 @@ assert.match(wranglerConfig, /"service"\s*:\s*"retro-run-account-api"/);
 assert.match(accountWranglerConfig, /"name"\s*:\s*"retro-run-account-api"/);
 assert.match(accountWranglerConfig, /"name"\s*:\s*"ACCOUNT_STORE"/);
 assert.match(accountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
+assert.match(emailTestAccountConfig, /"name"\s*:\s*"retro-run-account-email-test"/);
+assert.match(emailTestAccountConfig, /"ALLOW_DUPLICATE_EMAILS"\s*:\s*"true"/);
+assert.match(emailTestAccountConfig, /"EMAIL_FROM"\s*:\s*"retrorun@schwartzdev\.com"/);
+assert.match(emailTestAccountConfig, /"send_email"\s*:\s*\[/);
+assert.match(emailTestSiteConfig, /"service"\s*:\s*"retro-run-account-email-test"/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-cloud-locker/);
+assert.match(html, /game\.js\?v=20260820-email-checkpoint/);
 assert.match(html, /id="accountButton"/);
 assert.match(html, /id="accountModal"/);
 assert.match(html, /id="accountEmailField" hidden/);
@@ -156,7 +169,11 @@ assert.match(source, /accountEmailFieldEl\.hidden = !creating/);
 assert.match(source, /accountSyncButtonEl\.hidden = cloudSyncState === "saved"/);
 assert.match(source, /setAccountMode\("signin"\);\s+renderCloudAccount\(\);/);
 assert.match(workerSource, /export class AccountStore/);
-assert.match(workerSource, /email TEXT NOT NULL UNIQUE/);
+assert.match(workerSource, /ALLOW_DUPLICATE_EMAILS/);
+assert.match(workerSource, /confirmationEmail/);
+assert.match(workerSource, /verification_token_hash/);
+assert.match(workerSource, /Confirm your email before signing in/);
+assert.match(workerSource, /\/api\/auth\/confirm/);
 assert.match(workerSource, /PBKDF2/);
 assert.match(workerSource, /SameSite=Lax/);
 assert.match(workerSource, /MAX_AUTH_ATTEMPTS/);
@@ -269,7 +286,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-cloud-locker/);
+assert.match(html, /20260820-email-checkpoint/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);

@@ -5,6 +5,8 @@ const MAX_BODY_BYTES = 1_500_000;
 const MAX_AUTH_ATTEMPTS = 12;
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const SAVE_SLOTS_PER_GAME = 5;
+const EMAIL_CONFIRMATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_EMAIL_FROM = "retrorun@schwartzdev.com";
 
 export const SAVE_KEYS = [
   "gridiron-dash-franchise-slots",
@@ -198,17 +200,67 @@ function randomToken() {
     .replaceAll("=", "");
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+export function duplicateEmailsAllowed(value) {
+  return String(value || "").toLowerCase() === "true";
+}
+
+export function confirmationEmail({ email, username, confirmationUrl, from = DEFAULT_EMAIL_FROM }) {
+  const safeUsername = escapeHtml(username);
+  const safeConfirmationUrl = escapeHtml(confirmationUrl);
+  return {
+    to: email,
+    from: { email: from, name: "Retro Run" },
+    subject: "Confirm your Retro Run account",
+    text: [
+      `Hi ${username},`,
+      "",
+      "Confirm your Retro Run account by opening this link:",
+      confirmationUrl,
+      "",
+      "This link expires in 24 hours. If you did not create this account, you can ignore this email.",
+    ].join("\n"),
+    html: `
+      <div style="background:#0c1d2d;color:#fff7d6;font-family:Arial,sans-serif;padding:24px">
+        <div style="max-width:520px;margin:auto;border:4px solid #f2c94c;background:#173652;padding:24px">
+          <p style="color:#f2c94c;font-weight:800;letter-spacing:1px;margin:0 0 8px">RETRO RUN</p>
+          <h1 style="font-size:24px;margin:0 0 16px">Confirm your account</h1>
+          <p>Hi ${safeUsername},</p>
+          <p>Confirm your email to unlock Cloud Locker saves on all your devices.</p>
+          <p style="margin:24px 0">
+            <a href="${safeConfirmationUrl}" style="display:inline-block;background:#f2c94c;color:#14253a;font-weight:800;padding:12px 18px;text-decoration:none">CONFIRM EMAIL</a>
+          </p>
+          <p style="font-size:13px;color:#dce4d2">This single-use link expires in 24 hours. If you did not create this account, you can ignore this email.</p>
+        </div>
+      </div>`,
+  };
+}
+
 export class AccountStore {
-  constructor(ctx) {
+  constructor(ctx, env) {
     this.sql = ctx.storage.sql;
+    this.env = env;
+    this.allowDuplicateEmails = duplicateEmailsAllowed(env.ALLOW_DUPLICATE_EMAILS);
+    const emailConstraint = this.allowDuplicateEmails ? "" : "UNIQUE";
     this.sql.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        email TEXT NOT NULL ${emailConstraint} COLLATE NOCASE,
         username TEXT NOT NULL UNIQUE COLLATE NOCASE,
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        created_at INTEGER NOT NULL,
+        verified_at INTEGER,
+        verification_token_hash TEXT,
+        verification_expires_at INTEGER
       );
       CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY,
@@ -229,6 +281,23 @@ export class AccountStore {
         reset_at INTEGER NOT NULL
       );
     `);
+    const userColumns = new Set(
+      this.sql.exec("PRAGMA table_info(users)").toArray().map((column) => column.name)
+    );
+    if (!userColumns.has("verified_at")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN verified_at INTEGER");
+      this.sql.exec("UPDATE users SET verified_at = created_at WHERE verified_at IS NULL");
+    }
+    if (!userColumns.has("verification_token_hash")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN verification_token_hash TEXT");
+    }
+    if (!userColumns.has("verification_expires_at")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN verification_expires_at INTEGER");
+    }
+    this.sql.exec("CREATE INDEX IF NOT EXISTS users_email ON users(email)");
+    this.sql.exec(
+      "CREATE INDEX IF NOT EXISTS users_verification_token ON users(verification_token_hash)"
+    );
   }
 
   one(query, ...bindings) {
@@ -304,6 +373,20 @@ export class AccountStore {
     return { id: user.id, email: user.email, username: user.username, tokenHash };
   }
 
+  async sendConfirmationEmail(request, email, username, token) {
+    if (!this.env.EMAIL || typeof this.env.EMAIL.send !== "function") {
+      throw new Error("Email confirmation is not configured.");
+    }
+    const confirmationUrl = new URL("/api/auth/confirm", request.url);
+    confirmationUrl.searchParams.set("token", token);
+    await this.env.EMAIL.send(confirmationEmail({
+      email,
+      username,
+      confirmationUrl: confirmationUrl.toString(),
+      from: this.env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
+    }));
+  }
+
   async handleSignup(request) {
     const rate = await this.consumeAuthAttempt(request, "signup");
     if (!rate.allowed) {
@@ -320,7 +403,7 @@ export class AccountStore {
     if (emailMessage || usernameMessage || passcodeMessage) {
       return errorResponse(emailMessage || usernameMessage || passcodeMessage);
     }
-    if (this.one("SELECT id FROM users WHERE email = ?", email)) {
+    if (!this.allowDuplicateEmails && this.one("SELECT id FROM users WHERE email = ?", email)) {
       return errorResponse("That email already has an account.", 409);
     }
     if (this.one("SELECT id FROM users WHERE username = ?", username)) {
@@ -328,23 +411,70 @@ export class AccountStore {
     }
     const credentials = await hashPassword(body.passcode);
     const userId = crypto.randomUUID();
+    const verificationToken = randomToken();
+    const verificationTokenHash = await sha256(verificationToken);
+    const now = Date.now();
     this.sql.exec(
-      `INSERT INTO users (id, email, username, password_salt, password_hash, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (
+         id, email, username, password_salt, password_hash, created_at,
+         verified_at, verification_token_hash, verification_expires_at
+       ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
       userId,
       email,
       username,
       credentials.salt,
       credentials.hash,
-      Date.now()
+      now,
+      verificationTokenHash,
+      now + EMAIL_CONFIRMATION_LIFETIME_MS
     );
-    const token = await this.createSession(userId);
+    try {
+      await this.sendConfirmationEmail(request, email, username, verificationToken);
+    } catch (error) {
+      this.sql.exec("DELETE FROM users WHERE id = ?", userId);
+      console.error("Retro Run confirmation email failed", error);
+      return errorResponse("We could not send the confirmation email. Try again soon.", 503);
+    }
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
-      { authenticated: true, email, username },
-      201,
-      { "Set-Cookie": sessionCookie(token) }
+      { authenticated: false, requiresVerification: true, email, username },
+      201
     );
+  }
+
+  async handleConfirmation(request) {
+    const token = new URL(request.url).searchParams.get("token") || "";
+    const redirect = new URL("/", request.url);
+    if (token.length < 32) {
+      redirect.searchParams.set("email", "invalid");
+      return Response.redirect(redirect.toString(), 302);
+    }
+    const tokenHash = await sha256(token);
+    const user = this.one(
+      `SELECT id, email, username, verification_expires_at FROM users
+       WHERE verification_token_hash = ?`,
+      tokenHash
+    );
+    if (!user || user.verification_expires_at <= Date.now()) {
+      redirect.searchParams.set("email", "expired");
+      return Response.redirect(redirect.toString(), 302);
+    }
+    this.sql.exec(
+      `UPDATE users SET verified_at = ?, verification_token_hash = NULL,
+       verification_expires_at = NULL WHERE id = ?`,
+      Date.now(),
+      user.id
+    );
+    const sessionToken = await this.createSession(user.id);
+    redirect.searchParams.set("email", "confirmed");
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: redirect.toString(),
+        "Set-Cookie": sessionCookie(sessionToken),
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
   async handleSignin(request) {
@@ -357,7 +487,7 @@ export class AccountStore {
     const body = await readJson(request);
     const username = normalizeUsername(body.username);
     const user = this.one(
-      `SELECT id, email, username, password_salt, password_hash FROM users
+      `SELECT id, email, username, password_salt, password_hash, verified_at FROM users
        WHERE username = ?`,
       username
     );
@@ -365,6 +495,7 @@ export class AccountStore {
       ? await verifyPassword(body.passcode, user.password_salt, user.password_hash)
       : false;
     if (!valid) return errorResponse("Incorrect username or passcode.", 401);
+    if (!user.verified_at) return errorResponse("Confirm your email before signing in.", 403);
     const token = await this.createSession(user.id);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
@@ -425,6 +556,9 @@ export class AccountStore {
       if (url.pathname === "/api/auth/signup" && request.method === "POST") {
         return this.handleSignup(request);
       }
+      if (url.pathname === "/api/auth/confirm" && request.method === "GET") {
+        return this.handleConfirmation(request);
+      }
       if (url.pathname === "/api/auth/signin" && request.method === "POST") {
         return this.handleSignin(request);
       }
@@ -452,7 +586,12 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/api/health") {
-      return jsonResponse({ ok: true, service: "retro-run-cloud-saves" });
+      return jsonResponse({
+        ok: true,
+        service: "retro-run-cloud-saves",
+        emailConfirmation: Boolean(env.EMAIL),
+        duplicateEmailTest: duplicateEmailsAllowed(env.ALLOW_DUPLICATE_EMAILS),
+      });
     }
     if (url.pathname.startsWith("/api/")) {
       if (!env.ACCOUNT_STORE) return errorResponse("Account service is not configured.", 503);
