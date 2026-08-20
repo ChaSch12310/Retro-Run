@@ -105,6 +105,28 @@ const upgradePanelEl = document.getElementById("upgradePanel");
 const upgradeActionsEl = document.getElementById("upgradeActions");
 const creatorTriggerEl = document.getElementById("creatorTrigger");
 const arcadeHomeButtonEl = document.getElementById("arcadeHomeButton");
+const accountButtonEl = document.getElementById("accountButton");
+const cloudSyncStatusEl = document.getElementById("cloudSyncStatus");
+const accountModalEl = document.getElementById("accountModal");
+const accountTitleEl = document.getElementById("accountTitle");
+const accountCloseButtonEl = document.getElementById("accountCloseButton");
+const accountSignedOutEl = document.getElementById("accountSignedOut");
+const accountSignedInEl = document.getElementById("accountSignedIn");
+const accountSigninModeButtonEl = document.getElementById("accountSigninModeButton");
+const accountSignupModeButtonEl = document.getElementById("accountSignupModeButton");
+const accountFormEl = document.getElementById("accountForm");
+const accountEmailFieldEl = document.getElementById("accountEmailField");
+const accountEmailInputEl = document.getElementById("accountEmailInput");
+const accountUsernameInputEl = document.getElementById("accountUsernameInput");
+const accountPasscodeInputEl = document.getElementById("accountPasscodeInput");
+const accountHelpTextEl = document.getElementById("accountHelpText");
+const accountMessageEl = document.getElementById("accountMessage");
+const accountSubmitButtonEl = document.getElementById("accountSubmitButton");
+const accountUsernameValueEl = document.getElementById("accountUsernameValue");
+const accountEmailValueEl = document.getElementById("accountEmailValue");
+const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
+const accountSignoutButtonEl = document.getElementById("accountSignoutButton");
+const accountSyncButtonEl = document.getElementById("accountSyncButton");
 const creatorModalEl = document.getElementById("creatorModal");
 const creatorLoginFormEl = document.getElementById("creatorLoginForm");
 const creatorLevelsFormEl = document.getElementById("creatorLevelsForm");
@@ -1012,6 +1034,8 @@ const legacyStorageKey = "gridiron-dash-best";
 const legacySeasonStorageKey = "gridiron-dash-season-progress";
 const legacyFranchiseStorageKey = "gridiron-dash-franchise";
 const MAX_FRANCHISE_SLOTS = 5;
+const CLOUD_SAVE_META_KEY = "retro-run-cloud-save-meta-v1";
+const CLOUD_SYNC_DELAY_MS = 1200;
 const CREATOR_USERNAME = "creator";
 const CREATOR_PASSWORD_HASH = "bc6bfd848ebd7819c9a82bf124d65e7f739d08e002601e23bb906aacd40a3d81";
 const CREATOR_MAX_ATTEMPTS = 3;
@@ -1235,6 +1259,12 @@ let creatorAttemptsRemaining = CREATOR_MAX_ATTEMPTS;
 let creatorReturnGameState = null;
 let creatorEditingRunnerId = null;
 let gameLibraryOpen = true;
+let cloudAccount = null;
+let accountMode = "signin";
+let cloudSyncTimer = null;
+let cloudSyncPromise = null;
+let cloudSyncQueued = false;
+let cloudSyncState = "local";
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
 let fieldGoalPhaseStarted = 0;
@@ -1957,6 +1987,334 @@ function emptySlots() {
   return Array.from({ length: MAX_FRANCHISE_SLOTS }, () => null);
 }
 
+function cloudSaveKeys() {
+  return [...new Set(Object.values(GAME_MODES).map((mode) => mode.slotsKey))];
+}
+
+function readCloudSaveMeta() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CLOUD_SAVE_META_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCloudSaveMeta(meta) {
+  localStorage.setItem(CLOUD_SAVE_META_KEY, JSON.stringify(meta));
+}
+
+function markCloudSlotChanged(slotsKey, slotIndex, changedAt = Date.now()) {
+  if (!slotsKey || !Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= MAX_FRANCHISE_SLOTS) {
+    return;
+  }
+  const meta = readCloudSaveMeta();
+  const timestamps = Array.isArray(meta[slotsKey])
+    ? meta[slotsKey].slice(0, MAX_FRANCHISE_SLOTS)
+    : [];
+  while (timestamps.length < MAX_FRANCHISE_SLOTS) timestamps.push(0);
+  timestamps[slotIndex] = changedAt;
+  meta[slotsKey] = timestamps;
+  writeCloudSaveMeta(meta);
+}
+
+function parsedLocalSlots(slotsKey) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(slotsKey) || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_FRANCHISE_SLOTS) : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeCloudSlotRecord(record) {
+  const data = record?.data && typeof record.data === "object" && !Array.isArray(record.data)
+    ? record.data
+    : null;
+  const timestamp = Number(record?.updatedAt);
+  return {
+    data,
+    updatedAt: Number.isSafeInteger(timestamp) && timestamp >= 0 ? timestamp : 0,
+  };
+}
+
+function normalizeClientCloudBundle(bundle) {
+  const games = {};
+  cloudSaveKeys().forEach((slotsKey) => {
+    const records = Array.isArray(bundle?.games?.[slotsKey]) ? bundle.games[slotsKey] : [];
+    games[slotsKey] = Array.from(
+      { length: MAX_FRANCHISE_SLOTS },
+      (_, index) => normalizeCloudSlotRecord(records[index])
+    );
+  });
+  return { version: 1, games };
+}
+
+function collectLocalCloudBundle() {
+  const meta = readCloudSaveMeta();
+  const games = {};
+  cloudSaveKeys().forEach((slotsKey) => {
+    const slots = parsedLocalSlots(slotsKey);
+    const timestamps = Array.isArray(meta[slotsKey]) ? meta[slotsKey] : [];
+    games[slotsKey] = Array.from({ length: MAX_FRANCHISE_SLOTS }, (_, index) => {
+      const data = slots[index] && typeof slots[index] === "object" ? slots[index] : null;
+      const storedTime = Number(timestamps[index] || 0);
+      const saveTime = Number(data?.savedAt || data?.franchise?.savedAt || 0);
+      return {
+        data,
+        updatedAt: Math.max(
+          Number.isSafeInteger(storedTime) ? storedTime : 0,
+          Number.isSafeInteger(saveTime) ? saveTime : 0,
+          data ? 1 : 0
+        ),
+      };
+    });
+  });
+  return { version: 1, games };
+}
+
+function mergeClientCloudBundles(firstBundle, secondBundle) {
+  const first = normalizeClientCloudBundle(firstBundle);
+  const second = normalizeClientCloudBundle(secondBundle);
+  const games = {};
+  cloudSaveKeys().forEach((slotsKey) => {
+    games[slotsKey] = first.games[slotsKey].map((firstSlot, index) => {
+      const secondSlot = second.games[slotsKey][index];
+      if (secondSlot.updatedAt > firstSlot.updatedAt) return secondSlot;
+      if (firstSlot.updatedAt > secondSlot.updatedAt) return firstSlot;
+      return secondSlot.data !== null ? secondSlot : firstSlot;
+    });
+  });
+  return { version: 1, games };
+}
+
+function applyCloudBundle(bundle) {
+  const normalized = normalizeClientCloudBundle(bundle);
+  const meta = readCloudSaveMeta();
+  cloudSaveKeys().forEach((slotsKey) => {
+    const records = normalized.games[slotsKey];
+    localStorage.setItem(slotsKey, JSON.stringify(records.map((record) => record.data)));
+    meta[slotsKey] = records.map((record) => record.updatedAt);
+  });
+  writeCloudSaveMeta(meta);
+}
+
+function setCloudSyncStatus(message, state = "") {
+  cloudSyncStatusEl.textContent = message;
+  if (state) cloudSyncStatusEl.dataset.state = state;
+  else delete cloudSyncStatusEl.dataset.state;
+}
+
+function renderCloudAccount() {
+  const signedIn = Boolean(cloudAccount);
+  accountButtonEl.textContent = signedIn ? `@${cloudAccount.username}` : "Sign In";
+  accountSignedOutEl.hidden = signedIn;
+  accountSignedInEl.hidden = !signedIn;
+  if (signedIn) {
+    accountTitleEl.textContent = "Cloud Locker";
+    accountUsernameValueEl.textContent = cloudAccount.username;
+    accountEmailValueEl.textContent = cloudAccount.email;
+    accountSyncButtonEl.hidden = cloudSyncState === "saved" || cloudSyncState === "syncing";
+    if (cloudSyncState === "saved") setCloudSyncStatus("Cloud saved", "saved");
+    else if (cloudSyncState === "syncing") setCloudSyncStatus("Syncing...");
+    else if (cloudSyncState === "error") setCloudSyncStatus("Sync paused", "error");
+    else setCloudSyncStatus("Cloud saves ready");
+  } else {
+    accountTitleEl.textContent = accountMode === "signup" ? "Create Account" : "Sign In";
+    accountSyncButtonEl.hidden = false;
+    setCloudSyncStatus("Local saves only");
+  }
+}
+
+function setAccountMode(mode) {
+  accountMode = mode === "signup" ? "signup" : "signin";
+  const creating = accountMode === "signup";
+  accountSigninModeButtonEl.classList.toggle("selected", !creating);
+  accountSignupModeButtonEl.classList.toggle("selected", creating);
+  accountSigninModeButtonEl.setAttribute("aria-pressed", String(!creating));
+  accountSignupModeButtonEl.setAttribute("aria-pressed", String(creating));
+  accountTitleEl.textContent = creating ? "Create Account" : "Sign In";
+  accountSubmitButtonEl.textContent = creating ? "Create Account" : "Sign In";
+  accountEmailFieldEl.hidden = !creating;
+  accountEmailInputEl.required = creating;
+  accountPasscodeInputEl.autocomplete = creating ? "new-password" : "current-password";
+  accountHelpTextEl.textContent = creating
+    ? "Create one account to carry all ten game libraries between devices. Passcode recovery is not available yet."
+    : "Sign in to use the same franchise saves on your other devices.";
+  accountMessageEl.textContent = "";
+  accountMessageEl.classList.remove("error");
+}
+
+function openAccountModal() {
+  accountModalEl.hidden = false;
+  renderCloudAccount();
+  if (!cloudAccount) {
+    (accountMode === "signup" ? accountEmailInputEl : accountUsernameInputEl).focus();
+  }
+  else (accountSyncButtonEl.hidden ? accountSignoutButtonEl : accountSyncButtonEl).focus();
+}
+
+function closeAccountModal() {
+  accountModalEl.hidden = true;
+  accountPasscodeInputEl.value = "";
+  accountButtonEl.focus();
+}
+
+async function accountApi(path, options = {}) {
+  const response = await fetch(path, {
+    credentials: "same-origin",
+    headers: options.body ? { "Content-Type": "application/json" } : undefined,
+    ...options,
+  });
+  let data = {};
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+  if (!response.ok) {
+    const error = new Error(data.error || "Cloud Locker is temporarily unavailable.");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+function refreshCurrentGameAfterCloudSync() {
+  if (!activeGameId) return;
+  franchiseSlots = loadFranchiseSlots();
+  if (gameState === "playing" || fieldGoalPhase !== "idle") return;
+  if (activeSlotIndex !== null && franchiseSlots[activeSlotIndex]) {
+    const slot = franchiseSlots[activeSlotIndex];
+    franchise = normalizeFranchise(slot.franchise, true);
+    seasonCheckpointLevel = Number(slot.seasonCheckpointLevel ?? franchise.seasonCheckpointLevel ?? 0);
+    currentLevel = seasonCheckpointLevel;
+    pendingUpgrade = franchise.pendingUpgradeChoices.length > 0;
+  }
+  renderFranchiseSlots();
+  updateStartOverlay();
+  updateHud();
+}
+
+async function performCloudSync(manual = false) {
+  cloudSyncState = "syncing";
+  accountSyncButtonEl.hidden = true;
+  setCloudSyncStatus("Syncing...", "");
+  if (manual) accountSignedInMessageEl.textContent = "Checking every franchise slot...";
+  const remote = await accountApi("/api/saves");
+  const merged = mergeClientCloudBundles(collectLocalCloudBundle(), remote.saves);
+  const saved = await accountApi("/api/saves", {
+    method: "PUT",
+    body: JSON.stringify({ saves: merged }),
+  });
+  applyCloudBundle(saved.saves);
+  refreshCurrentGameAfterCloudSync();
+  cloudSyncState = "saved";
+  accountSyncButtonEl.hidden = true;
+  setCloudSyncStatus("Cloud saved", "saved");
+  accountSignedInMessageEl.textContent = "All game libraries are synced.";
+  return true;
+}
+
+async function syncCloudSaves({ manual = false } = {}) {
+  if (!cloudAccount || typeof fetch !== "function") return false;
+  if (cloudSyncPromise) {
+    cloudSyncQueued = true;
+    return cloudSyncPromise;
+  }
+  cloudSyncPromise = performCloudSync(manual).catch((error) => {
+    if (error.status === 401) {
+      cloudAccount = null;
+      renderCloudAccount();
+    }
+    cloudSyncState = "error";
+    accountSyncButtonEl.hidden = false;
+    setCloudSyncStatus("Sync paused", "error");
+    accountSignedInMessageEl.textContent = error.message;
+    accountSignedInMessageEl.classList.add("error");
+    return false;
+  }).finally(() => {
+    cloudSyncPromise = null;
+    if (cloudSyncQueued && cloudAccount) {
+      cloudSyncQueued = false;
+      scheduleCloudSync();
+    }
+  });
+  return cloudSyncPromise;
+}
+
+function scheduleCloudSync() {
+  if (!cloudAccount || typeof setTimeout !== "function") return;
+  if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    cloudSyncTimer = null;
+    syncCloudSaves();
+  }, CLOUD_SYNC_DELAY_MS);
+}
+
+async function submitCloudAccount(event) {
+  event.preventDefault();
+  const email = accountMode === "signup" ? accountEmailInputEl.value.trim().toLowerCase() : "";
+  const username = accountUsernameInputEl.value.trim().toLowerCase();
+  const passcode = accountPasscodeInputEl.value;
+  accountMessageEl.textContent = accountMode === "signup" ? "Creating account..." : "Signing in...";
+  accountMessageEl.classList.remove("error");
+  accountSubmitButtonEl.disabled = true;
+  try {
+    const result = await accountApi(`/api/auth/${accountMode}`, {
+      method: "POST",
+      body: JSON.stringify({ email, username, passcode }),
+    });
+    cloudAccount = { email: result.email, username: result.username };
+    cloudSyncState = "syncing";
+    accountPasscodeInputEl.value = "";
+    accountSignedInMessageEl.classList.remove("error");
+    accountSignedInMessageEl.textContent = accountMode === "signup"
+      ? "Account created. Uploading your local saves..."
+      : "Signed in. Merging your newest saves...";
+    renderCloudAccount();
+    await syncCloudSaves({ manual: true });
+  } catch (error) {
+    accountMessageEl.textContent = error.message;
+    accountMessageEl.classList.add("error");
+  } finally {
+    accountSubmitButtonEl.disabled = false;
+  }
+}
+
+async function signOutCloudAccount() {
+  accountSignoutButtonEl.disabled = true;
+  await syncCloudSaves();
+  try {
+    await accountApi("/api/auth/signout", { method: "POST" });
+  } catch {
+    // Local saves remain available even if the sign-out request cannot reach the server.
+  }
+  cloudAccount = null;
+  cloudSyncState = "local";
+  accountSignedInMessageEl.classList.remove("error");
+  setAccountMode("signin");
+  renderCloudAccount();
+  accountSignoutButtonEl.disabled = false;
+}
+
+async function initializeCloudAccount() {
+  setAccountMode("signin");
+  renderCloudAccount();
+  if (typeof fetch !== "function") return;
+  try {
+    const session = await accountApi("/api/auth/session");
+    if (session.authenticated) {
+      cloudAccount = { email: session.email, username: session.username };
+      cloudSyncState = "syncing";
+      renderCloudAccount();
+      await syncCloudSaves();
+    }
+  } catch {
+    setCloudSyncStatus("Offline - local saves", "error");
+  }
+}
+
 function loadFranchiseSlots() {
   const rawSlots = localStorage.getItem(currentGameMode().slotsKey);
   if (rawSlots) {
@@ -2010,11 +2368,16 @@ function loadFranchiseSlots() {
   }
 }
 
-function saveFranchiseSlots() {
+function saveFranchiseSlots(changedSlotIndex = activeSlotIndex) {
   if (!activeGameId) {
     return;
   }
-  localStorage.setItem(currentGameMode().slotsKey, JSON.stringify(franchiseSlots));
+  const slotsKey = currentGameMode().slotsKey;
+  localStorage.setItem(slotsKey, JSON.stringify(franchiseSlots));
+  if (Number.isInteger(changedSlotIndex)) {
+    markCloudSlotChanged(slotsKey, changedSlotIndex);
+  }
+  scheduleCloudSync();
 }
 
 function saveFranchise() {
@@ -2089,8 +2452,9 @@ function eraseActiveSave() {
     return;
   }
 
-  franchiseSlots[activeSlotIndex] = null;
-  saveFranchiseSlots();
+  const erasedSlotIndex = activeSlotIndex;
+  franchiseSlots[erasedSlotIndex] = null;
+  saveFranchiseSlots(erasedSlotIndex);
   activeSlotIndex = null;
   slotSelectOpen = true;
   franchise = createDefaultFranchise();
@@ -7817,6 +8181,11 @@ function renderRunnerCards() {
 }
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !accountModalEl.hidden) {
+    event.preventDefault();
+    closeAccountModal();
+    return;
+  }
   const target = event.target;
   const isTextEntry =
     target instanceof HTMLInputElement ||
@@ -7939,6 +8308,16 @@ coachHireButtonEl.addEventListener("click", hireCoachAndStaff);
 createFranchiseButton.addEventListener("click", createFranchiseFromForm);
 creatorTriggerEl.addEventListener("click", openCreatorTools);
 arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
+accountButtonEl.addEventListener("click", openAccountModal);
+accountCloseButtonEl.addEventListener("click", closeAccountModal);
+accountSigninModeButtonEl.addEventListener("click", () => setAccountMode("signin"));
+accountSignupModeButtonEl.addEventListener("click", () => setAccountMode("signup"));
+accountFormEl.addEventListener("submit", submitCloudAccount);
+accountSignoutButtonEl.addEventListener("click", signOutCloudAccount);
+accountSyncButtonEl.addEventListener("click", () => syncCloudSaves({ manual: true }));
+accountModalEl.addEventListener("click", (event) => {
+  if (event.target === accountModalEl) closeAccountModal();
+});
 [
   teamPrimaryInputEl,
   teamSecondaryInputEl,
@@ -7978,4 +8357,5 @@ syncFranchiseSetupState();
 showOverlay();
 updateStartOverlay();
 updateHud();
+initializeCloudAccount();
 requestAnimationFrame(update);

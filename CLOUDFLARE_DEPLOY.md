@@ -9,6 +9,21 @@
 
 ## Upload a preview
 
+The Cloud Locker account backend is a private Worker service. Deploy it once
+before uploading a site preview, and redeploy it whenever `worker.js` or
+`wrangler.account.jsonc` changes:
+
+```sh
+pnpm run cloudflare:account:deploy
+```
+
+The service has no public `workers.dev` address. The main `retro-run` Worker
+reaches it through the `ACCOUNT_API` service binding, and `/api/*` requests are
+proxied by `site-worker.js`. Account passcodes are stored only as salted PBKDF2
+hashes; `.env` remains local and must never be committed.
+
+Then upload the website preview:
+
 Run:
 
 ```sh

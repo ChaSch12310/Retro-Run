@@ -111,6 +111,12 @@ const wranglerConfig = fs.readFileSync(
   new URL("../wrangler.jsonc", import.meta.url),
   "utf8"
 );
+const accountWranglerConfig = fs.readFileSync(
+  new URL("../wrangler.account.jsonc", import.meta.url),
+  "utf8"
+);
+const workerSource = fs.readFileSync(new URL("../worker.js", import.meta.url), "utf8");
+const siteWorkerSource = fs.readFileSync(new URL("../site-worker.js", import.meta.url), "utf8");
 const holidayWorkflow = fs.readFileSync(
   new URL("../.github/workflows/holiday-release-schedule.yml", import.meta.url),
   "utf8"
@@ -124,9 +130,37 @@ assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
 assert.match(wranglerConfig, /"head_sampling_rate"\s*:\s*1/);
 assert.match(wranglerConfig, /"invocation_logs"\s*:\s*true/);
+assert.match(wranglerConfig, /"main"\s*:\s*"site-worker\.js"/);
+assert.match(wranglerConfig, /"binding"\s*:\s*"ASSETS"/);
+assert.match(wranglerConfig, /"binding"\s*:\s*"ACCOUNT_API"/);
+assert.match(wranglerConfig, /"service"\s*:\s*"retro-run-account-api"/);
+assert.match(accountWranglerConfig, /"name"\s*:\s*"retro-run-account-api"/);
+assert.match(accountWranglerConfig, /"name"\s*:\s*"ACCOUNT_STORE"/);
+assert.match(accountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
+assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260818-creator-key-refresh/);
+assert.match(html, /game\.js\?v=20260820-cloud-locker/);
+assert.match(html, /id="accountButton"/);
+assert.match(html, /id="accountModal"/);
+assert.match(html, /id="accountEmailField" hidden/);
+assert.match(html, /id="accountEmailInput" type="email"/);
+assert.match(html, /id="accountUsernameInput"/);
+assert.match(html, /id="accountPasscodeInput" type="password"/);
+assert.match(html, /id="accountSyncButton"/);
+assert.doesNotMatch(html, /id="accountEmailInput"[^>]*\srequired/);
+assert.match(source, /function mergeClientCloudBundles/);
+assert.match(source, /function scheduleCloudSync/);
+assert.match(source, /markCloudSlotChanged/);
+assert.match(source, /accountEmailFieldEl\.hidden = !creating/);
+assert.match(source, /accountSyncButtonEl\.hidden = cloudSyncState === "saved"/);
+assert.match(source, /setAccountMode\("signin"\);\s+renderCloudAccount\(\);/);
+assert.match(workerSource, /export class AccountStore/);
+assert.match(workerSource, /email TEXT NOT NULL UNIQUE/);
+assert.match(workerSource, /PBKDF2/);
+assert.match(workerSource, /SameSite=Lax/);
+assert.match(workerSource, /MAX_AUTH_ATTEMPTS/);
+assert.match(workerSource, /Incorrect username or passcode/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
 assert.match(html, /id="seasonalGameShelf"/);
@@ -235,7 +269,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260818-creator-key-refresh/);
+assert.match(html, /20260820-cloud-locker/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);
@@ -986,6 +1020,8 @@ globalThis.__retroRunTest = {
   get activeGameId() { return activeGameId; },
   get gameLibraryOpen() { return gameLibraryOpen; },
   get franchiseSlots() { return franchiseSlots; },
+  collectLocalCloudBundle,
+  mergeCloudBundles: mergeClientCloudBundles,
   get currentTeamName() { return currentTeam().name; },
   get homeTeamSecondary() { return currentHomeTeam().secondary; },
   get runnerSkin() { return currentRunner().appearance.skin; },
@@ -1182,6 +1218,23 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
+
+const cloudGameKey = "gridiron-dash-franchise-slots";
+const localCloud = game.collectLocalCloudBundle();
+assert.equal(localCloud.games[cloudGameKey].length, 5);
+assert.equal(localCloud.games[cloudGameKey][0].data.franchise.team.name, "Test Falcons");
+const remoteCloud = {
+  games: {
+    [cloudGameKey]: [
+      {
+        data: { savedAt: 9000, franchise: { team: { name: "Cloud Falcons" } } },
+        updatedAt: 9000,
+      },
+    ],
+  },
+};
+const mergedCloud = game.mergeCloudBundles(localCloud, remoteCloud);
+assert.equal(mergedCloud.games[cloudGameKey][0].data.franchise.team.name, "Cloud Falcons");
 assert.equal(game.alternateUniformCount, 99);
 assert.equal(game.swipeThreshold, 14);
 assert.equal(game.movementSpeedMultiplier, 1);

@@ -2,13 +2,15 @@
   "name": "retro-run",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/smoke-test.mjs",
+    "test": "node scripts/test.mjs",
     "cloudflare:preview": "pnpm run build && wrangler versions upload --preview-alias preview --strict",
     "cloudflare:versions": "wrangler versions list",
     "cloudflare:promote": "wrangler versions deploy",
-    "cloudflare:seasonal": "node scripts/deploy-seasonal-versions.mjs"
+    "cloudflare:seasonal": "node scripts/deploy-seasonal-versions.mjs",
+    "cloudflare:account:deploy": "wrangler deploy --config wrangler.account.jsonc --strict --keep-vars"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
