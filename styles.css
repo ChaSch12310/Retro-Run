@@ -713,6 +713,95 @@ body.game-library-open .play-panel {
   border-top-color: #69c36d;
 }
 
+.dynasty-contract-card {
+  border-top-color: #f0bf43;
+}
+
+.dynasty-contracts {
+  display: grid;
+  gap: 7px;
+}
+
+.dynasty-contract {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #0d2336;
+  border: 2px solid #315777;
+}
+
+.dynasty-contract > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.dynasty-contract strong {
+  overflow: hidden;
+  color: #f6efcf;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dynasty-contract small {
+  color: #9eb3b3;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.57rem;
+  font-weight: 800;
+}
+
+.dynasty-contract-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.dynasty-contract-actions button {
+  min-width: 58px;
+  padding: 6px;
+  color: #10263e;
+  background: #f0bf43;
+  border: 2px solid #09131e;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+}
+
+.dynasty-contract-actions button:last-child {
+  color: #f6efcf;
+  background: #8e392f;
+}
+
+.dynasty-contract-actions button:disabled {
+  color: #8fa09d;
+  background: #29445f;
+}
+
+.dynasty-standings {
+  display: grid;
+  gap: 3px;
+}
+
+.dynasty-standings > div {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 7px;
+  padding: 6px 8px;
+  color: #cbd8cd;
+  background: #0d2336;
+  border-left: 4px solid #29445f;
+  font-size: 0.62rem;
+}
+
+.dynasty-standings > div.player {
+  color: #10263e;
+  background: #f0bf43;
+  border-left-color: #f6efcf;
+}
+
 .dynasty-draft {
   display: grid;
   gap: 6px;

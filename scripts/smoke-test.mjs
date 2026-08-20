@@ -165,11 +165,11 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-morale-boost-training/);
+assert.match(html, /game\.js\?v=20260820-pocket-dynasty-contract-season/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260820-morale-boost-training/);
+assert.match(html, /pocket-dynasty\.js\?v=20260820-pocket-dynasty-contract-season/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -179,6 +179,8 @@ assert.match(pocketDynastySource, /function updateRun\(delta\)/);
 assert.match(pocketDynastySource, /function tackleRunner\(defender\)/);
 assert.match(pocketDynastySource, /function generateProspects\(\)/);
 assert.match(pocketDynastySource, /function upgradeFacility\(facilityId\)/);
+assert.match(pocketDynastySource, /function resolveContract\(playerId, action\)/);
+assert.match(pocketDynastySource, /function leagueTable\(\)/);
 assert.match(pocketDynastySource, /canvas\.addEventListener\("pointerdown"/);
 assert.match(pocketDynastySource, /localStorage\.setItem\(STORAGE_KEY/);
 assert.match(styles, /\.pocket-dynasty-screen/);
@@ -187,6 +189,8 @@ assert.match(html, /id="dynastyClockValue"/);
 assert.match(html, /id="dynastyFacilities"/);
 assert.match(html, /id="dynastyEventPanel" hidden/);
 assert.match(html, /id="dynastyDraftPanel" hidden/);
+assert.match(html, /id="dynastyContractPanel" hidden/);
+assert.match(html, /id="dynastyStandings"/);
 
 const pocketIds = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const pocketElements = new Map(pocketIds.map((id) => [id, new FakeElement(id)]));
@@ -232,11 +236,25 @@ const pocketVmContext = vm.createContext({
 vm.runInContext(pocketDynastySource, pocketVmContext);
 const pocketHooks = pocketWindow.PocketDynastyTest;
 assert.equal(pocketHooks.defaultState().roster.length, 9);
+assert.equal(pocketHooks.defaultState().roster.every((player) => player.contractYears === 3), true);
 assert.deepEqual(
   Object.keys(pocketHooks.defaultState().facilities),
   ["stadium", "training", "rehab"]
 );
 assert.equal(pocketHooks.generateProspects().length, 3);
+assert.equal(pocketHooks.generateProspects().every((player) => player.contractYears === 3), true);
+assert.equal(pocketHooks.contractRenewalCost({ salary: 9 }), 3);
+assert.equal(pocketHooks.leagueTable().length, 13);
+assert.equal(pocketHooks.visibleLeagueTable().some((team) => team.player), true);
+const expiringPocketPlayer = pocketHooks.state.roster[0];
+const pocketCreditsBeforeRenewal = pocketHooks.state.credits;
+pocketHooks.state.offseason = true;
+pocketHooks.state.pendingContracts = [expiringPocketPlayer.id];
+expiringPocketPlayer.contractYears = 0;
+assert.equal(pocketHooks.resolveContract(expiringPocketPlayer.id, "renew"), true);
+assert.equal(expiringPocketPlayer.contractYears, 2);
+assert.equal(pocketHooks.state.pendingContracts.length, 0);
+assert.equal(pocketHooks.state.credits, pocketCreditsBeforeRenewal - pocketHooks.contractRenewalCost({ salary: expiringPocketPlayer.salary - 1 }));
 const migratedPocketState = pocketHooks.normalizeState({
   season: 3,
   week: 4,
@@ -378,7 +396,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-morale-boost-training/);
+assert.match(html, /20260820-pocket-dynasty-contract-season/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);

@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260820-morale-boost-training" />
+    <link rel="stylesheet" href="styles.css?v=20260820-pocket-dynasty-contract-season" />
   </head>
   <body>
     <main class="game-shell">
@@ -362,6 +362,14 @@
               <div class="dynasty-facilities" id="dynastyFacilities"></div>
             </section>
 
+            <section class="dynasty-card dynasty-contract-card" id="dynastyContractPanel" hidden>
+              <div class="dynasty-card-heading">
+                <h3>Contract Desk</h3>
+                <span>Resolve before draft</span>
+              </div>
+              <div class="dynasty-contracts" id="dynastyContracts"></div>
+            </section>
+
             <section class="dynasty-card dynasty-draft-card" id="dynastyDraftPanel" hidden>
               <div class="dynasty-card-heading">
                 <h3>Rookie Draft</h3>
@@ -376,6 +384,14 @@
                 <span>12 Games</span>
               </div>
               <div class="dynasty-schedule" id="dynastySchedule"></div>
+            </section>
+
+            <section class="dynasty-card">
+              <div class="dynasty-card-heading">
+                <h3>League Table</h3>
+                <span>Top Six</span>
+              </div>
+              <div class="dynasty-standings" id="dynastyStandings"></div>
             </section>
 
             <button class="secondary-button danger-button dynasty-reset-button" id="dynastyResetButton" type="button">Reset Pocket Dynasty</button>
@@ -1028,11 +1044,11 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260820-morale-boost-training"></script>
-    <script src="pocket-dynasty.js?v=20260820-morale-boost-training"></script>
-    <script src="seasonal-profile.js?v=20260820-morale-boost-training"></script>
+    <script src="game.js?v=20260820-pocket-dynasty-contract-season"></script>
+    <script src="pocket-dynasty.js?v=20260820-pocket-dynasty-contract-season"></script>
+    <script src="seasonal-profile.js?v=20260820-pocket-dynasty-contract-season"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260820-morale-boost-training"></script>
-    <script src="seasonal-parity.js?v=20260820-morale-boost-training"></script>
+    <script src="seasonal-games.js?v=20260820-pocket-dynasty-contract-season"></script>
+    <script src="seasonal-parity.js?v=20260820-pocket-dynasty-contract-season"></script>
   </body>
 </html>

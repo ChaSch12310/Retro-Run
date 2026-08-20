@@ -87,8 +87,11 @@
   const eventTitle = document.getElementById("dynastyEventTitle");
   const eventText = document.getElementById("dynastyEventText");
   const eventActions = document.getElementById("dynastyEventActions");
+  const contractPanel = document.getElementById("dynastyContractPanel");
+  const contractList = document.getElementById("dynastyContracts");
   const draftPanel = document.getElementById("dynastyDraftPanel");
   const draftList = document.getElementById("dynastyDraft");
+  const standings = document.getElementById("dynastyStandings");
   const ui = {
     season: document.getElementById("dynastySeasonValue"),
     record: document.getElementById("dynastyRecordValue"),
@@ -128,6 +131,7 @@
       salary: clamp(Number(player.salary) || 4, 2, 20),
       condition: clamp(Number(player.condition) || 100, 20, 100),
       morale: clamp(Number(player.morale) || 65, 10, 100),
+      contractYears: clamp(Number.isFinite(Number(player.contractYears)) ? Number(player.contractYears) : 3, 0, 4),
     };
   }
 
@@ -149,6 +153,7 @@
       routeSet: 0,
       pendingEvent: null,
       offseason: false,
+      pendingContracts: [],
       prospects: [],
       championships: 0,
     };
@@ -215,6 +220,9 @@
       routeSet: clamp(Number(value.routeSet) || 0, 0, ROUTE_SETS.length - 1),
       pendingEvent: value.pendingEvent && typeof value.pendingEvent === "object" ? value.pendingEvent : null,
       offseason: Boolean(value.offseason),
+      pendingContracts: Array.isArray(value.pendingContracts)
+        ? value.pendingContracts.map(String).filter((id) => value.roster.some((player) => String(player.id) === id))
+        : [],
       prospects: Array.isArray(value.prospects) ? value.prospects.slice(0, 3).map(copyPlayer) : [],
       championships: Math.max(0, Number(value.championships) || 0),
     };
@@ -648,6 +656,44 @@
     };
   }
 
+  function prepareOffseasonContracts() {
+    state.pendingContracts = [];
+    state.roster.forEach((player) => {
+      player.contractYears = Math.max(0, player.contractYears - 1);
+      if (player.contractYears === 0) state.pendingContracts.push(player.id);
+    });
+  }
+
+  function contractRenewalCost(player) {
+    return Math.max(1, Math.ceil(player.salary / 4));
+  }
+
+  function resolveContract(playerId, action) {
+    if (!state.offseason || state.pendingEvent || !state.pendingContracts.includes(playerId)) return false;
+    const playerIndex = state.roster.findIndex((player) => player.id === playerId);
+    if (playerIndex < 0) return false;
+    const player = state.roster[playerIndex];
+    if (action === "renew") {
+      const cost = contractRenewalCost(player);
+      if (state.credits < cost) return false;
+      state.credits -= cost;
+      player.contractYears = 2;
+      player.salary = clamp(player.salary + 1, 2, 20);
+      player.morale = clamp(player.morale + 6, 10, 100);
+      fieldMessage.textContent = player.name + " signs for two seasons";
+    } else if (action === "release") {
+      if (state.roster.length <= 5) return false;
+      state.roster.splice(playerIndex, 1);
+      fieldMessage.textContent = player.name + " enters free agency";
+    } else {
+      return false;
+    }
+    state.pendingContracts = state.pendingContracts.filter((id) => id !== playerId);
+    saveState();
+    render();
+    return true;
+  }
+
   function finishGame() {
     if (!state.game?.active) return;
     if (state.game.playerScore === state.game.opponentScore) {
@@ -679,6 +725,7 @@
     state.pendingEvent = generateEvent(won);
     if (state.week >= GAME_COUNT) {
       state.offseason = true;
+      prepareOffseasonContracts();
       state.prospects = generateProspects();
       if (state.wins >= 9) state.championships += 1;
     }
@@ -715,12 +762,13 @@
         salary: level + 3,
         condition: 100,
         morale: 72,
+        contractYears: 3,
       });
     });
   }
 
   function draftProspect(index) {
-    if (!state.offseason) return;
+    if (!state.offseason || state.pendingContracts.length) return;
     const prospect = state.prospects[index];
     if (!prospect) return;
     const projectedSalary = salaryUsed() + prospect.salary;
@@ -743,7 +791,7 @@
   }
 
   function skipDraft() {
-    if (!state.offseason) return;
+    if (!state.offseason || state.pendingContracts.length) return;
     beginNextSeason("The Meteors keep their veteran roster.");
   }
 
@@ -754,6 +802,7 @@
     state.losses = 0;
     state.results = Array(GAME_COUNT).fill(null);
     state.offseason = false;
+    state.pendingContracts = [];
     state.prospects = [];
     state.credits += 2;
     state.roster.forEach((player) => {
@@ -1107,7 +1156,7 @@
       card.innerHTML =
         "<span>" + player.position + "</span>" +
         "<div><strong>" + player.name + "</strong>" +
-        "<small>LV " + player.level + " · SPD " + player.speed + " PWR " + player.power + " SKL " + player.skill + "</small>" +
+        "<small>LV " + player.level + " · SPD " + player.speed + " PWR " + player.power + " SKL " + player.skill + " · " + player.contractYears + "Y</small>" +
         "<em><i style=\"width:" + player.condition + "%\"></i></em></div>" +
         "<button type=\"button\" " + (state.game?.active || state.pendingEvent || state.offseason || player.level >= 10 || state.credits < cost ? "disabled" : "") + ">" +
         (player.level >= 10 ? "MAX" : "+" + cost) + "</button>";
@@ -1159,9 +1208,9 @@
   }
 
   function renderDraft() {
-    draftPanel.hidden = !state.offseason || Boolean(state.pendingEvent);
+    draftPanel.hidden = !state.offseason || Boolean(state.pendingEvent) || state.pendingContracts.length > 0;
     draftList.replaceChildren();
-    if (!state.offseason || state.pendingEvent) return;
+    if (!state.offseason || state.pendingEvent || state.pendingContracts.length) return;
     state.prospects.forEach((prospect, index) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -1180,8 +1229,70 @@
     draftList.append(skip);
   }
 
+  function renderContracts() {
+    const showContracts = state.offseason && !state.pendingEvent && state.pendingContracts.length > 0;
+    contractPanel.hidden = !showContracts;
+    contractList.replaceChildren();
+    if (!showContracts) return;
+    state.pendingContracts.forEach((playerId) => {
+      const player = state.roster.find((candidate) => candidate.id === playerId);
+      if (!player) return;
+      const cost = contractRenewalCost(player);
+      const row = document.createElement("div");
+      row.className = "dynasty-contract";
+      row.innerHTML =
+        "<div><strong>" + player.position + " · " + player.name + "</strong>" +
+        "<small>LV " + player.level + " · $" + player.salary + " cap · renewal " + cost + " credits</small></div>" +
+        "<div class=\"dynasty-contract-actions\"><button type=\"button\" data-contract=\"renew\" " +
+        (state.credits < cost ? "disabled" : "") + ">Re-sign</button><button type=\"button\" data-contract=\"release\" " +
+        (state.roster.length <= 5 ? "disabled" : "") + ">Release</button></div>";
+      row.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => resolveContract(player.id, button.dataset.contract));
+      });
+      contractList.append(row);
+    });
+  }
+
+  function leagueTable() {
+    const gamesPlayed = clamp(state.week, 0, GAME_COUNT);
+    const rivals = OPPONENTS.map((team, teamIndex) => {
+      let wins = 0;
+      for (let gameIndex = 0; gameIndex < gamesPlayed; gameIndex += 1) {
+        const strength = (team.offense + team.defense) / 10;
+        const roll = ((state.season * 97 + teamIndex * 31 + gameIndex * 17) % 100) / 100;
+        if (roll < 0.31 + strength * 0.42) wins += 1;
+      }
+      return { name: team.name, short: team.short, wins, losses: gamesPlayed - wins, player: false };
+    });
+    return [
+      ...rivals,
+      { name: TEAM.city + " " + TEAM.name, short: TEAM.short, wins: state.wins, losses: state.losses, player: true },
+    ]
+      .sort((a, b) => b.wins - a.wins || a.losses - b.losses || a.name.localeCompare(b.name))
+      .map((team, index) => ({ ...team, rank: index + 1 }));
+  }
+
+  function visibleLeagueTable() {
+    const table = leagueTable();
+    const leaders = table.slice(0, 6);
+    const playerTeam = table.find((team) => team.player);
+    if (playerTeam && !leaders.some((team) => team.player)) leaders[leaders.length - 1] = playerTeam;
+    return leaders;
+  }
+
+  function renderStandings() {
+    standings.replaceChildren();
+    visibleLeagueTable().forEach((team) => {
+      const row = document.createElement("div");
+      row.className = team.player ? "player" : "";
+      row.innerHTML = "<span>" + team.rank + "</span><strong>" + team.short + "</strong><b>" + team.wins + "-" + team.losses + "</b>";
+      standings.append(row);
+    });
+  }
+
   function seasonSummary() {
     if (state.pendingEvent) return "Answer the postgame question before advancing.";
+    if (state.offseason && state.pendingContracts.length) return "Season " + state.season + " is complete. Resolve " + state.pendingContracts.length + " expiring contract" + (state.pendingContracts.length === 1 ? "" : "s") + " before the draft.";
     if (state.offseason) return "Season " + state.season + " finished " + state.wins + "-" + state.losses + ". Choose one rookie or keep the veterans.";
     if (state.game?.active) return "Control every Metro possession. The defense is simulated between drives.";
     if (state.week === 0) return "A new 12-game campaign begins. Build the Meteors your way.";
@@ -1192,6 +1303,7 @@
     const game = state.game;
     if (!runtime) {
       if (state.pendingEvent) fieldMessage.textContent = "Postgame decision";
+      else if (state.offseason && state.pendingContracts.length) fieldMessage.textContent = "Contract decisions";
       else if (state.offseason) fieldMessage.textContent = "Choose a rookie";
       else if (game?.active) fieldMessage.textContent = "Choose a play";
       else if (state.week > 0 && state.results[state.week - 1]) {
@@ -1234,8 +1346,10 @@
     renderEvent();
     renderRoster();
     renderFacilities();
+    renderContracts();
     renderDraft();
     renderSchedule();
+    renderStandings();
     drawField(performance.now());
   }
 
@@ -1303,6 +1417,10 @@
     defaultState,
     normalizeState,
     generateProspects,
+    contractRenewalCost,
+    leagueTable,
+    visibleLeagueTable,
+    resolveContract,
     get state() { return state; },
   };
   render();
