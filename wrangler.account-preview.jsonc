@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "retro-run-account-email-test",
+  "name": "retro-run-account-preview",
   "main": "worker.js",
   "compatibility_date": "2026-07-20",
   "workers_dev": false,
@@ -12,17 +12,6 @@
       "invocation_logs": true
     }
   },
-  "vars": {
-    "ALLOW_DUPLICATE_EMAILS": "true",
-    "EMAIL_FROM": "retrorun@schwartzdev.com"
-  },
-  "send_email": [
-    {
-      "name": "EMAIL",
-      "allowed_sender_addresses": ["retrorun@schwartzdev.com"],
-      "remote": true
-    }
-  ],
   "durable_objects": {
     "bindings": [
       {

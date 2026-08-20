@@ -115,15 +115,12 @@ const accountSignedInEl = document.getElementById("accountSignedIn");
 const accountSigninModeButtonEl = document.getElementById("accountSigninModeButton");
 const accountSignupModeButtonEl = document.getElementById("accountSignupModeButton");
 const accountFormEl = document.getElementById("accountForm");
-const accountEmailFieldEl = document.getElementById("accountEmailField");
-const accountEmailInputEl = document.getElementById("accountEmailInput");
 const accountUsernameInputEl = document.getElementById("accountUsernameInput");
 const accountPasscodeInputEl = document.getElementById("accountPasscodeInput");
 const accountHelpTextEl = document.getElementById("accountHelpText");
 const accountMessageEl = document.getElementById("accountMessage");
 const accountSubmitButtonEl = document.getElementById("accountSubmitButton");
 const accountUsernameValueEl = document.getElementById("accountUsernameValue");
-const accountEmailValueEl = document.getElementById("accountEmailValue");
 const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
 const accountSignoutButtonEl = document.getElementById("accountSignoutButton");
 const accountSyncButtonEl = document.getElementById("accountSyncButton");
@@ -2113,7 +2110,6 @@ function renderCloudAccount() {
   if (signedIn) {
     accountTitleEl.textContent = "Cloud Locker";
     accountUsernameValueEl.textContent = cloudAccount.username;
-    accountEmailValueEl.textContent = cloudAccount.email;
     accountSyncButtonEl.hidden = cloudSyncState === "saved" || cloudSyncState === "syncing";
     if (cloudSyncState === "saved") setCloudSyncStatus("Cloud saved", "saved");
     else if (cloudSyncState === "syncing") setCloudSyncStatus("Syncing...");
@@ -2135,8 +2131,6 @@ function setAccountMode(mode) {
   accountSignupModeButtonEl.setAttribute("aria-pressed", String(creating));
   accountTitleEl.textContent = creating ? "Create Account" : "Sign In";
   accountSubmitButtonEl.textContent = creating ? "Create Account" : "Sign In";
-  accountEmailFieldEl.hidden = !creating;
-  accountEmailInputEl.required = creating;
   accountPasscodeInputEl.autocomplete = creating ? "new-password" : "current-password";
   accountHelpTextEl.textContent = creating
     ? "Create one account to carry all ten game libraries between devices. Passcode recovery is not available yet."
@@ -2149,7 +2143,7 @@ function openAccountModal() {
   accountModalEl.hidden = false;
   renderCloudAccount();
   if (!cloudAccount) {
-    (accountMode === "signup" ? accountEmailInputEl : accountUsernameInputEl).focus();
+    accountUsernameInputEl.focus();
   }
   else (accountSyncButtonEl.hidden ? accountSignoutButtonEl : accountSyncButtonEl).focus();
 }
@@ -2254,7 +2248,6 @@ function scheduleCloudSync() {
 
 async function submitCloudAccount(event) {
   event.preventDefault();
-  const email = accountMode === "signup" ? accountEmailInputEl.value.trim().toLowerCase() : "";
   const username = accountUsernameInputEl.value.trim().toLowerCase();
   const passcode = accountPasscodeInputEl.value;
   accountMessageEl.textContent = accountMode === "signup" ? "Creating account..." : "Signing in...";
@@ -2263,14 +2256,9 @@ async function submitCloudAccount(event) {
   try {
     const result = await accountApi(`/api/auth/${accountMode}`, {
       method: "POST",
-      body: JSON.stringify({ email, username, passcode }),
+      body: JSON.stringify({ username, passcode }),
     });
-    if (result.requiresVerification) {
-      accountPasscodeInputEl.value = "";
-      accountMessageEl.textContent = `Confirmation sent to ${result.email}. Open the link to finish signing up.`;
-      return;
-    }
-    cloudAccount = { email: result.email, username: result.username };
+    cloudAccount = { username: result.username };
     cloudSyncState = "syncing";
     accountPasscodeInputEl.value = "";
     accountSignedInMessageEl.classList.remove("error");
@@ -2306,33 +2294,14 @@ async function signOutCloudAccount() {
 async function initializeCloudAccount() {
   setAccountMode("signin");
   renderCloudAccount();
-  let emailConfirmationStatus = "";
-  if (typeof window !== "undefined" && window.location?.href) {
-    const currentUrl = new URL(window.location.href);
-    emailConfirmationStatus = currentUrl.searchParams.get("email") || "";
-    if (emailConfirmationStatus) {
-      currentUrl.searchParams.delete("email");
-      window.history?.replaceState?.({}, "", currentUrl.toString());
-    }
-  }
   if (typeof fetch !== "function") return;
   try {
     const session = await accountApi("/api/auth/session");
     if (session.authenticated) {
-      cloudAccount = { email: session.email, username: session.username };
+      cloudAccount = { username: session.username };
       cloudSyncState = "syncing";
       renderCloudAccount();
       await syncCloudSaves();
-      if (emailConfirmationStatus === "confirmed") {
-        accountSignedInMessageEl.textContent = "Email confirmed. All game libraries are synced.";
-        accountModalEl.hidden = false;
-      }
-    } else if (emailConfirmationStatus) {
-      accountMessageEl.textContent = emailConfirmationStatus === "expired"
-        ? "That confirmation link expired. Create the account again to receive a new link."
-        : "That confirmation link is not valid.";
-      accountMessageEl.classList.add("error");
-      accountModalEl.hidden = false;
     }
   } catch {
     setCloudSyncStatus("Offline - local saves", "error");

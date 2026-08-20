@@ -3,6 +3,7 @@ import { seasonalDeployments } from "./seasonal-deployments.mjs";
 
 const requestedProfile = process.argv.find((argument) => argument.startsWith("--profile="))?.split("=")[1];
 const releaseName = process.env.RETRO_RUN_RELEASE_NAME?.trim();
+const wranglerConfig = process.env.RETRO_RUN_WRANGLER_CONFIG?.trim();
 const deployments = requestedProfile
   ? seasonalDeployments.filter((deployment) => deployment.profile === requestedProfile)
   : seasonalDeployments;
@@ -36,6 +37,7 @@ for (const deployment of deployments) {
     "wrangler",
     "versions",
     "upload",
+    ...(wranglerConfig ? ["--config", wranglerConfig] : []),
     "--strict",
     "--message",
     versionMessage,
@@ -53,6 +55,7 @@ if (!requestedProfile) {
     "wrangler",
     "versions",
     "upload",
+    ...(wranglerConfig ? ["--config", wranglerConfig] : []),
     "--strict",
     "--message",
     currentVersionMessage,

@@ -116,12 +116,12 @@ const accountWranglerConfig = fs.readFileSync(
   new URL("../wrangler.account.jsonc", import.meta.url),
   "utf8"
 );
-const emailTestAccountConfig = fs.readFileSync(
-  new URL("../wrangler.account-email-test.jsonc", import.meta.url),
+const previewAccountWranglerConfig = fs.readFileSync(
+  new URL("../wrangler.account-preview.jsonc", import.meta.url),
   "utf8"
 );
-const emailTestSiteConfig = fs.readFileSync(
-  new URL("../wrangler.email-test.jsonc", import.meta.url),
+const previewWranglerConfig = fs.readFileSync(
+  new URL("../wrangler.preview.jsonc", import.meta.url),
   "utf8"
 );
 const workerSource = fs.readFileSync(new URL("../worker.js", import.meta.url), "utf8");
@@ -146,19 +146,18 @@ assert.match(wranglerConfig, /"service"\s*:\s*"retro-run-account-api"/);
 assert.match(accountWranglerConfig, /"name"\s*:\s*"retro-run-account-api"/);
 assert.match(accountWranglerConfig, /"name"\s*:\s*"ACCOUNT_STORE"/);
 assert.match(accountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
-assert.match(emailTestAccountConfig, /"name"\s*:\s*"retro-run-account-email-test"/);
-assert.match(emailTestAccountConfig, /"ALLOW_DUPLICATE_EMAILS"\s*:\s*"true"/);
-assert.match(emailTestAccountConfig, /"EMAIL_FROM"\s*:\s*"retrorun@schwartzdev\.com"/);
-assert.match(emailTestAccountConfig, /"send_email"\s*:\s*\[/);
-assert.match(emailTestSiteConfig, /"service"\s*:\s*"retro-run-account-email-test"/);
+assert.match(previewAccountWranglerConfig, /"name"\s*:\s*"retro-run-account-preview"/);
+assert.match(previewAccountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
+assert.match(previewWranglerConfig, /"service"\s*:\s*"retro-run-account-preview"/);
+assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-full-screen-decisions/);
+assert.match(html, /game\.js\?v=20260820-username-only-cloud-locker/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260820-full-screen-decisions/);
+assert.match(html, /pocket-dynasty\.js\?v=20260820-username-only-cloud-locker/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -169,25 +168,23 @@ assert.match(styles, /body\.between-game-active \.between-game-panel/);
 assert.match(styles, /body\.between-game-active #franchiseMainContent > :not\(#betweenGamePanel\)/);
 assert.match(html, /id="accountButton"/);
 assert.match(html, /id="accountModal"/);
-assert.match(html, /id="accountEmailField" hidden/);
-assert.match(html, /id="accountEmailInput" type="email"/);
+assert.doesNotMatch(html, /accountEmail|type="email"/);
 assert.match(html, /id="accountUsernameInput"/);
 assert.match(html, /id="accountPasscodeInput" type="password"/);
 assert.match(html, /id="accountSyncButton"/);
-assert.doesNotMatch(html, /id="accountEmailInput"[^>]*\srequired/);
 assert.match(source, /function mergeClientCloudBundles/);
 assert.match(source, /function scheduleCloudSync/);
 assert.match(source, /markCloudSlotChanged/);
-assert.match(source, /accountEmailFieldEl\.hidden = !creating/);
+assert.doesNotMatch(source, /accountEmail|requiresVerification|Confirmation sent/);
 assert.match(source, /accountSyncButtonEl\.hidden = cloudSyncState === "saved"/);
 assert.match(source, /setAccountMode\("signin"\);\s+renderCloudAccount\(\);/);
 assert.match(workerSource, /export class AccountStore/);
-assert.match(workerSource, /ALLOW_DUPLICATE_EMAILS/);
-assert.match(workerSource, /confirmationEmail/);
-assert.match(workerSource, /verification_token_hash/);
-assert.match(workerSource, /Confirm your email before signing in/);
-assert.match(workerSource, /\/api\/auth\/confirm/);
+assert.match(workerSource, /usernameOnlyAccounts: true/);
+assert.match(workerSource, /legacyEmailPlaceholder/);
+assert.doesNotMatch(workerSource, /confirmationEmail|sendConfirmationEmail|requiresVerification/);
+assert.doesNotMatch(workerSource, /\/api\/auth\/confirm|Confirm your email before signing in/);
 assert.match(workerSource, /PBKDF2/);
+assert.match(workerSource, /PASSWORD_ITERATIONS = 100000/);
 assert.match(workerSource, /SameSite=Lax/);
 assert.match(workerSource, /MAX_AUTH_ATTEMPTS/);
 assert.match(workerSource, /Incorrect username or passcode/);
@@ -299,7 +296,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-full-screen-decisions/);
+assert.match(html, /20260820-username-only-cloud-locker/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);

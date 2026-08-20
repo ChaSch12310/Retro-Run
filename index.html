@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260820-full-screen-decisions" />
+    <link rel="stylesheet" href="styles.css?v=20260820-username-only-cloud-locker" />
   </head>
   <body>
     <main class="game-shell">
@@ -884,10 +884,6 @@
             <button id="accountSignupModeButton" class="account-mode-button" type="button" aria-pressed="false">Create Account</button>
           </div>
           <form id="accountForm" class="creator-form account-form">
-            <label class="setup-field" id="accountEmailField" hidden>
-              <span class="label">Email</span>
-              <input id="accountEmailInput" type="email" maxlength="254" autocomplete="email" autocapitalize="none" spellcheck="false" />
-            </label>
             <label class="setup-field">
               <span class="label">Username</span>
               <input id="accountUsernameInput" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" autocapitalize="none" spellcheck="false" required />
@@ -906,7 +902,6 @@
           <div class="account-profile">
             <span>Signed in as</span>
             <strong id="accountUsernameValue">player</strong>
-            <small id="accountEmailValue">player@example.com</small>
           </div>
           <p>Your ten game libraries and all five slots sync automatically. The newest version of each slot is kept.</p>
           <p class="account-message" id="accountSignedInMessage" role="status" aria-live="polite">Cloud saves ready.</p>
@@ -1002,11 +997,11 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260820-full-screen-decisions"></script>
-    <script src="pocket-dynasty.js?v=20260820-full-screen-decisions"></script>
-    <script src="seasonal-profile.js?v=20260820-full-screen-decisions"></script>
+    <script src="game.js?v=20260820-username-only-cloud-locker"></script>
+    <script src="pocket-dynasty.js?v=20260820-username-only-cloud-locker"></script>
+    <script src="seasonal-profile.js?v=20260820-username-only-cloud-locker"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260820-full-screen-decisions"></script>
-    <script src="seasonal-parity.js?v=20260820-full-screen-decisions"></script>
+    <script src="seasonal-games.js?v=20260820-username-only-cloud-locker"></script>
+    <script src="seasonal-parity.js?v=20260820-username-only-cloud-locker"></script>
   </body>
 </html>

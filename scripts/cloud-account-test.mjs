@@ -1,37 +1,16 @@
 import assert from "node:assert/strict";
 import worker, {
   SAVE_KEYS,
-  confirmationEmail,
-  duplicateEmailsAllowed,
   hashPassword,
   mergeSaveBundles,
-  normalizeEmail,
   normalizeSaveBundle,
   normalizeUsername,
   verifyPassword,
 } from "../worker.js";
 import siteWorker from "../site-worker.js";
 
-assert.equal(normalizeEmail("  Player@Example.COM  "), "player@example.com");
 assert.equal(normalizeUsername("  Player_One  "), "player_one");
 assert.equal(SAVE_KEYS.length, 10);
-assert.equal(duplicateEmailsAllowed("true"), true);
-assert.equal(duplicateEmailsAllowed("false"), false);
-
-const emailMessage = confirmationEmail({
-  email: "player@example.com",
-  username: "Player<One>",
-  confirmationUrl: "https://preview.example/api/auth/confirm?token=abc&next=1",
-});
-assert.equal(emailMessage.to, "player@example.com");
-assert.deepEqual(emailMessage.from, {
-  email: "retrorun@schwartzdev.com",
-  name: "Retro Run",
-});
-assert.match(emailMessage.subject, /Confirm your Retro Run account/);
-assert.match(emailMessage.text, /expires in 24 hours/);
-assert.match(emailMessage.html, /Player&lt;One&gt;/);
-assert.match(emailMessage.html, /token=abc&amp;next=1/);
 
 const credentials = await hashPassword("strong-pass-42");
 assert.equal(await verifyPassword("strong-pass-42", credentials.salt, credentials.hash), true);
@@ -66,8 +45,7 @@ assert.equal(health.status, 200);
 assert.deepEqual(await health.json(), {
   ok: true,
   service: "retro-run-cloud-saves",
-  emailConfirmation: false,
-  duplicateEmailTest: false,
+  usernameOnlyAccounts: true,
 });
 
 let forwardedUrl = "";

@@ -1,12 +1,10 @@
 const SESSION_COOKIE = "retro_run_session";
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 120000;
+const PASSWORD_ITERATIONS = 100000;
 const MAX_BODY_BYTES = 1_500_000;
 const MAX_AUTH_ATTEMPTS = 12;
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const SAVE_SLOTS_PER_GAME = 5;
-const EMAIL_CONFIRMATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_EMAIL_FROM = "retrorun@schwartzdev.com";
 
 export const SAVE_KEYS = [
   "gridiron-dash-franchise-slots",
@@ -40,17 +38,6 @@ async function sha256(value) {
 
 export function normalizeUsername(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-export function normalizeEmail(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function emailError(email) {
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return "Enter a valid email address.";
-  }
-  return "";
 }
 
 function usernameError(username) {
@@ -200,67 +187,17 @@ function randomToken() {
     .replaceAll("=", "");
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-export function duplicateEmailsAllowed(value) {
-  return String(value || "").toLowerCase() === "true";
-}
-
-export function confirmationEmail({ email, username, confirmationUrl, from = DEFAULT_EMAIL_FROM }) {
-  const safeUsername = escapeHtml(username);
-  const safeConfirmationUrl = escapeHtml(confirmationUrl);
-  return {
-    to: email,
-    from: { email: from, name: "Retro Run" },
-    subject: "Confirm your Retro Run account",
-    text: [
-      `Hi ${username},`,
-      "",
-      "Confirm your Retro Run account by opening this link:",
-      confirmationUrl,
-      "",
-      "This link expires in 24 hours. If you did not create this account, you can ignore this email.",
-    ].join("\n"),
-    html: `
-      <div style="background:#0c1d2d;color:#fff7d6;font-family:Arial,sans-serif;padding:24px">
-        <div style="max-width:520px;margin:auto;border:4px solid #f2c94c;background:#173652;padding:24px">
-          <p style="color:#f2c94c;font-weight:800;letter-spacing:1px;margin:0 0 8px">RETRO RUN</p>
-          <h1 style="font-size:24px;margin:0 0 16px">Confirm your account</h1>
-          <p>Hi ${safeUsername},</p>
-          <p>Confirm your email to unlock Cloud Locker saves on all your devices.</p>
-          <p style="margin:24px 0">
-            <a href="${safeConfirmationUrl}" style="display:inline-block;background:#f2c94c;color:#14253a;font-weight:800;padding:12px 18px;text-decoration:none">CONFIRM EMAIL</a>
-          </p>
-          <p style="font-size:13px;color:#dce4d2">This single-use link expires in 24 hours. If you did not create this account, you can ignore this email.</p>
-        </div>
-      </div>`,
-  };
-}
-
 export class AccountStore {
-  constructor(ctx, env) {
+  constructor(ctx) {
     this.sql = ctx.storage.sql;
-    this.env = env;
-    this.allowDuplicateEmails = duplicateEmailsAllowed(env.ALLOW_DUPLICATE_EMAILS);
-    const emailConstraint = this.allowDuplicateEmails ? "" : "UNIQUE";
     this.sql.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
-        email TEXT NOT NULL ${emailConstraint} COLLATE NOCASE,
+        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
         username TEXT NOT NULL UNIQUE COLLATE NOCASE,
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        verified_at INTEGER,
-        verification_token_hash TEXT,
-        verification_expires_at INTEGER
+        created_at INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY,
@@ -281,23 +218,6 @@ export class AccountStore {
         reset_at INTEGER NOT NULL
       );
     `);
-    const userColumns = new Set(
-      this.sql.exec("PRAGMA table_info(users)").toArray().map((column) => column.name)
-    );
-    if (!userColumns.has("verified_at")) {
-      this.sql.exec("ALTER TABLE users ADD COLUMN verified_at INTEGER");
-      this.sql.exec("UPDATE users SET verified_at = created_at WHERE verified_at IS NULL");
-    }
-    if (!userColumns.has("verification_token_hash")) {
-      this.sql.exec("ALTER TABLE users ADD COLUMN verification_token_hash TEXT");
-    }
-    if (!userColumns.has("verification_expires_at")) {
-      this.sql.exec("ALTER TABLE users ADD COLUMN verification_expires_at INTEGER");
-    }
-    this.sql.exec("CREATE INDEX IF NOT EXISTS users_email ON users(email)");
-    this.sql.exec(
-      "CREATE INDEX IF NOT EXISTS users_verification_token ON users(verification_token_hash)"
-    );
   }
 
   one(query, ...bindings) {
@@ -361,7 +281,7 @@ export class AccountStore {
     const tokenHash = await sha256(token);
     const now = Date.now();
     const user = this.one(
-      `SELECT users.id, users.email, users.username, sessions.expires_at
+      `SELECT users.id, users.username, sessions.expires_at
        FROM sessions JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ?`,
       tokenHash
@@ -370,21 +290,7 @@ export class AccountStore {
       this.sql.exec("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
       return null;
     }
-    return { id: user.id, email: user.email, username: user.username, tokenHash };
-  }
-
-  async sendConfirmationEmail(request, email, username, token) {
-    if (!this.env.EMAIL || typeof this.env.EMAIL.send !== "function") {
-      throw new Error("Email confirmation is not configured.");
-    }
-    const confirmationUrl = new URL("/api/auth/confirm", request.url);
-    confirmationUrl.searchParams.set("token", token);
-    await this.env.EMAIL.send(confirmationEmail({
-      email,
-      username,
-      confirmationUrl: confirmationUrl.toString(),
-      from: this.env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
-    }));
+    return { id: user.id, username: user.username, tokenHash };
   }
 
   async handleSignup(request) {
@@ -395,86 +301,37 @@ export class AccountStore {
       });
     }
     const body = await readJson(request);
-    const email = normalizeEmail(body.email);
     const username = normalizeUsername(body.username);
-    const emailMessage = emailError(email);
     const usernameMessage = usernameError(username);
     const passcodeMessage = passcodeError(body.passcode);
-    if (emailMessage || usernameMessage || passcodeMessage) {
-      return errorResponse(emailMessage || usernameMessage || passcodeMessage);
-    }
-    if (!this.allowDuplicateEmails && this.one("SELECT id FROM users WHERE email = ?", email)) {
-      return errorResponse("That email already has an account.", 409);
+    if (usernameMessage || passcodeMessage) {
+      return errorResponse(usernameMessage || passcodeMessage);
     }
     if (this.one("SELECT id FROM users WHERE username = ?", username)) {
       return errorResponse("That username is already taken.", 409);
     }
     const credentials = await hashPassword(body.passcode);
     const userId = crypto.randomUUID();
-    const verificationToken = randomToken();
-    const verificationTokenHash = await sha256(verificationToken);
     const now = Date.now();
+    const legacyEmailPlaceholder = `${username}@accounts.retrorun.invalid`;
     this.sql.exec(
       `INSERT INTO users (
-         id, email, username, password_salt, password_hash, created_at,
-         verified_at, verification_token_hash, verification_expires_at
-       ) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
+         id, email, username, password_salt, password_hash, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?)`,
       userId,
-      email,
+      legacyEmailPlaceholder,
       username,
       credentials.salt,
       credentials.hash,
-      now,
-      verificationTokenHash,
-      now + EMAIL_CONFIRMATION_LIFETIME_MS
+      now
     );
-    try {
-      await this.sendConfirmationEmail(request, email, username, verificationToken);
-    } catch (error) {
-      this.sql.exec("DELETE FROM users WHERE id = ?", userId);
-      console.error("Retro Run confirmation email failed", error);
-      return errorResponse("We could not send the confirmation email. Try again soon.", 503);
-    }
+    const token = await this.createSession(userId);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
-      { authenticated: false, requiresVerification: true, email, username },
-      201
+      { authenticated: true, username },
+      201,
+      { "Set-Cookie": sessionCookie(token) }
     );
-  }
-
-  async handleConfirmation(request) {
-    const token = new URL(request.url).searchParams.get("token") || "";
-    const redirect = new URL("/", request.url);
-    if (token.length < 32) {
-      redirect.searchParams.set("email", "invalid");
-      return Response.redirect(redirect.toString(), 302);
-    }
-    const tokenHash = await sha256(token);
-    const user = this.one(
-      `SELECT id, email, username, verification_expires_at FROM users
-       WHERE verification_token_hash = ?`,
-      tokenHash
-    );
-    if (!user || user.verification_expires_at <= Date.now()) {
-      redirect.searchParams.set("email", "expired");
-      return Response.redirect(redirect.toString(), 302);
-    }
-    this.sql.exec(
-      `UPDATE users SET verified_at = ?, verification_token_hash = NULL,
-       verification_expires_at = NULL WHERE id = ?`,
-      Date.now(),
-      user.id
-    );
-    const sessionToken = await this.createSession(user.id);
-    redirect.searchParams.set("email", "confirmed");
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: redirect.toString(),
-        "Set-Cookie": sessionCookie(sessionToken),
-        "Cache-Control": "no-store",
-      },
-    });
   }
 
   async handleSignin(request) {
@@ -487,7 +344,7 @@ export class AccountStore {
     const body = await readJson(request);
     const username = normalizeUsername(body.username);
     const user = this.one(
-      `SELECT id, email, username, password_salt, password_hash, verified_at FROM users
+      `SELECT id, username, password_salt, password_hash FROM users
        WHERE username = ?`,
       username
     );
@@ -495,11 +352,10 @@ export class AccountStore {
       ? await verifyPassword(body.passcode, user.password_salt, user.password_hash)
       : false;
     if (!valid) return errorResponse("Incorrect username or passcode.", 401);
-    if (!user.verified_at) return errorResponse("Confirm your email before signing in.", 403);
     const token = await this.createSession(user.id);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
-      { authenticated: true, email: user.email, username: user.username },
+      { authenticated: true, username: user.username },
       200,
       { "Set-Cookie": sessionCookie(token) }
     );
@@ -550,14 +406,11 @@ export class AccountStore {
       if (url.pathname === "/api/auth/session" && request.method === "GET") {
         const user = await this.currentUser(request);
         return jsonResponse(user
-          ? { authenticated: true, email: user.email, username: user.username }
+          ? { authenticated: true, username: user.username }
           : { authenticated: false });
       }
       if (url.pathname === "/api/auth/signup" && request.method === "POST") {
         return this.handleSignup(request);
-      }
-      if (url.pathname === "/api/auth/confirm" && request.method === "GET") {
-        return this.handleConfirmation(request);
       }
       if (url.pathname === "/api/auth/signin" && request.method === "POST") {
         return this.handleSignin(request);
@@ -589,8 +442,7 @@ export default {
       return jsonResponse({
         ok: true,
         service: "retro-run-cloud-saves",
-        emailConfirmation: Boolean(env.EMAIL),
-        duplicateEmailTest: duplicateEmailsAllowed(env.ALLOW_DUPLICATE_EMAILS),
+        usernameOnlyAccounts: true,
       });
     }
     if (url.pathname.startsWith("/api/")) {

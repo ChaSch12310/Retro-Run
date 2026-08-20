@@ -22,23 +22,21 @@ reaches it through the `ACCOUNT_API` service binding, and `/api/*` requests are
 proxied by `site-worker.js`. Account passcodes are stored only as salted PBKDF2
 hashes; `.env` remains local and must never be committed.
 
-## Email confirmation test preview
+Cloud Locker accounts use only a username and passcode. There is no email
+address or confirmation step.
 
-The isolated Email Checkpoint service has its own account database and permits
-multiple usernames to use the same email address. The regular Cloud Locker does
-not. Before deploying it, onboard `schwartzdev.com` under **Compute > Email
-Service > Email Sending** so Cloudflare can send authenticated mail from
-`retrorun@schwartzdev.com`.
-
-Deploy the private test account service, then its named website preview:
+Account changes should first use the isolated preview service so production
+accounts are not modified during testing:
 
 ```sh
-pnpm run cloudflare:email-test:account
-pnpm run cloudflare:email-test:preview
+pnpm run cloudflare:account-preview:deploy
+pnpm run cloudflare:preview:isolated
 ```
 
-Neither command promotes a new `retro-run` website version to production. Do
-not use the test service binding in the regular `wrangler.jsonc` configuration.
+Preview versions uploaded with `wrangler.preview.jsonc` use a separate account
+database. Do not promote one of those versions directly. For production,
+deploy `wrangler.account.jsonc` after approval and upload a fresh website
+version with the normal `wrangler.jsonc` binding.
 
 Then upload the website preview:
 

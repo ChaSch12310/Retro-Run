@@ -21,7 +21,7 @@
   "services": [
     {
       "binding": "ACCOUNT_API",
-      "service": "retro-run-account-email-test"
+      "service": "retro-run-account-preview"
     }
   ]
 }

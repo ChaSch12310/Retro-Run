@@ -7,12 +7,12 @@
     "build": "node scripts/build.mjs",
     "test": "node scripts/test.mjs",
     "cloudflare:preview": "pnpm run build && wrangler versions upload --preview-alias preview --strict",
+    "cloudflare:preview:isolated": "pnpm run build && wrangler versions upload --config wrangler.preview.jsonc --preview-alias preview --strict",
     "cloudflare:versions": "wrangler versions list",
     "cloudflare:promote": "wrangler versions deploy",
     "cloudflare:seasonal": "node scripts/deploy-seasonal-versions.mjs",
     "cloudflare:account:deploy": "wrangler deploy --config wrangler.account.jsonc --strict --keep-vars",
-    "cloudflare:email-test:account": "wrangler deploy --config wrangler.account-email-test.jsonc --strict --keep-vars",
-    "cloudflare:email-test:preview": "RETRO_RUN_SEASONAL_PROFILE=standard pnpm run build && wrangler versions upload --config wrangler.email-test.jsonc --preview-alias email-checkpoint --strict --message 'Email Checkpoint - Duplicate Email Test'"
+    "cloudflare:account-preview:deploy": "wrangler deploy --config wrangler.account-preview.jsonc --strict --keep-vars"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
