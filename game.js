@@ -5636,6 +5636,8 @@ function renderBetweenGameProblem() {
   const decision = problem || conference;
   const pending = problem ? pendingProblem : pendingConference;
   const showDecision = Boolean(decision) && !pendingUpgrade && !franchise.offseason;
+  const decisionScreenActive = showDecision && !slotSelectOpen && !gameLibraryOpen;
+  document.body.classList.toggle("between-game-active", decisionScreenActive);
   betweenGamePanelEl.classList.toggle("press-conference", Boolean(conference));
   betweenGamePanelEl.hidden = !showDecision;
   if (!showDecision) {

@@ -4333,10 +4333,220 @@ body.offseason-active .offseason-choices {
   filter: grayscale(0.75) brightness(0.7);
 }
 
+body.between-game-active .overlay {
+  inset: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: clamp(10px, 2vw, 22px);
+  overflow: hidden;
+  text-align: left;
+  background:
+    linear-gradient(90deg, rgba(5, 14, 23, 0.96), rgba(16, 40, 62, 0.97)),
+    repeating-linear-gradient(0deg, transparent 0 34px, rgba(255, 255, 255, 0.035) 34px 36px);
+}
+
+body.between-game-active .overlay > .homepage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  display: block;
+}
+
+body.between-game-active #gameLibraryButton,
+body.between-game-active #homepageHero,
+body.between-game-active #loadSavePanel,
+body.between-game-active #onboardingPanel,
+body.between-game-active #offseasonPanel,
+body.between-game-active #startButton,
+body.between-game-active #franchiseMainContent > :not(#betweenGamePanel) {
+  display: none !important;
+}
+
+body.between-game-active #franchiseMainContent {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block !important;
+}
+
+body.between-game-active .between-game-panel {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid !important;
+  grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+  align-content: stretch;
+  gap: clamp(8px, 1.4vh, 14px);
+  padding: clamp(18px, 3vw, 40px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-width: 6px;
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.05),
+    inset 18px 0 0 rgba(240, 191, 67, 0.12);
+}
+
+body.between-game-active .between-game-panel::before {
+  content: "!";
+  position: absolute;
+  z-index: -1;
+  right: clamp(18px, 5vw, 60px);
+  top: clamp(52px, 8vh, 90px);
+  color: rgba(240, 191, 67, 0.075);
+  font-size: clamp(11rem, 30vw, 25rem);
+  line-height: 0.75;
+}
+
+body.between-game-active .between-game-panel.press-conference {
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.05),
+    inset 18px 0 0 rgba(112, 200, 232, 0.13);
+}
+
+body.between-game-active .between-game-panel.press-conference::before {
+  content: "PRESS";
+  right: 4%;
+  top: 12%;
+  color: rgba(112, 200, 232, 0.06);
+  font-size: clamp(4rem, 12vw, 9rem);
+  letter-spacing: -0.08em;
+  writing-mode: vertical-rl;
+}
+
+body.between-game-active .between-game-panel .module-head {
+  padding-bottom: 12px;
+  border-bottom: 4px solid rgba(246, 243, 222, 0.15);
+}
+
+body.between-game-active .between-game-panel .module-head h3 {
+  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  letter-spacing: 0.1em;
+}
+
+body.between-game-active .between-game-panel .module-head span {
+  padding: 7px 10px;
+  color: #10263e;
+  background: var(--team-accent);
+  border: 3px solid var(--line);
+  font-size: clamp(0.62rem, 1.4vw, 0.82rem);
+}
+
+body.between-game-active .between-game-panel.press-conference .module-head span {
+  background: #70c8e8;
+}
+
+body.between-game-active .problem-kicker {
+  font-size: clamp(0.72rem, 1.5vw, 0.95rem) !important;
+}
+
+body.between-game-active .between-game-panel h4 {
+  max-width: 18ch;
+  font-size: clamp(2rem, 4.4vw, 4.25rem);
+  line-height: 0.95;
+  text-shadow: 0 5px 0 rgba(5, 12, 19, 0.45);
+}
+
+body.between-game-active .between-game-panel > #betweenGameText {
+  max-width: 62ch;
+  margin: 0;
+  font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+  line-height: 1.5;
+}
+
+body.between-game-active .problem-status {
+  align-self: end;
+  gap: clamp(7px, 1.4vw, 14px);
+}
+
+body.between-game-active .problem-status span {
+  padding: clamp(9px, 1.5vw, 15px);
+  border-width: 3px;
+  font-size: clamp(0.65rem, 1.25vw, 0.82rem);
+}
+
+body.between-game-active .problem-choices {
+  align-self: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: clamp(8px, 1.5vw, 16px);
+}
+
+body.between-game-active .problem-choice {
+  min-height: clamp(104px, 14vh, 150px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-content: stretch;
+  padding: clamp(13px, 2vw, 22px);
+  border-width: 4px;
+  box-shadow: inset 0 -7px 0 rgba(5, 12, 19, 0.25);
+}
+
+body.between-game-active .problem-choice:hover,
+body.between-game-active .problem-choice:focus-visible {
+  color: #10263e;
+  background: var(--team-accent);
+}
+
+body.between-game-active .press-conference .problem-choice:hover,
+body.between-game-active .press-conference .problem-choice:focus-visible {
+  background: #70c8e8;
+}
+
+body.between-game-active .problem-choice:hover strong,
+body.between-game-active .problem-choice:hover span,
+body.between-game-active .problem-choice:hover small,
+body.between-game-active .problem-choice:focus-visible strong,
+body.between-game-active .problem-choice:focus-visible span,
+body.between-game-active .problem-choice:focus-visible small {
+  color: #10263e;
+}
+
+body.between-game-active .problem-choice strong {
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+}
+
+body.between-game-active .problem-choice span {
+  font-size: clamp(0.76rem, 1.3vw, 0.92rem);
+  line-height: 1.4;
+}
+
+body.between-game-active .problem-choice small {
+  font-size: clamp(0.62rem, 1.15vw, 0.76rem);
+}
+
 @media (max-width: 620px) {
   .problem-status,
   .problem-choices {
     grid-template-columns: 1fr;
+  }
+
+  body.between-game-active .overlay {
+    padding: 6px;
+  }
+
+  body[data-device="mobile"].between-game-active,
+  body[data-device="tablet"].between-game-active,
+  body.between-game-active .between-game-panel {
+    touch-action: pan-y;
+  }
+
+  body.between-game-active .between-game-panel {
+    grid-template-rows: auto auto auto auto auto;
+    align-content: start;
+    gap: 10px;
+    padding: 18px 14px;
+    border-width: 4px;
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.05);
+  }
+
+  body.between-game-active .between-game-panel h4 {
+    font-size: clamp(1.7rem, 10vw, 2.7rem);
+  }
+
+  body.between-game-active .problem-choice {
+    min-height: 108px;
   }
 }
 
