@@ -1398,6 +1398,14 @@ const UPGRADE_POOL = [
     },
   },
   {
+    key: "morale",
+    title: "Morale Boost",
+    description: "+12 player morale",
+    apply(playerProfile) {
+      playerProfile.morale = Math.min(100, (Number(playerProfile.morale) || 0) + 12);
+    },
+  },
+  {
     key: "elite",
     title: "Elite Session",
     description: "+2 speed, +2 power, +2 cut",

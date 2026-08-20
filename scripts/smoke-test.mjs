@@ -165,11 +165,11 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-pocket-dynasty-sideline-era/);
+assert.match(html, /game\.js\?v=20260820-morale-boost-training/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260820-pocket-dynasty-sideline-era/);
+assert.match(html, /pocket-dynasty\.js\?v=20260820-morale-boost-training/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -378,7 +378,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-pocket-dynasty-sideline-era/);
+assert.match(html, /20260820-morale-boost-training/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);
@@ -1302,6 +1302,12 @@ globalThis.__retroRunTest = {
   },
   stiffarmChanceForPower,
   getUpgradeDisplay(key) { return upgradeDisplayCopy(getUpgradeByKey(key)); },
+  applyUpgradeForTest(key) {
+    const upgrade = getUpgradeByKey(key);
+    if (!upgrade) return false;
+    upgrade.apply(currentRunner());
+    return true;
+  },
   updateCharacterPreview,
   drawChainMarkers,
   setChainRows(lineRow, targetRow) {
@@ -2272,6 +2278,14 @@ assert.equal(game.gameRevenueForFans(100), 5);
 assert.equal(game.gameRevenueForFans(1500), 75);
 assert.equal(game.gameRevenueForFans(1560), 75);
 assert.equal(game.gameRevenueForFans(3000), 150);
+game.setRunnerRatings({ morale: 55 });
+assert.equal(game.getUpgradeDisplay("morale").title, "Morale Boost");
+assert.equal(game.getUpgradeDisplay("morale").description, "+12 player morale");
+assert.equal(game.applyUpgradeForTest("morale"), true);
+assert.equal(game.runnerMorale, 67);
+game.setRunnerRatings({ morale: 95 });
+assert.equal(game.applyUpgradeForTest("morale"), true);
+assert.equal(game.runnerMorale, 100);
 game.setRunnerRatings({ morale: 55 });
 game.setManagement({
   fans: 1500,
