@@ -146,6 +146,10 @@ const creatorKeyPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-creator-key-refresh.yml", import.meta.url),
   "utf8"
 );
+const pocketDynastyPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-pocket-dynasty-contract-season.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -353,6 +357,14 @@ assert.match(creatorKeyPromotionWorkflow, /2026-08-19/);
 assert.match(creatorKeyPromotionWorkflow, /2a101a7c-3563-4e68-b494-4583617c1b4c@100%/);
 assert.match(creatorKeyPromotionWorkflow, /--yes/);
 assert.match(creatorKeyPromotionWorkflow, /Creator Key Refresh - Production/);
+assert.match(pocketDynastyPromotionWorkflow, /name: Pocket Dynasty Contract Season Production/);
+assert.match(pocketDynastyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(pocketDynastyPromotionWorkflow, /2026-08-21/);
+assert.match(pocketDynastyPromotionWorkflow, /f0cf17b49a8e878fdc9a7fdb5c9424eff036530e/);
+assert.match(pocketDynastyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(pocketDynastyPromotionWorkflow, /pnpm test/);
+assert.match(pocketDynastyPromotionWorkflow, /wrangler deploy/);
+assert.match(pocketDynastyPromotionWorkflow, /Pocket Dynasty: Contract Season - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
