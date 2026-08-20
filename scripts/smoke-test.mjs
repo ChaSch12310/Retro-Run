@@ -63,6 +63,18 @@ class FakeElement {
     this.children = [...children];
   }
 
+  querySelector(selector) {
+    if (selector === "button") {
+      if (!this._button) this._button = new FakeElement();
+      return this._button;
+    }
+    return null;
+  }
+
+  querySelectorAll() {
+    return [];
+  }
+
   get innerHTML() {
     return this._innerHTML || "";
   }
@@ -153,16 +165,86 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-username-only-cloud-locker/);
+assert.match(html, /game\.js\?v=20260820-pocket-dynasty-sideline-era/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260820-username-only-cloud-locker/);
+assert.match(html, /pocket-dynasty\.js\?v=20260820-pocket-dynasty-sideline-era/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
+assert.match(pocketDynastySource, /function beginPass\(\)/);
+assert.match(pocketDynastySource, /function throwBall\(\)/);
+assert.match(pocketDynastySource, /function updateRun\(delta\)/);
+assert.match(pocketDynastySource, /function tackleRunner\(defender\)/);
+assert.match(pocketDynastySource, /function generateProspects\(\)/);
+assert.match(pocketDynastySource, /function upgradeFacility\(facilityId\)/);
+assert.match(pocketDynastySource, /canvas\.addEventListener\("pointerdown"/);
 assert.match(pocketDynastySource, /localStorage\.setItem\(STORAGE_KEY/);
 assert.match(styles, /\.pocket-dynasty-screen/);
+assert.match(styles, /#pocketDynastyCanvas[\s\S]*aspect-ratio: 8 \/ 3/);
+assert.match(html, /id="dynastyClockValue"/);
+assert.match(html, /id="dynastyFacilities"/);
+assert.match(html, /id="dynastyEventPanel" hidden/);
+assert.match(html, /id="dynastyDraftPanel" hidden/);
+
+const pocketIds = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+const pocketElements = new Map(pocketIds.map((id) => [id, new FakeElement(id)]));
+const pocketCanvas = pocketElements.get("pocketDynastyCanvas");
+const pocketContext = new Proxy({}, {
+  get(target, property) {
+    if (!(property in target)) target[property] = () => {};
+    return target[property];
+  },
+  set(target, property, value) {
+    target[property] = value;
+    return true;
+  },
+});
+pocketCanvas.width = 960;
+pocketCanvas.height = 360;
+pocketCanvas.getContext = () => pocketContext;
+pocketCanvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 960, height: 360 });
+const pocketStorage = new Map();
+const pocketWindow = {
+  addEventListener() {},
+  confirm() { return true; },
+};
+const pocketVmContext = vm.createContext({
+  console,
+  Math,
+  Date,
+  JSON,
+  performance: { now: () => 1000 },
+  requestAnimationFrame() { return 0; },
+  cancelAnimationFrame() {},
+  localStorage: {
+    getItem(key) { return pocketStorage.has(key) ? pocketStorage.get(key) : null; },
+    setItem(key, value) { pocketStorage.set(key, String(value)); },
+  },
+  document: {
+    body: new FakeElement("body"),
+    getElementById(id) { return pocketElements.get(id) || null; },
+    createElement() { return new FakeElement(); },
+  },
+  window: pocketWindow,
+});
+vm.runInContext(pocketDynastySource, pocketVmContext);
+const pocketHooks = pocketWindow.PocketDynastyTest;
+assert.equal(pocketHooks.defaultState().roster.length, 9);
+assert.deepEqual(
+  Object.keys(pocketHooks.defaultState().facilities),
+  ["stadium", "training", "rehab"]
+);
+assert.equal(pocketHooks.generateProspects().length, 3);
+const migratedPocketState = pocketHooks.normalizeState({
+  season: 3,
+  week: 4,
+  roster: { qb: 7, rb: 5, wr: 6 },
+});
+assert.equal(migratedPocketState.season, 3);
+assert.equal(migratedPocketState.roster.find((player) => player.position === "QB").level, 7);
+assert.equal(migratedPocketState.roster.length, 9);
 assert.match(source, /classList\.toggle\("between-game-active", decisionScreenActive\)/);
 assert.match(styles, /body\.between-game-active \.between-game-panel/);
 assert.match(styles, /body\.between-game-active #franchiseMainContent > :not\(#betweenGamePanel\)/);
@@ -296,7 +378,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-username-only-cloud-locker/);
+assert.match(html, /20260820-pocket-dynasty-sideline-era/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);

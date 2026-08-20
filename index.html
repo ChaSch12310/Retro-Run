@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260820-username-only-cloud-locker" />
+    <link rel="stylesheet" href="styles.css?v=20260820-pocket-dynasty-sideline-era" />
   </head>
   <body>
     <main class="game-shell">
@@ -277,7 +277,7 @@
         <header class="dynasty-header">
           <button class="secondary-button dynasty-back-button" id="pocketDynastyBackButton" type="button">Back to Arcade</button>
           <div>
-            <p>Hidden Football Manager</p>
+            <p>Hidden Football Franchise</p>
             <h2 id="pocketDynastyTitle">Pocket Dynasty</h2>
           </div>
           <div class="dynasty-header-record">
@@ -297,26 +297,30 @@
               <div><span id="dynastyOpponentValue">Harbor Hawks</span><strong id="dynastyAwayScore">0</strong></div>
             </div>
 
+            <button class="dynasty-primary-action" id="dynastyStartButton" type="button">Start Week 1</button>
+
             <div class="dynasty-field-wrap">
-              <canvas id="pocketDynastyCanvas" width="960" height="280" aria-label="Animated pixel football field"></canvas>
+              <canvas id="pocketDynastyCanvas" width="960" height="360" aria-label="Interactive side-view pixel football field"></canvas>
               <div class="dynasty-field-message" id="dynastyFieldMessage">Call your first game</div>
+              <div class="dynasty-play-calls" id="dynastyPlayCalls" hidden>
+                <button type="button" data-dynasty-play="pass"><span>Air</span><strong>Snap Ball</strong><small>Read routes and aim</small></button>
+                <button type="button" data-dynasty-play="run"><span>Ground</span><strong>Hand Off</strong><small>Control the halfback</small></button>
+                <button type="button" data-dynasty-play="audible"><span>Coach</span><strong>Audible</strong><small>Draw new routes</small></button>
+                <button type="button" data-dynasty-play="kick"><span>Special</span><strong>Field Goal</strong><small id="dynastyKickHint">Try for three</small></button>
+              </div>
             </div>
+
+            <p class="dynasty-control-hint" id="dynastyControlHint">
+              Pass: drag backward from the quarterback and release. Run: arrows or swipe. Space dives.
+            </p>
 
             <div class="dynasty-situation">
               <div><span>Down</span><strong id="dynastyDownValue">1</strong></div>
               <div><span>To Go</span><strong id="dynastyToGoValue">10</strong></div>
               <div><span>Ball On</span><strong id="dynastyBallOnValue">20</strong></div>
-              <div><span>Drive</span><strong id="dynastyDriveValue">1 / 4</strong></div>
+              <div><span>Clock</span><strong id="dynastyClockValue">2:00</strong></div>
             </div>
 
-            <div class="dynasty-play-calls" id="dynastyPlayCalls" hidden>
-              <button type="button" data-dynasty-play="run"><span>Ground</span><strong>Run</strong><small>Safe, steady yards</small></button>
-              <button type="button" data-dynasty-play="quick"><span>Air</span><strong>Quick Pass</strong><small>Reliable first downs</small></button>
-              <button type="button" data-dynasty-play="deep"><span>Air</span><strong>Deep Pass</strong><small>Big gain, big risk</small></button>
-              <button type="button" data-dynasty-play="kick"><span>Special</span><strong>Kick</strong><small>Try for three points</small></button>
-            </div>
-
-            <button class="dynasty-primary-action" id="dynastyStartButton" type="button">Start Week 1</button>
             <ol class="dynasty-drive-log" id="dynastyDriveLog" aria-label="Recent plays"></ol>
           </section>
 
@@ -327,16 +331,43 @@
               <div class="dynasty-team-stats">
                 <span>Credits <b id="dynastyCreditsValue">2</b></span>
                 <span>Fans <b id="dynastyFansValue">1200</b></span>
+                <span>Salary Cap <b id="dynastyCapValue">0 / 100</b></span>
+                <span>Team Morale <b id="dynastyMoraleValue">65%</b></span>
               </div>
               <p id="dynastySeasonSummary">A new 12-game season is ready.</p>
             </section>
 
+            <section class="dynasty-card dynasty-event-card" id="dynastyEventPanel" hidden>
+              <div class="dynasty-card-heading">
+                <h3 id="dynastyEventTitle">Postgame</h3>
+                <span>Decision</span>
+              </div>
+              <p id="dynastyEventText"></p>
+              <div class="dynasty-event-actions" id="dynastyEventActions"></div>
+            </section>
+
             <section class="dynasty-card">
               <div class="dynasty-card-heading">
-                <h3>Offense</h3>
+                <h3>Star Roster</h3>
                 <span>Upgrade between games</span>
               </div>
               <div class="dynasty-roster" id="dynastyRoster"></div>
+            </section>
+
+            <section class="dynasty-card">
+              <div class="dynasty-card-heading">
+                <h3>Facilities</h3>
+                <span>Permanent boosts</span>
+              </div>
+              <div class="dynasty-facilities" id="dynastyFacilities"></div>
+            </section>
+
+            <section class="dynasty-card dynasty-draft-card" id="dynastyDraftPanel" hidden>
+              <div class="dynasty-card-heading">
+                <h3>Rookie Draft</h3>
+                <span>Choose one prospect</span>
+              </div>
+              <div class="dynasty-draft" id="dynastyDraft"></div>
             </section>
 
             <section class="dynasty-card">
@@ -997,11 +1028,11 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260820-username-only-cloud-locker"></script>
-    <script src="pocket-dynasty.js?v=20260820-username-only-cloud-locker"></script>
-    <script src="seasonal-profile.js?v=20260820-username-only-cloud-locker"></script>
+    <script src="game.js?v=20260820-pocket-dynasty-sideline-era"></script>
+    <script src="pocket-dynasty.js?v=20260820-pocket-dynasty-sideline-era"></script>
+    <script src="seasonal-profile.js?v=20260820-pocket-dynasty-sideline-era"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260820-username-only-cloud-locker"></script>
-    <script src="seasonal-parity.js?v=20260820-username-only-cloud-locker"></script>
+    <script src="seasonal-games.js?v=20260820-pocket-dynasty-sideline-era"></script>
+    <script src="seasonal-parity.js?v=20260820-pocket-dynasty-sideline-era"></script>
   </body>
 </html>
