@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260820-email-checkpoint" />
+    <link rel="stylesheet" href="styles.css?v=20260820-pocket-dynasty" />
   </head>
   <body>
     <main class="game-shell">
@@ -50,7 +50,7 @@
 
       <section class="game-library" id="gameLibraryScreen" aria-labelledby="gameLibraryTitle">
         <div class="library-header">
-          <p class="library-kicker">Retro Run Arcade</p>
+          <button class="library-kicker library-secret-trigger" id="pocketDynastyTrigger" type="button">Retro Run Arcade</button>
           <h2 id="gameLibraryTitle">Choose Your Game</h2>
           <p>Choose a game to enter the arcade</p>
         </div>
@@ -270,6 +270,85 @@
             </span>
             <span class="play-game-label">Play Game</span>
           </button>
+        </div>
+      </section>
+
+      <section class="pocket-dynasty-screen" id="pocketDynastyScreen" aria-labelledby="pocketDynastyTitle" hidden>
+        <header class="dynasty-header">
+          <button class="secondary-button dynasty-back-button" id="pocketDynastyBackButton" type="button">Back to Arcade</button>
+          <div>
+            <p>Hidden Football Manager</p>
+            <h2 id="pocketDynastyTitle">Pocket Dynasty</h2>
+          </div>
+          <div class="dynasty-header-record">
+            <span>Season <b id="dynastySeasonValue">1</b></span>
+            <strong id="dynastyRecordValue">0-0</strong>
+          </div>
+        </header>
+
+        <div class="dynasty-layout">
+          <section class="dynasty-game-panel">
+            <div class="dynasty-scoreboard" aria-live="polite">
+              <div><span>Metro Meteors</span><strong id="dynastyHomeScore">0</strong></div>
+              <div class="dynasty-game-clock">
+                <span id="dynastyWeekValue">Week 1</span>
+                <strong id="dynastyQuarterValue">Pregame</strong>
+              </div>
+              <div><span id="dynastyOpponentValue">Harbor Hawks</span><strong id="dynastyAwayScore">0</strong></div>
+            </div>
+
+            <div class="dynasty-field-wrap">
+              <canvas id="pocketDynastyCanvas" width="960" height="280" aria-label="Animated pixel football field"></canvas>
+              <div class="dynasty-field-message" id="dynastyFieldMessage">Call your first game</div>
+            </div>
+
+            <div class="dynasty-situation">
+              <div><span>Down</span><strong id="dynastyDownValue">1</strong></div>
+              <div><span>To Go</span><strong id="dynastyToGoValue">10</strong></div>
+              <div><span>Ball On</span><strong id="dynastyBallOnValue">20</strong></div>
+              <div><span>Drive</span><strong id="dynastyDriveValue">1 / 4</strong></div>
+            </div>
+
+            <div class="dynasty-play-calls" id="dynastyPlayCalls" hidden>
+              <button type="button" data-dynasty-play="run"><span>Ground</span><strong>Run</strong><small>Safe, steady yards</small></button>
+              <button type="button" data-dynasty-play="quick"><span>Air</span><strong>Quick Pass</strong><small>Reliable first downs</small></button>
+              <button type="button" data-dynasty-play="deep"><span>Air</span><strong>Deep Pass</strong><small>Big gain, big risk</small></button>
+              <button type="button" data-dynasty-play="kick"><span>Special</span><strong>Kick</strong><small>Try for three points</small></button>
+            </div>
+
+            <button class="dynasty-primary-action" id="dynastyStartButton" type="button">Start Week 1</button>
+            <ol class="dynasty-drive-log" id="dynastyDriveLog" aria-label="Recent plays"></ol>
+          </section>
+
+          <aside class="dynasty-front-office">
+            <section class="dynasty-card dynasty-team-card">
+              <p>Front Office</p>
+              <h3>Metro Meteors</h3>
+              <div class="dynasty-team-stats">
+                <span>Credits <b id="dynastyCreditsValue">2</b></span>
+                <span>Fans <b id="dynastyFansValue">1200</b></span>
+              </div>
+              <p id="dynastySeasonSummary">A new 12-game season is ready.</p>
+            </section>
+
+            <section class="dynasty-card">
+              <div class="dynasty-card-heading">
+                <h3>Offense</h3>
+                <span>Upgrade between games</span>
+              </div>
+              <div class="dynasty-roster" id="dynastyRoster"></div>
+            </section>
+
+            <section class="dynasty-card">
+              <div class="dynasty-card-heading">
+                <h3>Schedule</h3>
+                <span>12 Games</span>
+              </div>
+              <div class="dynasty-schedule" id="dynastySchedule"></div>
+            </section>
+
+            <button class="secondary-button danger-button dynasty-reset-button" id="dynastyResetButton" type="button">Reset Pocket Dynasty</button>
+          </aside>
         </div>
       </section>
 
@@ -923,10 +1002,11 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260820-email-checkpoint"></script>
-    <script src="seasonal-profile.js?v=20260820-email-checkpoint"></script>
+    <script src="game.js?v=20260820-pocket-dynasty"></script>
+    <script src="pocket-dynasty.js?v=20260820-pocket-dynasty"></script>
+    <script src="seasonal-profile.js?v=20260820-pocket-dynasty"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260820-email-checkpoint"></script>
-    <script src="seasonal-parity.js?v=20260820-email-checkpoint"></script>
+    <script src="seasonal-games.js?v=20260820-pocket-dynasty"></script>
+    <script src="seasonal-parity.js?v=20260820-pocket-dynasty"></script>
   </body>
 </html>

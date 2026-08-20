@@ -95,6 +95,7 @@ class FakeElement {
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
+const pocketDynastySource = fs.readFileSync(new URL("../pocket-dynasty.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const seasonalSource = fs.readFileSync(new URL("../seasonal-games.js", import.meta.url), "utf8");
 const seasonalParitySource = fs.readFileSync(new URL("../seasonal-parity.js", import.meta.url), "utf8");
@@ -153,7 +154,16 @@ assert.match(emailTestSiteConfig, /"service"\s*:\s*"retro-run-account-email-test
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260820-email-checkpoint/);
+assert.match(html, /game\.js\?v=20260820-pocket-dynasty/);
+assert.match(html, /id="pocketDynastyTrigger"/);
+assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
+assert.match(html, /id="pocketDynastyCanvas"/);
+assert.match(html, /pocket-dynasty\.js\?v=20260820-pocket-dynasty/);
+assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
+assert.match(pocketDynastySource, /function callPlay\(type\)/);
+assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
+assert.match(pocketDynastySource, /localStorage\.setItem\(STORAGE_KEY/);
+assert.match(styles, /\.pocket-dynasty-screen/);
 assert.match(html, /id="accountButton"/);
 assert.match(html, /id="accountModal"/);
 assert.match(html, /id="accountEmailField" hidden/);
@@ -286,7 +296,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260820-email-checkpoint/);
+assert.match(html, /20260820-pocket-dynasty/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);

@@ -148,6 +148,610 @@ body.game-library-open .play-panel {
   text-transform: uppercase;
 }
 
+.library-secret-trigger {
+  width: auto;
+  margin: 0 auto;
+  padding: 0;
+  color: var(--team-accent);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: default;
+  font: inherit;
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+}
+
+.library-secret-trigger:hover,
+.library-secret-trigger:focus-visible {
+  color: var(--team-accent);
+  background: transparent;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.library-secret-trigger:active {
+  color: var(--team-accent);
+  background: transparent;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.library-secret-trigger:focus-visible {
+  outline: 2px dashed currentColor;
+  outline-offset: 4px;
+}
+
+.pocket-dynasty-screen {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  z-index: 5;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(8, 21, 34, 0.86), rgba(8, 21, 34, 0.94)),
+    repeating-linear-gradient(90deg, #315f37 0 44px, #397040 44px 88px);
+  border: 5px solid #080f18;
+  box-shadow: inset 0 0 0 4px #29445f, 0 10px 0 rgba(6, 13, 20, 0.45);
+}
+
+.pocket-dynasty-screen[hidden] {
+  display: none !important;
+}
+
+.dynasty-header {
+  display: grid;
+  grid-template-columns: 180px 1fr 180px;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 10px 14px;
+  background: #142f49;
+  border: 4px solid #09131e;
+  box-shadow: inset 0 -5px 0 #0c2236;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.dynasty-header p,
+.dynasty-card p {
+  margin: 0;
+  color: #cbd8cd;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.dynasty-header h2 {
+  margin: 2px 0 0;
+  color: #f0bf43;
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  line-height: 1;
+  text-shadow: 0 4px 0 #09131e;
+}
+
+.dynasty-back-button {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 0.68rem;
+}
+
+.dynasty-header-record {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.dynasty-header-record span {
+  color: #cbd8cd;
+  font-size: 0.7rem;
+}
+
+.dynasty-header-record strong {
+  color: #f6efcf;
+  font-size: 1.4rem;
+}
+
+.dynasty-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.75fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.dynasty-game-panel,
+.dynasty-front-office {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: #f0bf43 #10263e;
+}
+
+.dynasty-game-panel {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.dynasty-scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: stretch;
+  background: #07121d;
+  border: 4px solid #29445f;
+  box-shadow: inset 0 0 0 3px #0c2236;
+}
+
+.dynasty-scoreboard > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  text-transform: uppercase;
+}
+
+.dynasty-scoreboard > div:last-child {
+  text-align: right;
+}
+
+.dynasty-scoreboard span {
+  overflow: hidden;
+  color: #f6efcf;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dynasty-scoreboard strong {
+  color: #f0bf43;
+  font-size: 1.55rem;
+}
+
+.dynasty-scoreboard .dynasty-game-clock {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 2px;
+  background: #173652;
+  border-inline: 4px solid #29445f;
+  text-align: center;
+}
+
+.dynasty-game-clock strong {
+  font-size: 0.78rem;
+}
+
+.dynasty-field-wrap {
+  position: relative;
+  background: #07121d;
+  border: 5px solid #09131e;
+  box-shadow: inset 0 0 0 3px #29445f;
+}
+
+#pocketDynastyCanvas {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  aspect-ratio: 24 / 7;
+  display: block;
+  border: 0;
+  image-rendering: pixelated;
+}
+
+.dynasty-field-message {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 7px 14px;
+  transform: translateX(-50%);
+  color: #10263e;
+  background: #f0bf43;
+  border: 3px solid #09131e;
+  font-size: 0.72rem;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 rgba(5, 11, 18, 0.45);
+}
+
+.dynasty-situation {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+
+.dynasty-situation > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  background: #173652;
+  border: 3px solid #09131e;
+}
+
+.dynasty-situation span {
+  color: #cbd8cd;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.dynasty-situation strong {
+  color: #f0bf43;
+  font-size: 1rem;
+}
+
+.dynasty-play-calls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+
+.dynasty-play-calls[hidden] {
+  display: none !important;
+}
+
+.dynasty-play-calls button {
+  min-height: 78px;
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  padding: 9px;
+  color: #f6efcf;
+  background: #1d4d71;
+  border: 3px solid #09131e;
+  text-align: left;
+  box-shadow: inset 0 -5px 0 rgba(6, 13, 20, 0.28);
+}
+
+.dynasty-play-calls button:hover,
+.dynasty-play-calls button:focus-visible {
+  color: #10263e;
+  background: #f0bf43;
+}
+
+.dynasty-play-calls button > span {
+  color: #8fc6e8;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.dynasty-play-calls button:hover > span,
+.dynasty-play-calls button:focus-visible > span {
+  color: #653f17;
+}
+
+.dynasty-play-calls button strong {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.dynasty-play-calls button small {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.dynasty-primary-action {
+  width: 100%;
+  padding: 13px;
+  color: #10263e;
+  background: #f0bf43;
+  border: 4px solid #09131e;
+  font-size: 0.9rem;
+  box-shadow: inset 0 -5px 0 rgba(121, 77, 19, 0.24), 0 5px 0 rgba(5, 11, 18, 0.45);
+}
+
+.dynasty-primary-action[hidden] {
+  display: none !important;
+}
+
+.dynasty-drive-log {
+  min-height: 58px;
+  margin: 0;
+  padding: 9px 10px 9px 32px;
+  color: #dce4d2;
+  background: #0d2336;
+  border: 3px solid #09131e;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.dynasty-drive-log li::marker {
+  color: #f0bf43;
+}
+
+.dynasty-front-office {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.dynasty-card {
+  padding: 12px;
+  background: #142f49;
+  border: 4px solid #09131e;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+.dynasty-team-card {
+  border-top-color: #f0bf43;
+}
+
+.dynasty-card h3 {
+  margin: 3px 0 8px;
+  color: #f6efcf;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.dynasty-team-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.dynasty-team-stats span {
+  padding: 7px;
+  color: #cbd8cd;
+  background: #0d2336;
+  border: 2px solid #29445f;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+}
+
+.dynasty-team-stats b {
+  display: block;
+  margin-top: 2px;
+  color: #f0bf43;
+  font-size: 0.92rem;
+}
+
+.dynasty-card-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dynasty-card-heading span {
+  color: #9eb3b3;
+  font-size: 0.58rem;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.dynasty-roster {
+  display: grid;
+  gap: 6px;
+}
+
+.dynasty-player {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  background: #0d2336;
+  border: 2px solid #29445f;
+}
+
+.dynasty-player > span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: #10263e;
+  background: #f0bf43;
+  border: 2px solid #09131e;
+  font-size: 0.68rem;
+}
+
+.dynasty-player div {
+  min-width: 0;
+  display: grid;
+}
+
+.dynasty-player strong {
+  overflow: hidden;
+  color: #f6efcf;
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dynasty-player small {
+  color: #9eb3b3;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.dynasty-player button {
+  width: 42px;
+  min-height: 32px;
+  padding: 4px;
+  color: #10263e;
+  background: #f0bf43;
+  border: 2px solid #09131e;
+  font-size: 0.64rem;
+}
+
+.dynasty-player button:disabled {
+  color: #8fa09d;
+  background: #29445f;
+}
+
+.dynasty-schedule {
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 3px;
+}
+
+.dynasty-schedule > div {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  color: #cbd8cd;
+  background: #0d2336;
+  border-left: 4px solid #29445f;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.dynasty-schedule > div.current {
+  color: #10263e;
+  background: #f0bf43;
+  border-left-color: #f6efcf;
+}
+
+.dynasty-schedule > div.win {
+  border-left-color: #69c36d;
+}
+
+.dynasty-schedule > div.loss {
+  border-left-color: #db554c;
+}
+
+.dynasty-schedule b {
+  color: inherit;
+}
+
+.dynasty-reset-button {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.62rem;
+}
+
+body.pocket-dynasty-open .info-panel,
+body.pocket-dynasty-open .play-panel,
+body.pocket-dynasty-open .game-library,
+body.pocket-dynasty-open .seasonal-game-screen {
+  display: none !important;
+}
+
+body.pocket-dynasty-open .support-link,
+body.pocket-dynasty-open .account-strip {
+  display: none !important;
+}
+
+body.pocket-dynasty-open .top-title {
+  gap: 0;
+}
+
+@media (max-width: 900px) {
+  body.pocket-dynasty-open {
+    touch-action: pan-y;
+  }
+
+  .pocket-dynasty-screen {
+    overflow-y: auto;
+  }
+
+  .dynasty-layout {
+    display: block;
+    overflow: visible;
+  }
+
+  .dynasty-game-panel,
+  .dynasty-front-office {
+    overflow: visible;
+  }
+
+  .dynasty-front-office {
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  .pocket-dynasty-screen {
+    padding: 7px;
+  }
+
+  .dynasty-header {
+    grid-template-columns: 1fr auto;
+    padding: 8px;
+    text-align: left;
+  }
+
+  .dynasty-header > div:first-of-type {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .dynasty-back-button {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .dynasty-header-record {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .dynasty-scoreboard {
+    grid-template-columns: 1fr 80px 1fr;
+  }
+
+  .dynasty-scoreboard > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 7px;
+  }
+
+  .dynasty-scoreboard > div:last-child {
+    justify-items: end;
+  }
+
+  .dynasty-scoreboard strong {
+    font-size: 1.15rem;
+  }
+
+  .dynasty-scoreboard span {
+    font-size: 0.55rem;
+  }
+
+  .dynasty-situation {
+    gap: 3px;
+  }
+
+  .dynasty-situation > div {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 1px;
+    padding: 6px 3px;
+  }
+
+  .dynasty-play-calls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dynasty-play-calls button {
+    min-height: 66px;
+  }
+
+  .dynasty-field-message {
+    bottom: 6px;
+    padding: 5px 8px;
+    font-size: 0.58rem;
+  }
+}
+
 .library-header h2 {
   margin: 6px 0 8px;
   color: var(--text);

@@ -16,6 +16,7 @@ await Promise.all([
   cp(`${projectRoot}index.html`, `${distDirectory}index.html`),
   cp(`${projectRoot}styles.css`, `${distDirectory}styles.css`),
   cp(`${projectRoot}game.js`, `${distDirectory}game.js`),
+  cp(`${projectRoot}pocket-dynasty.js`, `${distDirectory}pocket-dynasty.js`),
   cp(`${projectRoot}seasonal-games.js`, `${distDirectory}seasonal-games.js`),
   cp(`${projectRoot}seasonal-parity.js`, `${distDirectory}seasonal-parity.js`),
   writeFile(
