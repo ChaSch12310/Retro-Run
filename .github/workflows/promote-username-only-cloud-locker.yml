@@ -1,0 +1,75 @@
+name: Username-Only Cloud Locker Production
+
+run-name: Username-Only Cloud Locker production promotion
+
+on:
+  schedule:
+    - cron: "0 0 29 8 *"
+      timezone: "America/Chicago"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-run-production-release
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check one-time release date
+        id: release-window
+        shell: bash
+        run: |
+          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-08-29" ]]; then
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+            echo "Username-Only Cloud Locker is scheduled for production now."
+          else
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping because this one-time release date has passed."
+          fi
+
+      - name: Check out tested release
+        if: steps.release-window.outputs.promote == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: 035a2f81ceaab7b7fc225158dc32ec5f9c570312
+
+      - name: Set up pnpm
+        if: steps.release-window.outputs.promote == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        if: steps.release-window.outputs.promote == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.release-window.outputs.promote == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Test tested release
+        if: steps.release-window.outputs.promote == 'true'
+        run: pnpm test
+
+      - name: Build standard arcade edition
+        if: steps.release-window.outputs.promote == 'true'
+        env:
+          RETRO_RUN_SEASONAL_PROFILE: standard
+        run: pnpm run build
+
+      - name: Deploy Username-Only Cloud Locker
+        if: steps.release-window.outputs.promote == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm exec wrangler deploy
+          --strict
+          --keep-vars
+          --message "Username-Only Cloud Locker - Production"

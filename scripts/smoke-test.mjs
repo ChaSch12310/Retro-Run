@@ -150,6 +150,10 @@ const pocketDynastyPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-pocket-dynasty-contract-season.yml", import.meta.url),
   "utf8"
 );
+const usernameOnlyPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-username-only-cloud-locker.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -369,6 +373,14 @@ assert.match(pocketDynastyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standa
 assert.match(pocketDynastyPromotionWorkflow, /pnpm test/);
 assert.match(pocketDynastyPromotionWorkflow, /wrangler deploy/);
 assert.match(pocketDynastyPromotionWorkflow, /Pocket Dynasty: Contract Season - Production/);
+assert.match(usernameOnlyPromotionWorkflow, /name: Username-Only Cloud Locker Production/);
+assert.match(usernameOnlyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(usernameOnlyPromotionWorkflow, /2026-08-29/);
+assert.match(usernameOnlyPromotionWorkflow, /035a2f81ceaab7b7fc225158dc32ec5f9c570312/);
+assert.match(usernameOnlyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(usernameOnlyPromotionWorkflow, /pnpm test/);
+assert.match(usernameOnlyPromotionWorkflow, /wrangler deploy/);
+assert.match(usernameOnlyPromotionWorkflow, /Username-Only Cloud Locker - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
