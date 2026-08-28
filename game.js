@@ -2141,8 +2141,8 @@ function setAccountMode(mode) {
   accountSubmitButtonEl.textContent = creating ? "Create Account" : "Sign In";
   accountPasscodeInputEl.autocomplete = creating ? "new-password" : "current-password";
   accountHelpTextEl.textContent = creating
-    ? "Create one account to carry all ten game libraries between devices. Passcode recovery is not available yet."
-    : "Sign in to use the same franchise saves on your other devices.";
+    ? "Create an account with only a username and passcode. No email required. Passcode recovery is not available yet."
+    : "Sign in with only your username and passcode. No email required.";
   accountMessageEl.textContent = "";
   accountMessageEl.classList.remove("error");
 }

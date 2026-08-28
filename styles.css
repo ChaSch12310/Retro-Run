@@ -2196,6 +2196,28 @@ body.franchise-slot-selecting #loadSavePanel {
   font-size: 0.72rem;
 }
 
+.account-credentials-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  color: #172334;
+  background: var(--menu-accent);
+  border: 3px solid var(--line);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.account-credentials-note span {
+  color: #f6efcf;
+  background: #173652;
+  padding: 4px 6px;
+  border: 2px solid #09131e;
+  white-space: nowrap;
+}
+
 .account-mode-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
