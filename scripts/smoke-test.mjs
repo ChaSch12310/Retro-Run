@@ -154,6 +154,10 @@ const usernameOnlyPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-username-only-cloud-locker.yml", import.meta.url),
   "utf8"
 );
+const usernameOnlyAccountApiWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-username-only-account-api.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -381,6 +385,14 @@ assert.match(usernameOnlyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standar
 assert.match(usernameOnlyPromotionWorkflow, /pnpm test/);
 assert.match(usernameOnlyPromotionWorkflow, /wrangler deploy/);
 assert.match(usernameOnlyPromotionWorkflow, /Username-Only Cloud Locker - Production/);
+assert.match(usernameOnlyAccountApiWorkflow, /name: Username-Only Account API Production/);
+assert.match(usernameOnlyAccountApiWorkflow, /timezone: "America\/Chicago"/);
+assert.match(usernameOnlyAccountApiWorkflow, /2026-09-06/);
+assert.match(usernameOnlyAccountApiWorkflow, /9ec832df5cc83cfe7f9074c741c683eadbeedbfa/);
+assert.match(usernameOnlyAccountApiWorkflow, /pnpm test/);
+assert.match(usernameOnlyAccountApiWorkflow, /wrangler deploy/);
+assert.match(usernameOnlyAccountApiWorkflow, /wrangler\.account\.jsonc/);
+assert.match(usernameOnlyAccountApiWorkflow, /Username-Only Account API - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
