@@ -3,9 +3,7 @@ name: Creator Key Refresh Production
 run-name: Creator Key Refresh production promotion
 
 on:
-  schedule:
-    - cron: "0 0 19 8 *"
-      timezone: "America/Chicago"
+  workflow_dispatch:
 
 permissions:
   contents: read

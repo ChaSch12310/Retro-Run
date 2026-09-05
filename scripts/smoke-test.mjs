@@ -154,10 +154,6 @@ const usernameOnlyPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-username-only-cloud-locker.yml", import.meta.url),
   "utf8"
 );
-const usernameOnlyAccountApiWorkflow = fs.readFileSync(
-  new URL("../.github/workflows/promote-username-only-account-api.yml", import.meta.url),
-  "utf8"
-);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -357,20 +353,23 @@ assert.deepEqual(
   }
 );
 assert.equal(releaseForMonthDay("08-07"), null);
-assert.equal((holidayWorkflow.match(/timezone: "America\/Chicago"/g) || []).length, 7);
+assert.match(holidayWorkflow, /workflow_dispatch:/);
+assert.doesNotMatch(holidayWorkflow, /\n  schedule:/);
 assert.match(holidayWorkflow, /pnpm test/);
 assert.match(holidayWorkflow, /RETRO_RUN_SEASONAL_PROFILE: \$\{\{ steps\.release\.outputs\.profile \}\}/);
 assert.match(holidayWorkflow, /wrangler deploy/);
 assert.match(holidayWorkflow, /--strict/);
 assert.match(holidayWorkflow, /--keep-vars/);
 assert.match(creatorKeyPromotionWorkflow, /name: Creator Key Refresh Production/);
-assert.match(creatorKeyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(creatorKeyPromotionWorkflow, /workflow_dispatch:/);
+assert.doesNotMatch(creatorKeyPromotionWorkflow, /\n  schedule:/);
 assert.match(creatorKeyPromotionWorkflow, /2026-08-19/);
 assert.match(creatorKeyPromotionWorkflow, /2a101a7c-3563-4e68-b494-4583617c1b4c@100%/);
 assert.match(creatorKeyPromotionWorkflow, /--yes/);
 assert.match(creatorKeyPromotionWorkflow, /Creator Key Refresh - Production/);
 assert.match(pocketDynastyPromotionWorkflow, /name: Pocket Dynasty Contract Season Production/);
-assert.match(pocketDynastyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(pocketDynastyPromotionWorkflow, /workflow_dispatch:/);
+assert.doesNotMatch(pocketDynastyPromotionWorkflow, /\n  schedule:/);
 assert.match(pocketDynastyPromotionWorkflow, /2026-08-21/);
 assert.match(pocketDynastyPromotionWorkflow, /f0cf17b49a8e878fdc9a7fdb5c9424eff036530e/);
 assert.match(pocketDynastyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
@@ -378,21 +377,14 @@ assert.match(pocketDynastyPromotionWorkflow, /pnpm test/);
 assert.match(pocketDynastyPromotionWorkflow, /wrangler deploy/);
 assert.match(pocketDynastyPromotionWorkflow, /Pocket Dynasty: Contract Season - Production/);
 assert.match(usernameOnlyPromotionWorkflow, /name: Username-Only Cloud Locker Production/);
-assert.match(usernameOnlyPromotionWorkflow, /timezone: "America\/Chicago"/);
+assert.match(usernameOnlyPromotionWorkflow, /workflow_dispatch:/);
+assert.doesNotMatch(usernameOnlyPromotionWorkflow, /\n  schedule:/);
 assert.match(usernameOnlyPromotionWorkflow, /2026-08-29/);
 assert.match(usernameOnlyPromotionWorkflow, /035a2f81ceaab7b7fc225158dc32ec5f9c570312/);
 assert.match(usernameOnlyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
 assert.match(usernameOnlyPromotionWorkflow, /pnpm test/);
 assert.match(usernameOnlyPromotionWorkflow, /wrangler deploy/);
 assert.match(usernameOnlyPromotionWorkflow, /Username-Only Cloud Locker - Production/);
-assert.match(usernameOnlyAccountApiWorkflow, /name: Username-Only Account API Production/);
-assert.match(usernameOnlyAccountApiWorkflow, /timezone: "America\/Chicago"/);
-assert.match(usernameOnlyAccountApiWorkflow, /2026-09-06/);
-assert.match(usernameOnlyAccountApiWorkflow, /9ec832df5cc83cfe7f9074c741c683eadbeedbfa/);
-assert.match(usernameOnlyAccountApiWorkflow, /pnpm test/);
-assert.match(usernameOnlyAccountApiWorkflow, /wrangler deploy/);
-assert.match(usernameOnlyAccountApiWorkflow, /wrangler\.account\.jsonc/);
-assert.match(usernameOnlyAccountApiWorkflow, /Username-Only Account API - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",

@@ -3,9 +3,7 @@ name: Pocket Dynasty Contract Season Production
 run-name: Pocket Dynasty Contract Season production promotion
 
 on:
-  schedule:
-    - cron: "0 0 21 8 *"
-      timezone: "America/Chicago"
+  workflow_dispatch:
 
 permissions:
   contents: read

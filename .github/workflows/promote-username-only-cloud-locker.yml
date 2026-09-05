@@ -3,9 +3,7 @@ name: Username-Only Cloud Locker Production
 run-name: Username-Only Cloud Locker production promotion
 
 on:
-  schedule:
-    - cron: "0 0 29 8 *"
-      timezone: "America/Chicago"
+  workflow_dispatch:
 
 permissions:
   contents: read

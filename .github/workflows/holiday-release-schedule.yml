@@ -1,23 +1,8 @@
 name: Holiday Release Schedule
 
-run-name: Holiday release - ${{ github.event_name == 'workflow_dispatch' && inputs.profile || 'automatic' }}
+run-name: Holiday release - ${{ inputs.profile }}
 
 on:
-  schedule:
-    - cron: "0 0 3 1 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 30 3 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 3 4 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 1,6 7 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 24 10 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 2,21,30 11 *"
-      timezone: "America/Chicago"
-    - cron: "0 0 8,29 12 *"
-      timezone: "America/Chicago"
   workflow_dispatch:
     inputs:
       profile:
@@ -63,7 +48,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Select scheduled release
+      - name: Select requested release
         id: release
         env:
           RETRO_RUN_FORCE_PROFILE: ${{ inputs.profile }}
