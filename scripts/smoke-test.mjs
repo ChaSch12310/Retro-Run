@@ -173,11 +173,11 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260828-username-only-cloud-locker/);
+assert.match(html, /game\.js\?v=20260905-varied-interviews/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260828-username-only-cloud-locker/);
+assert.match(html, /pocket-dynasty\.js\?v=20260905-varied-interviews/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -428,7 +428,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260828-username-only-cloud-locker/);
+assert.match(html, /20260905-varied-interviews/);
 assert.match(html, /id="betweenGamePanel"/);
 assert.match(html, /id="betweenGameHeading"/);
 assert.match(html, /id="betweenGameChoices"/);
@@ -1323,6 +1323,14 @@ globalThis.__retroRunTest = {
   playerMoraleMood,
   shouldCreateBetweenGameProblem,
   shouldCreatePressConference,
+  get problemDeckSize() { return BETWEEN_GAME_PROBLEMS.length; },
+  get pressConferenceDeckSize() { return PRESS_CONFERENCES.length; },
+  createProblemForTest: createBetweenGameProblem,
+  createPressConferenceForTest: createPressConference,
+  setDecisionHistory(problemHistory = [], pressConferenceHistory = []) {
+    franchise.problemHistory = problemHistory;
+    franchise.pressConferenceHistory = pressConferenceHistory;
+  },
   triggerProblem(problemId = "equipment-trouble", week = 3) {
     franchise.pendingProblem = { id: problemId, season: franchise.year, week };
     seasonCheckpointLevel = currentSeasonStartLevel() + week;
@@ -2381,6 +2389,27 @@ assert.equal(game.shouldCreatePressConference(8, false), true);
 assert.equal(game.shouldCreatePressConference(11, false), true);
 assert.equal(game.shouldCreatePressConference(3, false), false);
 assert.equal(game.shouldCreatePressConference(12, true), false);
+const problemDeckIds = [];
+game.setDecisionHistory([], []);
+for (let week = 1; week <= game.problemDeckSize; week += 1) {
+  const decision = game.createProblemForTest(1, week);
+  assert.equal(problemDeckIds.includes(decision.id), false);
+  problemDeckIds.push(decision.id);
+  game.setDecisionHistory(problemDeckIds.map((id) => ({ id })), []);
+}
+assert.equal(problemDeckIds.length, game.problemDeckSize);
+assert.notEqual(game.createProblemForTest(2, 1).id, problemDeckIds.at(-1));
+const pressDeckIds = [];
+game.setDecisionHistory([], []);
+for (let week = 1; week <= game.pressConferenceDeckSize; week += 1) {
+  const decision = game.createPressConferenceForTest(1, week);
+  assert.equal(pressDeckIds.includes(decision.id), false);
+  pressDeckIds.push(decision.id);
+  game.setDecisionHistory([], pressDeckIds.map((id) => ({ id })));
+}
+assert.equal(pressDeckIds.length, game.pressConferenceDeckSize);
+assert.notEqual(game.createPressConferenceForTest(2, 1).id, pressDeckIds.at(-1));
+game.setDecisionHistory([], []);
 game.setManagement({ fans: 1500, lastFanChange: 0 });
 game.triggerPressConference("tough-result", 2);
 assert.equal(game.pendingPressConference.id, "tough-result");

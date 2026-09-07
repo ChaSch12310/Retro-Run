@@ -1141,6 +1141,66 @@ const BETWEEN_GAME_PROBLEMS = [
       { id: "hard-practice", title: "Demand Extra Work", description: "Push the player hard despite team concerns.", effects: { teamMorale: -2, playerMorale: 5 } },
     ],
   },
+  {
+    id: "weather-watch",
+    category: "Game Day",
+    title: "Weather Watch",
+    text: "A rough forecast could disrupt the team's pregame routine.",
+    choices: [
+      { id: "reserve-indoor-space", title: "Reserve Indoor Space", description: "Keep the preparation routine comfortable and focused.", cost: 80, effects: { teamMorale: 3, allPlayerMorale: 1, money: -80 } },
+      { id: "embrace-weather", title: "Embrace the Weather", description: "Treat the conditions as a chance to build toughness.", effects: { teamMorale: -1, playerMorale: 3 } },
+    ],
+  },
+  {
+    id: "recovery-concern",
+    category: "Player Care",
+    title: "Recovery Concern",
+    text: "The active player asks for extra recovery time before the next matchup.",
+    choices: [
+      { id: "book-treatment", title: "Book Treatment", description: "Pay for a recovery session and protect the starter.", cost: 90, effects: { playerMorale: 6, teamMorale: 1, money: -90 } },
+      { id: "trust-routine", title: "Trust the Routine", description: "Keep the regular schedule and conserve Team Funds.", effects: { playerMorale: -3, teamMorale: 1 } },
+    ],
+  },
+  {
+    id: "venue-access",
+    category: "Facilities",
+    title: "Venue Access Mix-Up",
+    text: "The team loses its planned walkthrough time at the next venue.",
+    choices: [
+      { id: "rent-practice-site", title: "Rent a Practice Site", description: "Give the roster a clean replacement walkthrough.", cost: 110, effects: { teamMorale: 4, allPlayerMorale: 1, money: -110 } },
+      { id: "study-film", title: "Study More Film", description: "Shift preparation to the meeting room instead.", effects: { teamMorale: 1, playerMorale: 2 } },
+    ],
+  },
+  {
+    id: "teammate-spotlight",
+    category: "Locker Room",
+    title: "Teammate Wants Recognition",
+    text: "A reserve player feels overlooked after a strong week in practice.",
+    choices: [
+      { id: "share-spotlight", title: "Share the Spotlight", description: "Recognize the player's work in front of the whole team.", effects: { teamMorale: 5, allPlayerMorale: 1 } },
+      { id: "keep-depth-quiet", title: "Keep the Focus Narrow", description: "Keep attention on the active player's preparation.", effects: { playerMorale: 3, teamMorale: -2 } },
+    ],
+  },
+  {
+    id: "local-rivalry",
+    category: "Community",
+    title: "Local Rivalry Week",
+    text: "A nearby club challenges the team to a public skills event before the matchup.",
+    choices: [
+      { id: "accept-challenge", title: "Accept the Challenge", description: "Build excitement with a friendly public appearance.", effects: { teamMorale: 3, playerMorale: 2 } },
+      { id: "stay-private", title: "Stay Private", description: "Keep the team away from distractions and focus on preparation.", effects: { playerMorale: 1, teamMorale: -1 } },
+    ],
+  },
+  {
+    id: "nutrition-plan",
+    category: "Training",
+    title: "Nutrition Plan Debate",
+    text: "The staff wants to refresh the team's meals before the next game.",
+    choices: [
+      { id: "upgrade-meals", title: "Upgrade Team Meals", description: "Pay for a better meal plan for the whole roster.", cost: 70, effects: { teamMorale: 3, allPlayerMorale: 2, money: -70 } },
+      { id: "keep-plan", title: "Keep the Current Plan", description: "Save the money and leave the routine alone.", effects: { teamMorale: -1 } },
+    ],
+  },
 ];
 const PRESS_CONFERENCES = [
   {
@@ -1185,6 +1245,94 @@ const PRESS_CONFERENCES = [
       { id: "praise-roster", title: "Praise the Whole Roster", description: "Celebrate every player who contributes to the season.", fans: 120 },
       { id: "spotlight-starter", title: "Spotlight the Starter", description: "Build excitement around the active player.", fans: 60 },
       { id: "question-talent", title: "Question the Talent", description: "Say the roster still has not proven it belongs.", fans: -150 },
+    ],
+  },
+  {
+    id: "captain-question",
+    category: "Leadership",
+    title: "Who Sets the Standard?",
+    text: "A reporter asks who keeps the team steady when the game gets difficult.",
+    choices: [
+      { id: "praise-captains", title: "Praise the Captains", description: "Credit the leaders who set the tone every day.", fans: 130 },
+      { id: "coach-credit", title: "Credit the Coaches", description: "Point to the staff's preparation and discipline.", fans: 55 },
+      { id: "avoid-answer", title: "Avoid the Question", description: "Refuse to name anyone and move on quickly.", fans: -90 },
+    ],
+  },
+  {
+    id: "community-promise",
+    category: "Community Desk",
+    title: "How Will You Give Back?",
+    text: "Local families ask what the franchise will do for the community this season.",
+    choices: [
+      { id: "promise-visits", title: "Promise Team Visits", description: "Commit to spending time with local supporters.", fans: 140 },
+      { id: "support-foundation", title: "Support a Foundation", description: "Highlight the team's ongoing community support.", fans: 75 },
+      { id: "keep-it-sports", title: "Keep It About Sports", description: "Say the franchise should focus only on competing.", fans: -110 },
+    ],
+  },
+  {
+    id: "rivalry-headline",
+    category: "Rivalry Watch",
+    title: "Is This a Rivalry?",
+    text: "The press wants you to add drama before an important matchup.",
+    choices: [
+      { id: "welcome-rivalry", title: "Welcome the Rivalry", description: "Say big games bring out the best in the team.", fans: 145 },
+      { id: "respect-everyone", title: "Respect Every Opponent", description: "Keep the response measured and professional.", fans: 65 },
+      { id: "mock-opponent", title: "Mock the Opponent", description: "Turn the interview into a careless joke.", fans: -160 },
+    ],
+  },
+  {
+    id: "comeback-question",
+    category: "Season Story",
+    title: "Can This Team Bounce Back?",
+    text: "A reporter asks whether the franchise can respond after a difficult stretch.",
+    choices: [
+      { id: "promise-response", title: "Promise a Response", description: "Say the team will answer with effort and energy.", fans: 125 },
+      { id: "focus-process", title: "Focus on the Process", description: "Say improvement comes one practice at a time.", fans: 70 },
+      { id: "give-up-ground", title: "Concede the Season", description: "Suggest that the team may already be out of contention.", fans: -170 },
+    ],
+  },
+  {
+    id: "young-fans",
+    category: "Supporter Spotlight",
+    title: "What Do Young Fans Learn Here?",
+    text: "A student reporter asks what the franchise represents beyond the score.",
+    choices: [
+      { id: "talk-teamwork", title: "Talk About Teamwork", description: "Share a message about effort, teamwork, and resilience.", fans: 135 },
+      { id: "talk-competition", title: "Talk About Competition", description: "Focus on preparation and enjoying the challenge.", fans: 60 },
+      { id: "brush-off-kids", title: "Brush It Off", description: "Say the question is not important right now.", fans: -140 },
+    ],
+  },
+  {
+    id: "gameplan-question",
+    category: "Strategy Desk",
+    title: "Will You Change the Game Plan?",
+    text: "The media asks whether the team will try something new next week.",
+    choices: [
+      { id: "share-confidence", title: "Share Confidence", description: "Say the staff has a strong plan ready for the matchup.", fans: 110 },
+      { id: "stay-flexible", title: "Stay Flexible", description: "Say the team will adapt once the game begins.", fans: 65 },
+      { id: "reveal-nothing", title: "Shut Down the Question", description: "Refuse to offer even a basic answer.", fans: -75 },
+    ],
+  },
+  {
+    id: "road-trip-question",
+    category: "Road Report",
+    title: "How Does the Team Travel?",
+    text: "A reporter asks what keeps the group connected away from home.",
+    choices: [
+      { id: "credit-fans-away", title: "Credit Traveling Fans", description: "Thank supporters who show up wherever the team plays.", fans: 145 },
+      { id: "credit-routine", title: "Credit the Routine", description: "Talk about the team's calm and consistent preparation.", fans: 50 },
+      { id: "complain-travel", title: "Complain About Travel", description: "Make excuses before the next game even begins.", fans: -135 },
+    ],
+  },
+  {
+    id: "franchise-future",
+    category: "Franchise Future",
+    title: "Where Is This Team Going?",
+    text: "A reporter asks what supporters should expect from the franchise as it grows.",
+    choices: [
+      { id: "invite-support", title: "Invite Fans Along", description: "Tell fans they are building the future with the team.", fans: 150 },
+      { id: "promise-growth", title: "Promise Steady Growth", description: "Set a patient, positive expectation for the future.", fans: 80 },
+      { id: "make-empty-promise", title: "Make an Empty Promise", description: "Guarantee results that the team cannot control.", fans: -130 },
     ],
   },
 ];
@@ -3166,15 +3314,43 @@ function shouldCreatePressConference(week, seasonWrapped) {
   return !seasonWrapped && [2, 5, 8, 11].includes(week);
 }
 
+function historicDecisionIds(history, decisions, labelKey) {
+  return (history || []).map((entry) => {
+    if (decisions.some((decision) => decision.id === entry?.id)) {
+      return entry.id;
+    }
+    return decisions.find((decision) => decision.title === entry?.[labelKey])?.id || null;
+  }).filter(Boolean);
+}
+
+function rotatingDecision(decisions, history, labelKey, seedSource) {
+  const usedIds = historicDecisionIds(history, decisions, labelKey);
+  const unusedDecisions = decisions.filter((decision) => !usedIds.includes(decision.id));
+  const previousId = usedIds.at(-1);
+  const candidates = unusedDecisions.length
+    ? unusedDecisions
+    : decisions.filter((decision) => decision.id !== previousId);
+  const deck = candidates.length ? candidates : decisions;
+  return deck[textSeed(seedSource) % deck.length];
+}
+
 function createBetweenGameProblem(season, week) {
-  const seed = textSeed(`${franchise.team?.name}-${season}-${week}`);
-  const problem = BETWEEN_GAME_PROBLEMS[seed % BETWEEN_GAME_PROBLEMS.length];
+  const problem = rotatingDecision(
+    BETWEEN_GAME_PROBLEMS,
+    franchise.problemHistory,
+    "problem",
+    `${activeGameId}-${franchise.team?.name}-${season}-${week}-${franchise.completedGames}-problem`
+  );
   return { id: problem.id, season, week };
 }
 
 function createPressConference(season, week) {
-  const seed = textSeed(`${activeGameId}-${franchise.team?.name}-${season}-${week}-press`);
-  const conference = PRESS_CONFERENCES[seed % PRESS_CONFERENCES.length];
+  const conference = rotatingDecision(
+    PRESS_CONFERENCES,
+    franchise.pressConferenceHistory,
+    "conference",
+    `${activeGameId}-${franchise.team?.name}-${season}-${week}-${franchise.completedGames}-press`
+  );
   return { id: conference.id, season, week };
 }
 
@@ -3210,6 +3386,7 @@ function applyBetweenGameChoice(choiceId) {
   }
   franchise.teamFunds = Math.max(0, franchise.teamFunds + (effects.money || 0));
   franchise.problemHistory.push({
+    id: problem.id,
     season: pending.season,
     week: pending.week,
     problem: problem.title,
@@ -3239,6 +3416,7 @@ function applyPressConferenceChoice(choiceId) {
   const fanChange = franchise.fans - previousFans;
   franchise.lastFanChange = fanChange;
   franchise.pressConferenceHistory.push({
+    id: conference.id,
     season: pending.season,
     week: pending.week,
     conference: conference.title,
