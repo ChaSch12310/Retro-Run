@@ -3419,12 +3419,12 @@ function applyPlayerMoraleForGame(result, tries) {
   });
 }
 
-function shouldCreateBetweenGameProblem(week, seasonWrapped) {
-  return !seasonWrapped && week % 3 === 0;
+function shouldCreateBetweenGameProblem() {
+  return true;
 }
 
-function shouldCreatePressConference(week, seasonWrapped) {
-  return !seasonWrapped && [2, 5, 8, 11].includes(week);
+function shouldCreatePressConference() {
+  return true;
 }
 
 function historicDecisionIds(history, decisions, labelKey) {
@@ -3508,8 +3508,8 @@ function applyBetweenGameChoice(choiceId) {
   });
   franchise.problemHistory = franchise.problemHistory.slice(-12);
   franchise.pendingProblem = null;
-  franchise.lastResult = `${problem.title}: ${choice.title}. ${problemEffectSummary(effects)}.`;
-  gameState = "levelComplete";
+  franchise.lastResult = `${problem.title}: ${choice.title}.`;
+  gameState = franchise.pendingPressConference ? "levelComplete" : franchise.offseason ? "offseason" : "levelComplete";
   saveFranchise();
   updateStartOverlay();
   updateHud();
@@ -3538,8 +3538,8 @@ function applyPressConferenceChoice(choiceId) {
   });
   franchise.pressConferenceHistory = franchise.pressConferenceHistory.slice(-16);
   franchise.pendingPressConference = null;
-  franchise.lastResult = `${conference.title}: ${choice.title}. ${pressConferenceFanSummary(fanChange)}.`;
-  gameState = "levelComplete";
+  franchise.lastResult = `${conference.title}: ${choice.title}.`;
+  gameState = franchise.offseason ? "offseason" : "levelComplete";
   saveFranchise();
   updateStartOverlay();
   updateHud();
@@ -5475,10 +5475,10 @@ function completeLevel() {
           : `The kick is good and you beat the ${beatenTeam.name}. Next up: ${nextTeam.name}.`);
   pendingUpgrade = result === "W" && !runnerHasMaxRating(currentRunner());
   franchise.pendingUpgradeChoices = pendingUpgrade ? buildUpgradeChoices() : [];
-  franchise.pendingProblem = shouldCreateBetweenGameProblem(week, seasonWrapped)
+  franchise.pendingProblem = shouldCreateBetweenGameProblem()
     ? createBetweenGameProblem(seasonYear, week)
     : null;
-  franchise.pendingPressConference = !franchise.pendingProblem && shouldCreatePressConference(week, seasonWrapped)
+  franchise.pendingPressConference = shouldCreatePressConference()
     ? createPressConference(seasonYear, week)
     : null;
   if (pendingUpgrade) {
@@ -5506,17 +5506,17 @@ function advanceLevel() {
     renderUpgradeOptions();
     return;
   }
-  if (franchise.offseason) {
-    gameState = "offseason";
-    renderOffseasonPanel();
-    return;
-  }
   if (franchise.pendingProblem) {
     renderBetweenGameProblem();
     return;
   }
   if (franchise.pendingPressConference) {
     renderBetweenGameProblem();
+    return;
+  }
+  if (franchise.offseason) {
+    gameState = "offseason";
+    renderOffseasonPanel();
     return;
   }
   pendingUpgrade = false;
@@ -5528,7 +5528,11 @@ function syncFranchiseSetupState() {
   document.body.classList.toggle("game-library-open", gameLibraryOpen);
   document.body.classList.toggle("franchise-slot-selecting", slotSelectOpen);
   document.body.classList.toggle("franchise-setup-pending", !slotSelectOpen && !franchise.setupComplete);
-  document.body.classList.toggle("offseason-active", Boolean(franchise.offseason) && !pendingUpgrade && !slotSelectOpen && !gameLibraryOpen);
+  const offseasonReady = franchise.offseason
+    && !pendingUpgrade
+    && !franchise.pendingProblem
+    && !franchise.pendingPressConference;
+  document.body.classList.toggle("offseason-active", Boolean(offseasonReady) && !slotSelectOpen && !gameLibraryOpen);
   gameLibraryScreenEl.hidden = !gameLibraryOpen;
   creatorTriggerEl.disabled = gameLibraryOpen;
   creatorTriggerEl.setAttribute("aria-hidden", String(gameLibraryOpen));
@@ -5947,7 +5951,10 @@ function playerMoraleMood(value) {
 
 function renderOffseasonPanel() {
   const offseason = franchise.offseason;
-  const showOffseason = Boolean(offseason) && !pendingUpgrade;
+  const showOffseason = Boolean(offseason)
+    && !pendingUpgrade
+    && !franchise.pendingProblem
+    && !franchise.pendingPressConference;
   offseasonPanelEl.hidden = !showOffseason;
   document.body.classList.toggle("offseason-active", showOffseason && !slotSelectOpen && !gameLibraryOpen);
   restartSeasonButton.disabled = Boolean(offseason || franchise.pendingProblem || franchise.pendingPressConference);
@@ -5994,16 +6001,16 @@ function renderBetweenGameProblem() {
   const conference = pressConferenceById(pendingConference?.id);
   const decision = problem || conference;
   const pending = problem ? pendingProblem : pendingConference;
-  const showDecision = Boolean(decision) && !pendingUpgrade && !franchise.offseason;
+  const showDecision = Boolean(decision) && !pendingUpgrade;
   const decisionScreenActive = showDecision && !slotSelectOpen && !gameLibraryOpen;
+  const isPressConference = !problem && Boolean(conference);
   document.body.classList.toggle("between-game-active", decisionScreenActive);
-  betweenGamePanelEl.classList.toggle("press-conference", Boolean(conference));
+  betweenGamePanelEl.classList.toggle("press-conference", isPressConference);
   betweenGamePanelEl.hidden = !showDecision;
   if (!showDecision) {
     return;
   }
 
-  const isPressConference = Boolean(conference);
   betweenGameHeadingEl.textContent = isPressConference ? "Press Conference" : "Between-Game Problem";
   betweenGameWeekEl.textContent = `After Week ${pending.week}`;
   betweenGameCategoryEl.textContent = decision.category;
@@ -6027,12 +6034,9 @@ function renderBetweenGameProblem() {
     button.type = "button";
     button.className = "problem-choice";
     button.disabled = unaffordable;
-    const effectSummary = isPressConference
-      ? pressConferenceFanSummary(choice.fans)
-      : problemEffectSummary(choice.effects);
-    button.innerHTML = `<strong>${choice.title}</strong><span>${choice.description}</span><small>${effectSummary}${
-      unaffordable ? " · Not enough Team Funds" : ""
-    }</small>`;
+    button.innerHTML = `<strong>${choice.title}</strong><span>${choice.description}</span>${
+      unaffordable ? "<small>Not enough Team Funds</small>" : ""
+    }`;
     button.addEventListener("click", () => (
       isPressConference
         ? applyPressConferenceChoice(choice.id)
@@ -6258,7 +6262,9 @@ function applyUpgrade(upgrade) {
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   saveFranchise();
-  gameState = franchise.offseason ? "offseason" : "levelComplete";
+  gameState = franchise.pendingProblem || franchise.pendingPressConference
+    ? "levelComplete"
+    : franchise.offseason ? "offseason" : "levelComplete";
   updateStartOverlay();
 }
 

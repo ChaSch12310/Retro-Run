@@ -173,7 +173,7 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260907-franchise-paths/);
+assert.match(html, /game\.js\?v=20260907-postgame-doubleheader/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
 assert.match(html, /id="careerPathJourney"[^>]*value="journey"/);
 assert.match(html, /id="careerPathFavorite"[^>]*value="favorite"/);
@@ -182,7 +182,7 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260907-franchise-paths/);
+assert.match(html, /pocket-dynasty\.js\?v=20260907-postgame-doubleheader/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -433,7 +433,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260907-franchise-paths/);
+assert.match(html, /20260907-postgame-doubleheader/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
@@ -1298,6 +1298,7 @@ globalThis.__retroRunTest = {
   get frontOfficeCredits() { return franchise.frontOfficeCredits; },
   get fans() { return franchise.fans; },
   get lastFanChange() { return franchise.lastFanChange; },
+  get lastResult() { return franchise.lastResult; },
   get teamFunds() { return franchise.teamFunds; },
   get lastGameRevenue() { return franchise.lastGameRevenue; },
   get offseason() { return franchise.offseason; },
@@ -1376,6 +1377,11 @@ globalThis.__retroRunTest = {
     updateStartOverlay();
   },
   chooseProblem: applyBetweenGameChoice,
+  resolvePendingProblemForTest() {
+    const problem = betweenGameProblemById(franchise.pendingProblem?.id);
+    const choice = problem?.choices.find((entry) => (entry.cost || 0) <= franchise.teamFunds);
+    return choice ? applyBetweenGameChoice(choice.id) : false;
+  },
   triggerPressConference(conferenceId = "tough-result", week = 2) {
     franchise.pendingProblem = null;
     franchise.pendingPressConference = { id: conferenceId, season: franchise.year, week };
@@ -1385,6 +1391,10 @@ globalThis.__retroRunTest = {
     updateStartOverlay();
   },
   choosePressConference: applyPressConferenceChoice,
+  resolvePendingPressForTest() {
+    const conference = pressConferenceById(franchise.pendingPressConference?.id);
+    return conference?.choices[0] ? applyPressConferenceChoice(conference.choices[0].id) : false;
+  },
   activeFeatureCount,
   get maxConsecutiveDefenderRows() { return CONFIG.maxConsecutiveDefenderRows; },
   get venueLogoRow() { return CONFIG.venueLogoRow; },
@@ -1428,6 +1438,17 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
+
+function resolveRequiredPostgameDecisions() {
+  assert.notEqual(game.pendingProblem, null);
+  assert.notEqual(game.pendingPressConference, null);
+  assert.equal(elements.get("startButton").textContent, "Resolve Problem");
+  assert.equal(game.resolvePendingProblemForTest(), true);
+  assert.equal(elements.get("startButton").textContent, "Answer Press");
+  assert.equal(game.resolvePendingPressForTest(), true);
+  assert.equal(game.pendingProblem, null);
+  assert.equal(game.pendingPressConference, null);
+}
 
 const cloudGameKey = "gridiron-dash-franchise-slots";
 const localCloud = game.collectLocalCloudBundle();
@@ -1931,6 +1952,7 @@ assert.equal(elements.get("overlayTitle").textContent, "Swish!");
 assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
 assert.equal(elements.get("startButton").disabled, true);
 game.applyPendingUpgrade();
+resolveRequiredPostgameDecisions();
 assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
@@ -2022,6 +2044,7 @@ const hockeyUpgradesBefore = game.runnerUpgrades;
 game.applyPendingUpgrade();
 assert.equal(game.pendingUpgrade, false);
 assert.equal(game.runnerUpgrades, hockeyUpgradesBefore + 1);
+resolveRequiredPostgameDecisions();
 assert.equal(elements.get("startButton").textContent, "Next Game");
 assert.equal(elements.get("startButton").disabled, false);
 
@@ -2089,6 +2112,7 @@ assert.equal(game.gameState, "levelComplete");
 assert.equal(elements.get("overlayTitle").textContent, "Goal!");
 assert.equal(game.pendingUpgrade, true);
 game.applyPendingUpgrade();
+resolveRequiredPostgameDecisions();
 assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
@@ -2312,6 +2336,7 @@ assert.equal(game.gameState, "levelComplete");
 assert.equal(elements.get("overlayTitle").textContent, "Knockout!");
 assert.equal(game.pendingUpgrade, true);
 game.applyPendingUpgrade();
+resolveRequiredPostgameDecisions();
 assert.equal(elements.get("startButton").textContent, "Next Game");
 
 elements.get("arcadeHomeButton").click();
@@ -2467,14 +2492,14 @@ assert.ok(game.moraleChangeForGame("W", 2) >= 7);
 assert.equal(game.shouldCreateBetweenGameProblem(3, false), true);
 assert.equal(game.shouldCreateBetweenGameProblem(6, false), true);
 assert.equal(game.shouldCreateBetweenGameProblem(9, false), true);
-assert.equal(game.shouldCreateBetweenGameProblem(2, false), false);
-assert.equal(game.shouldCreateBetweenGameProblem(12, true), false);
+assert.equal(game.shouldCreateBetweenGameProblem(2, false), true);
+assert.equal(game.shouldCreateBetweenGameProblem(12, true), true);
 assert.equal(game.shouldCreatePressConference(2, false), true);
 assert.equal(game.shouldCreatePressConference(5, false), true);
 assert.equal(game.shouldCreatePressConference(8, false), true);
 assert.equal(game.shouldCreatePressConference(11, false), true);
-assert.equal(game.shouldCreatePressConference(3, false), false);
-assert.equal(game.shouldCreatePressConference(12, true), false);
+assert.equal(game.shouldCreatePressConference(3, false), true);
+assert.equal(game.shouldCreatePressConference(12, true), true);
 const problemDeckIds = [];
 game.setDecisionHistory([], []);
 for (let week = 1; week <= game.problemDeckSize; week += 1) {
@@ -2502,6 +2527,8 @@ assert.equal(game.pendingPressConference.id, "tough-result");
 assert.equal(elements.get("betweenGamePanel").hidden, false);
 assert.equal(elements.get("betweenGameHeading").textContent, "Press Conference");
 assert.equal(elements.get("betweenGameChoices").children.length, 3);
+assert.doesNotMatch(elements.get("betweenGameChoices").children[0].innerHTML, /<small>/);
+assert.doesNotMatch(elements.get("betweenGameChoices").children[0].innerHTML, /Fans \+/);
 assert.equal(elements.get("startButton").textContent, "Answer Press");
 assert.equal(elements.get("startButton").disabled, true);
 assert.equal(game.choosePressConference("blame-crowd"), true);
@@ -2510,6 +2537,7 @@ assert.equal(game.fans, 1320);
 assert.equal(game.lastFanChange, -180);
 assert.equal(game.pressConferenceHistory.at(-1).choice, "Blame the Crowd");
 assert.equal(game.pressConferenceHistory.at(-1).fanChange, -180);
+assert.equal(game.lastResult, "Who Owns the Tough Result?: Blame the Crowd.");
 assert.equal(elements.get("betweenGamePanel").hidden, true);
 assert.equal(elements.get("startButton").textContent, "Next Game");
 game.triggerPressConference("supporter-spotlight", 5);
@@ -2521,6 +2549,8 @@ assert.equal(game.pendingProblem.id, "equipment-trouble");
 assert.equal(elements.get("betweenGamePanel").hidden, false);
 assert.equal(elements.get("betweenGameChoices").children.length, 2);
 assert.equal(elements.get("betweenGameChoices").children[0].disabled, false);
+assert.doesNotMatch(elements.get("betweenGameChoices").children[0].innerHTML, /<small>/);
+assert.doesNotMatch(elements.get("betweenGameChoices").children[0].innerHTML, /Team Morale \+/);
 assert.equal(elements.get("startButton").textContent, "Resolve Problem");
 assert.equal(elements.get("startButton").disabled, true);
 assert.equal(game.chooseProblem("replace-gear"), true);
@@ -2529,6 +2559,7 @@ assert.equal(game.teamFunds, 1000);
 assert.equal(game.morale, 65);
 assert.equal(game.runnerMorale, 65);
 assert.equal(game.problemHistory.at(-1).choice, "Replace the Gear");
+assert.equal(game.lastResult, "Equipment Trouble: Replace the Gear.");
 assert.equal(elements.get("betweenGamePanel").hidden, true);
 assert.equal(elements.get("startButton").textContent, "Next Game");
 game.setManagement({ teamFunds: 0 });
@@ -2583,6 +2614,17 @@ assert.equal(game.pendingUpgrade, true);
 assert.equal(elements.get("startButton").textContent, "Choose Upgrade");
 assert.equal(elements.get("offseasonPanel").hidden, true);
 game.applyPendingUpgrade();
+assert.equal(game.gameState, "levelComplete");
+assert.notEqual(game.pendingProblem, null);
+assert.notEqual(game.pendingPressConference, null);
+assert.equal(elements.get("offseasonPanel").hidden, true);
+assert.equal(elements.get("betweenGameHeading").textContent, "Between-Game Problem");
+assert.equal(game.resolvePendingProblemForTest(), true);
+assert.equal(game.pendingProblem, null);
+assert.notEqual(game.pendingPressConference, null);
+assert.equal(elements.get("betweenGameHeading").textContent, "Press Conference");
+assert.equal(game.resolvePendingPressForTest(), true);
+assert.equal(game.pendingPressConference, null);
 assert.equal(game.gameState, "offseason");
 assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
 assert.equal(elements.get("offseasonPanel").hidden, false);
@@ -2692,6 +2734,13 @@ assert.equal(game.runnerHasMaxRating(), true);
 game.completeGameForTest(54, 2);
 assert.equal(game.pendingUpgrade, false);
 assert.equal(game.pendingUpgradeChoices.length, 0);
+assert.notEqual(game.pendingProblem, null);
+assert.notEqual(game.pendingPressConference, null);
+assert.equal(elements.get("startButton").textContent, "Resolve Problem");
+assert.equal(elements.get("startButton").disabled, true);
+assert.equal(game.resolvePendingProblemForTest(), true);
+assert.equal(elements.get("startButton").textContent, "Answer Press");
+assert.equal(game.resolvePendingPressForTest(), true);
 assert.equal(elements.get("startButton").textContent, "Next Game");
 assert.equal(elements.get("startButton").disabled, false);
 
