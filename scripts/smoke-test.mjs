@@ -154,6 +154,10 @@ const usernameOnlyPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-username-only-cloud-locker.yml", import.meta.url),
   "utf8"
 );
+const postgameDoubleheaderPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-postgame-doubleheader.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -390,6 +394,15 @@ assert.match(usernameOnlyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standar
 assert.match(usernameOnlyPromotionWorkflow, /pnpm test/);
 assert.match(usernameOnlyPromotionWorkflow, /wrangler deploy/);
 assert.match(usernameOnlyPromotionWorkflow, /Username-Only Cloud Locker - Production/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /name: Postgame Doubleheader Production/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /workflow_dispatch:/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /cron: "0 5 8 9 \*"/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /2026-09-08/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /ref: 73c90a6/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /pnpm test/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /wrangler deploy/);
+assert.match(postgameDoubleheaderPromotionWorkflow, /Postgame Doubleheader - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
