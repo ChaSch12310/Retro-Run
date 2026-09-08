@@ -35,6 +35,7 @@ const onboardingPanelEl = document.getElementById("onboardingPanel");
 const createCareerTitleEl = document.getElementById("createCareerTitle");
 const franchiseMainContentEl = document.getElementById("franchiseMainContent");
 const homeTeamNameEl = document.getElementById("homeTeamName");
+const careerTargetEl = document.getElementById("careerTarget");
 const nextOpponentNameEl = document.getElementById("nextOpponentName");
 const nextOpponentLabelEl = document.getElementById("nextOpponentLabel");
 const teamNameInputEl = document.getElementById("teamNameInput");
@@ -42,6 +43,14 @@ const runnerNameInputEl = document.getElementById("runnerNameInput");
 const playerNameLabelEl = document.getElementById("playerNameLabel");
 const teamPrimaryInputEl = document.getElementById("teamPrimaryInput");
 const teamSecondaryInputEl = document.getElementById("teamSecondaryInput");
+const careerPathCustomEl = document.getElementById("careerPathCustom");
+const careerPathJourneyEl = document.getElementById("careerPathJourney");
+const careerPathFavoriteEl = document.getElementById("careerPathFavorite");
+const favoriteTeamSelectEl = document.getElementById("favoriteTeamSelect");
+const careerPathSummaryEl = document.getElementById("careerPathSummary");
+const customTeamNameFieldEl = document.getElementById("customTeamNameField");
+const customPrimaryFieldEl = document.getElementById("customPrimaryField");
+const customSecondaryFieldEl = document.getElementById("customSecondaryField");
 const playerSkinInputEl = document.getElementById("playerSkinInput");
 const playerHairInputEl = document.getElementById("playerHairInput");
 const playerNumberInputEl = document.getElementById("playerNumberInput");
@@ -1338,6 +1347,11 @@ const PRESS_CONFERENCES = [
 ];
 const DEFAULT_FRANCHISE = {
   setupComplete: false,
+  careerPath: "custom",
+  favoriteTeamName: null,
+  lastTeamSwitchSeason: 1,
+  favoriteOfferSeason: 4,
+  teamOfferHistory: [],
   year: 1,
   wins: 0,
   losses: 0,
@@ -1438,6 +1452,59 @@ function comparableTeamName(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
+
+function teamByName(teamName, teams = currentTeams()) {
+  const target = comparableTeamName(teamName);
+  return teams.find((team) => comparableTeamName(team.name) === target) || null;
+}
+
+function selectedCareerPath() {
+  if (careerPathJourneyEl.checked) return "journey";
+  if (careerPathFavoriteEl.checked) return "favorite";
+  return "custom";
+}
+
+function selectedFavoriteTeam() {
+  return teamByName(favoriteTeamSelectEl.value) || currentTeams()[0];
+}
+
+function populateFavoriteTeamOptions() {
+  const teams = currentTeams();
+  const previousTeam = teamByName(favoriteTeamSelectEl.value, teams);
+  favoriteTeamSelectEl.innerHTML = teams
+    .map((team) => `<option value="${team.name}">${team.name}</option>`)
+    .join("");
+  favoriteTeamSelectEl.value = (previousTeam || teams[0]).name;
+}
+
+function updateCareerPathSetup() {
+  const path = selectedCareerPath();
+  const favoriteTeam = selectedFavoriteTeam();
+  const customTeam = path === "custom";
+  customTeamNameFieldEl.hidden = !customTeam;
+  customPrimaryFieldEl.hidden = !customTeam;
+  customSecondaryFieldEl.hidden = !customTeam;
+
+  if (path === "favorite") {
+    careerPathSummaryEl.textContent = `Begin Season 1 with ${favoriteTeam.name}. Other team offers begin before Season 3.`;
+  } else if (path === "journey") {
+    careerPathSummaryEl.textContent = `Begin with a random pro team other than ${favoriteTeam.name}. Team offers begin before Season 3.`;
+  } else {
+    careerPathSummaryEl.textContent = `Create your own team and work toward ${favoriteTeam.name}. Team offers begin before Season 3.`;
+  }
+
+  updateCharacterPreview();
+  if (!customTeam) {
+    const previewTeam = path === "favorite" ? favoriteTeam : currentGameMode().homeTeam;
+    characterPreviewEl.style.setProperty("--preview-primary", previewTeam.primary);
+    characterPreviewEl.style.setProperty("--preview-secondary", previewTeam.secondary);
+  }
+}
+
+function randomStartingTeam(favoriteTeam) {
+  const choices = currentTeams().filter((team) => team.name !== favoriteTeam.name);
+  return choices[Math.floor(Math.random() * choices.length)] || currentTeams()[0];
 }
 
 function currentOpponentTeams() {
@@ -1674,29 +1741,45 @@ function restartSeason() {
 
 function createFranchiseFromForm() {
   const defaultTeam = currentGameMode().homeTeam;
-  const teamName = teamNameInputEl.value.trim() || defaultTeam.name;
+  const careerPath = selectedCareerPath();
+  const favoriteTeam = selectedFavoriteTeam();
+  const customTeam = {
+    ...defaultTeam,
+    name: teamNameInputEl.value.trim() || defaultTeam.name,
+    primary: teamPrimaryInputEl.value || defaultTeam.primary,
+    secondary: teamSecondaryInputEl.value || defaultTeam.secondary,
+  };
+  const startingTeam = careerPath === "favorite"
+    ? favoriteTeam
+    : careerPath === "journey"
+      ? randomStartingTeam(favoriteTeam)
+      : customTeam;
   const runnerName = runnerNameInputEl.value.trim() || PLAYER_NAME_POOL[0];
-  const primary = teamPrimaryInputEl.value || defaultTeam.primary;
-  const secondary = teamSecondaryInputEl.value || defaultTeam.secondary;
   const appearance = readCharacterAppearanceInputs();
 
   franchise.setupComplete = true;
-  franchise.team = { name: teamName, primary, secondary };
+  franchise.careerPath = careerPath;
+  franchise.favoriteTeamName = favoriteTeam.name;
+  franchise.lastTeamSwitchSeason = 1;
+  franchise.favoriteOfferSeason = careerPath === "favorite" ? null : 4;
+  franchise.teamOfferHistory = [];
+  franchise.team = { ...startingTeam };
   const roster = createStartingRoster(runnerName, appearance);
   const starter = roster[0];
   franchise.player = starter;
   franchise.roster = roster;
   franchise.activePlayerId = starter.id;
   franchise.rosterUnlocked = true;
+  franchise.coach = createCoach(`${startingTeam.name}-${starter.name}`);
   franchise.lastResult = isBasketballMode()
-    ? "Basketball franchise created. Time to take the court."
+    ? `${startingTeam.name} are ready. Time to take the court.`
     : isSoccerMode()
-      ? "National team created. Time to start your campaign."
+      ? `${startingTeam.name} are ready. Time to start your campaign.`
       : isHockeyMode()
-        ? "Hockey franchise created. Time for puck drop."
+        ? `${startingTeam.name} are ready. Time for puck drop.`
         : isWaterPoloMode()
-          ? "Water polo club created. Time for the opening sprint."
-        : "Franchise created. Time to start your career.";
+          ? `${startingTeam.name} are ready. Time for the opening sprint.`
+        : `${startingTeam.name} are ready. Time to start your career.`;
   pendingUpgrade = false;
   franchise.pendingUpgradeChoices = [];
   saveFranchise();
@@ -1796,13 +1879,33 @@ function normalizeOffseason(rawOffseason, context = {}) {
       Number(context.completedGames) || 0,
       Number(context.scoutingQuality) || DEFAULT_FRANCHISE.scoutingQuality
     );
+  const savedOfferEvent = rawOffseason.events.find((event) => event?.type === "team-offer");
+  const savedOfferTeam = teamByName(savedOfferEvent?.team?.name || savedOfferEvent?.teamName);
+  const generatedOffer = createTeamOfferEvent(completedSeason + 1, context);
+  const offerEvent = savedOfferTeam
+    ? {
+      type: "team-offer",
+      nextSeason: completedSeason + 1,
+      team: { ...savedOfferTeam },
+      favorite: Boolean(savedOfferEvent.favorite),
+    }
+    : generatedOffer;
+  const events = [offerEvent, { type: "roster", prospects }].filter(Boolean);
+  const savedCurrentEvent = rawOffseason.events[Number(rawOffseason.index) || 0];
+  const canPreserveIndex = (
+    savedCurrentEvent?.type === "team-offer" && Boolean(savedOfferTeam)
+  ) || (
+    ["roster", "draft"].includes(savedCurrentEvent?.type)
+    && Number(rawOffseason.index) > 0
+    && Boolean(savedOfferTeam)
+  );
   return {
     completedSeason,
     wins: clamp(Number(rawOffseason.wins) || 0, 0, GAMES_PER_SEASON),
     losses: clamp(Number(rawOffseason.losses) || 0, 0, GAMES_PER_SEASON),
-    index: 0,
-    events: [{ type: "roster", prospects }],
-    decisions: [],
+    index: canPreserveIndex ? clamp(Number(rawOffseason.index) || 0, 0, events.length - 1) : 0,
+    events,
+    decisions: Array.isArray(rawOffseason.decisions) ? rawOffseason.decisions.slice(-8) : [],
   };
 }
 
@@ -2058,6 +2161,13 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
       ? parsed.seasonBests
       : {},
     setupComplete: typeof parsed.setupComplete === "boolean" ? parsed.setupComplete : fallbackSetupComplete,
+    careerPath: ["custom", "journey", "favorite"].includes(parsed.careerPath) ? parsed.careerPath : "custom",
+    favoriteTeamName: teamByName(parsed.favoriteTeamName)?.name || null,
+    lastTeamSwitchSeason: Math.max(1, Math.round(savedNumber(parsed.lastTeamSwitchSeason, 1))),
+    favoriteOfferSeason: parsed.favoriteOfferSeason === null
+      ? null
+      : Math.max(3, Math.round(savedNumber(parsed.favoriteOfferSeason, 4))),
+    teamOfferHistory: Array.isArray(parsed.teamOfferHistory) ? parsed.teamOfferHistory.slice(-20) : [],
     wins: migratedWins,
     losses: migratedLosses,
     team: teamProfile,
@@ -2571,6 +2681,9 @@ function selectFranchiseSlot(index) {
     const freshName = PLAYER_NAME_POOL[Math.floor(Math.random() * PLAYER_NAME_POOL.length)];
     franchise = createDefaultFranchise(freshName);
     seasonCheckpointLevel = 0;
+    careerPathCustomEl.checked = true;
+    careerPathJourneyEl.checked = false;
+    careerPathFavoriteEl.checked = false;
   }
 
   currentLevel = seasonCheckpointLevel;
@@ -3468,11 +3581,53 @@ function buildDraftProspects(
   });
 }
 
+function createTeamOfferEvent(nextSeason, career = franchise) {
+  if (nextSeason < 3) {
+    return null;
+  }
+
+  const teams = currentTeams();
+  const currentTeamName = comparableTeamName(career.team?.name);
+  const favoriteTeam = teamByName(career.favoriteTeamName, teams);
+  const favoriteOfferSeason = Number(career.favoriteOfferSeason);
+  const favoriteIsCurrent = favoriteTeam
+    && comparableTeamName(favoriteTeam.name) === currentTeamName;
+  const favoriteDue = favoriteTeam
+    && !favoriteIsCurrent
+    && Number.isFinite(favoriteOfferSeason)
+    && nextSeason >= favoriteOfferSeason;
+
+  let offeredTeam = favoriteDue ? favoriteTeam : null;
+  if (!offeredTeam) {
+    let candidates = teams.filter((team) => comparableTeamName(team.name) !== currentTeamName);
+    if (favoriteTeam && !favoriteDue) {
+      candidates = candidates.filter((team) => team.name !== favoriteTeam.name);
+    }
+    if (candidates.length === 0) {
+      candidates = teams.filter((team) => comparableTeamName(team.name) !== currentTeamName);
+    }
+    const seed = textSeed(
+      `${activeGameId}-${career.team?.name}-${nextSeason}-${career.completedGames || 0}-${career.teamOfferHistory?.length || 0}`
+    );
+    offeredTeam = candidates[Math.floor(seededRandom(seed + 9.7) * candidates.length)] || teams[0];
+  }
+
+  return {
+    type: "team-offer",
+    nextSeason,
+    team: { ...offeredTeam },
+    favorite: Boolean(favoriteDue),
+  };
+}
+
 function buildOffseasonEvents(completedSeason, finalResult) {
-  return [{
-    type: "roster",
-    prospects: buildDraftProspects(completedSeason),
-  }];
+  return [
+    createTeamOfferEvent(completedSeason + 1),
+    {
+      type: "roster",
+      prospects: buildDraftProspects(completedSeason),
+    },
+  ].filter(Boolean);
 }
 
 function beginOffseason(completedSeason, wins, losses, finalResult) {
@@ -3491,6 +3646,23 @@ function beginOffseason(completedSeason, wins, losses, finalResult) {
 
 function offseasonEventView(event) {
   const thirdRating = isBasketballMode() ? "HND" : isHockeyMode() || isWaterPoloMode() || isSurfingMode() || isSkiingMode() || isLacrosseMode() || isDodgeballMode() ? "AGI" : isBaseballMode() ? "RUN" : "CUT";
+  if (event.type === "team-offer") {
+    const offeredTeam = event.team;
+    const currentTeam = currentHomeTeam();
+    return {
+      type: event.favorite ? "Favorite Team Offer" : "Team Offer",
+      title: `${offeredTeam.name} Want You`,
+      text: event.favorite
+        ? `Your favorite team, ${offeredTeam.name}, is ready to make you the face of its Season ${event.nextSeason} campaign.`
+        : `${offeredTeam.name} have offered you the chance to lead their Season ${event.nextSeason} campaign.`,
+      choices: [
+        { id: "accept-offer", title: `Join ${offeredTeam.name}`, description: "Switch teams, uniforms, and home venue for the new season" },
+        { id: "stay", title: `Stay With ${currentTeam.name}`, description: event.nextSeason === 3 && !event.favorite
+          ? "Keep building here; your favorite team will make an offer before Season 4"
+          : "Keep your current team and continue the franchise" },
+      ],
+    };
+  }
   if (event.type === "development") {
     return {
       type: "Player Development",
@@ -3626,6 +3798,31 @@ function applyOffseasonChoice(choiceId) {
       franchise.player.cut = Math.min(99, franchise.player.cut + facilityBonus);
     }
     franchise.player.upgrades += 1;
+  } else if (event.type === "team-offer") {
+    const nextSeason = event.nextSeason || offseason.completedSeason + 1;
+    const previousTeam = currentHomeTeam();
+    const favoriteTeam = teamByName(franchise.favoriteTeamName);
+    if (choiceId === "accept-offer") {
+      franchise.team = { ...event.team };
+      franchise.lastTeamSwitchSeason = nextSeason;
+      franchise.favoriteOfferSeason = favoriteTeam && event.team.name === favoriteTeam.name
+        ? null
+        : favoriteTeam ? nextSeason + 3 : null;
+      franchise.lastFanChange = 0;
+    } else if (favoriteTeam && event.favorite) {
+      franchise.favoriteOfferSeason = nextSeason + 1;
+    } else if (favoriteTeam && nextSeason === 3 && previousTeam.name !== favoriteTeam.name) {
+      franchise.favoriteOfferSeason = 4;
+    }
+    franchise.teamOfferHistory.push({
+      season: nextSeason,
+      offeredTeam: event.team.name,
+      previousTeam: previousTeam.name,
+      choice: choiceId === "accept-offer" ? "accepted" : "stayed",
+    });
+    franchise.teamOfferHistory = franchise.teamOfferHistory.slice(-20);
+    applyHomeTeamPalette(currentHomeTeam());
+    homeTeamNameEl.textContent = currentHomeTeam().name;
   } else if (event.type === "coach") {
     if (choiceId === "trust") franchise.morale += 6;
     if (choiceId === "staff") {
@@ -5590,6 +5787,9 @@ function updateStartOverlay() {
   startButton.hidden = !setupReady;
   startButton.disabled = false;
   homeTeamNameEl.textContent = homeTeam.name;
+  careerTargetEl.textContent = franchise.favoriteTeamName
+    ? `Favorite Team: ${franchise.favoriteTeamName}`
+    : "Favorite Team: Not Set";
   nextOpponentNameEl.textContent = nextOpponent.name;
   teamNameInputEl.value = homeTeam.name;
   const runner = currentRunner();
@@ -5601,6 +5801,10 @@ function updateStartOverlay() {
   playerHairInputEl.value = appearance.hair;
   playerNumberInputEl.value = String(appearance.number);
   updateCharacterPreview();
+  if (!setupReady) {
+    populateFavoriteTeamOptions();
+    updateCareerPathSetup();
+  }
   renderRunnerCards();
   renderUpgradeOptions();
   renderFranchiseDashboard();
@@ -8506,6 +8710,12 @@ accountModalEl.addEventListener("click", (event) => {
   playerHairInputEl,
   playerNumberInputEl,
 ].forEach((input) => input.addEventListener("input", updateCharacterPreview));
+[
+  careerPathCustomEl,
+  careerPathJourneyEl,
+  careerPathFavoriteEl,
+].forEach((input) => input.addEventListener("change", updateCareerPathSetup));
+favoriteTeamSelectEl.addEventListener("change", updateCareerPathSetup);
 creatorLoginFormEl.addEventListener("submit", unlockCreatorTools);
 creatorLevelsFormEl.addEventListener("submit", saveCreatorLevels);
 creatorRunnerSelectEl.addEventListener("change", () => loadCreatorRunnerFields(creatorRunnerSelectEl.value));

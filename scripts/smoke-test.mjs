@@ -173,11 +173,16 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260907-monitor-fit/);
+assert.match(html, /game\.js\?v=20260907-franchise-paths/);
+assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
+assert.match(html, /id="careerPathJourney"[^>]*value="journey"/);
+assert.match(html, /id="careerPathFavorite"[^>]*value="favorite"/);
+assert.match(html, /id="favoriteTeamSelect"/);
+assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260907-monitor-fit/);
+assert.match(html, /pocket-dynasty\.js\?v=20260907-franchise-paths/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -428,7 +433,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260907-monitor-fit/);
+assert.match(html, /20260907-franchise-paths/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
@@ -1186,6 +1191,13 @@ globalThis.__retroRunTest = {
   collectLocalCloudBundle,
   mergeCloudBundles: mergeClientCloudBundles,
   get currentTeamName() { return currentTeam().name; },
+  get homeTeamName() { return currentHomeTeam().name; },
+  get careerPath() { return franchise.careerPath; },
+  get favoriteTeamName() { return franchise.favoriteTeamName; },
+  get favoriteOfferSeason() { return franchise.favoriteOfferSeason; },
+  get lastTeamSwitchSeason() { return franchise.lastTeamSwitchSeason; },
+  get teamOfferHistory() { return franchise.teamOfferHistory.map((entry) => ({ ...entry })); },
+  get proTeamNames() { return currentTeams().map((team) => team.name); },
   get homeTeamSecondary() { return currentHomeTeam().secondary; },
   get runnerSkin() { return currentRunner().appearance.skin; },
   get runnerHair() { return currentRunner().appearance.hair; },
@@ -1217,6 +1229,27 @@ globalThis.__retroRunTest = {
   get tutorial() { return tutorialSlides(); },
   selectFranchiseSlot,
   createFranchiseFromForm,
+  setCareerPath(path, favoriteTeamName) {
+    careerPathCustomEl.checked = path === "custom";
+    careerPathJourneyEl.checked = path === "journey";
+    careerPathFavoriteEl.checked = path === "favorite";
+    favoriteTeamSelectEl.value = favoriteTeamName;
+    updateCareerPathSetup();
+  },
+  setCareerState(values = {}) {
+    Object.assign(franchise, values);
+    if (values.teamName) {
+      franchise.team = teamByName(values.teamName) || { ...currentHomeTeam(), name: values.teamName };
+    }
+  },
+  teamOfferForTest(nextSeason, values = {}) {
+    const career = { ...franchise, ...values };
+    if (values.teamName) {
+      career.team = teamByName(values.teamName) || { ...franchise.team, name: values.teamName };
+    }
+    const offer = createTeamOfferEvent(nextSeason, career);
+    return offer ? { teamName: offer.team.name, favorite: offer.favorite } : null;
+  },
   openGridironDash,
   openPitchDash,
   openHoopHustle,
@@ -1515,6 +1548,19 @@ assert.equal(currentEconomySave.teamFunds, 18450);
 assert.equal(currentEconomySave.lastGameRevenue, 11200);
 assert.equal(migratedManagementSave.roster.length, 5);
 assert.equal(migratedManagementSave.activePlayerId, migratedManagementSave.player.id);
+const migratedCareerSave = game.normalizeFranchise({
+  careerPath: "journey",
+  favoriteTeamName: "Argentina",
+  favoriteOfferSeason: 6,
+  lastTeamSwitchSeason: 3,
+  teamOfferHistory: [{ season: 3, offeredTeam: "France", choice: "accepted" }],
+});
+assert.equal(migratedCareerSave.careerPath, "journey");
+assert.equal(migratedCareerSave.favoriteTeamName, "Argentina");
+assert.equal(migratedCareerSave.favoriteOfferSeason, 6);
+assert.equal(migratedCareerSave.lastTeamSwitchSeason, 3);
+assert.equal(migratedCareerSave.teamOfferHistory.length, 1);
+assert.equal(game.normalizeFranchise({ favoriteTeamName: "Missing Team" }).favoriteTeamName, null);
 const migratedOffseasonSave = game.normalizeFranchise({
   year: 1,
   offseason: {
@@ -1530,6 +1576,24 @@ const migratedOffseasonSave = game.normalizeFranchise({
 });
 assert.deepEqual([...migratedOffseasonSave.offseason.events.map((event) => event.type)], ["roster"]);
 assert.equal(migratedOffseasonSave.offseason.index, 0);
+const resumedOfferSave = game.normalizeFranchise({
+  year: 2,
+  team: { name: "Brazil", primary: "#ffdf00", secondary: "#002776" },
+  favoriteTeamName: "Argentina",
+  favoriteOfferSeason: 4,
+  offseason: {
+    completedSeason: 2,
+    wins: 9,
+    losses: 3,
+    index: 1,
+    events: [
+      { type: "team-offer", nextSeason: 3, team: { name: "France" }, favorite: false },
+      { type: "roster", prospects: [{ id: "prospect-0", name: "K. Monroe", speed: 60, power: 58, cut: 62, archetype: "Speed Back" }] },
+    ],
+  },
+});
+assert.deepEqual([...resumedOfferSave.offseason.events.map((event) => event.type)], ["team-offer", "roster"]);
+assert.equal(resumedOfferSave.offseason.index, 1);
 assert.equal(game.activeFeatureCount(1), 0);
 assert.equal(game.activeFeatureCount(4), 1);
 
@@ -1544,6 +1608,8 @@ assert.equal(elements.get("characterPreview").style["--preview-hair"], "#d2a24a"
 assert.equal(elements.get("characterNumberPreview").textContent, "23");
 game.createFranchiseFromForm();
 assert.ok(storage.has("pitch-dash-franchise-slots"));
+assert.equal(game.careerPath, "custom");
+assert.equal(game.favoriteTeamName, "Brazil");
 assert.equal(game.roster.length, 5);
 assert.equal(game.rosterUnlocked, true);
 assert.equal(elements.get("runnerGrid").children.length, 5);
@@ -1664,6 +1730,22 @@ elements.get("teamNameInput").value = "Oranje";
 game.createFranchiseFromForm();
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), true);
+game.selectFranchiseSlot(2);
+game.setCareerPath("journey", "Argentina");
+game.createFranchiseFromForm();
+assert.equal(game.careerPath, "journey");
+assert.equal(game.favoriteTeamName, "Argentina");
+assert.equal(game.proTeamNames.includes(game.homeTeamName), true);
+assert.notEqual(game.homeTeamName, "Argentina");
+assert.equal(game.favoriteOfferSeason, 4);
+game.selectFranchiseSlot(3);
+game.setCareerPath("favorite", "Spain");
+game.createFranchiseFromForm();
+assert.equal(game.careerPath, "favorite");
+assert.equal(game.favoriteTeamName, "Spain");
+assert.equal(game.homeTeamName, "Spain");
+assert.equal(game.favoriteOfferSeason, null);
+assert.equal(game.currentSeasonOpponentNames.includes("Spain"), false);
 game.selectFranchiseSlot(0);
 assert.equal(game.currentSeasonOpponentNames.includes("Brazil"), false);
 assert.equal(game.currentSeasonOpponentNames.includes("Netherlands"), true);
@@ -2545,11 +2627,34 @@ assert.equal(game.playerMoraleMood(65), "Confident");
 assert.equal(game.playerMoraleMood(45), "Steady");
 assert.equal(game.playerMoraleMood(25), "Frustrated");
 
+game.setCareerState({
+  careerPath: "custom",
+  teamName: "49ers",
+  favoriteTeamName: "Chiefs",
+  favoriteOfferSeason: 4,
+  lastTeamSwitchSeason: 1,
+  teamOfferHistory: [],
+});
+assert.equal(game.teamOfferForTest(2), null);
+const firstProOffer = game.teamOfferForTest(3);
+assert.equal(firstProOffer.favorite, false);
+assert.notEqual(firstProOffer.teamName, "Chiefs");
 game.beginTestOffseason(2, 8, 4, "L");
-assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
+assert.deepEqual([...game.offseasonEventTypes], ["team-offer", "roster"]);
+assert.equal(game.offseasonView.type, "Team Offer");
+const switchedToTeam = game.offseasonView.title.replace(" Want You", "");
+game.chooseOffseason("accept-offer");
+assert.equal(game.homeTeamName, switchedToTeam);
+assert.equal(game.lastTeamSwitchSeason, 3);
+assert.equal(game.favoriteOfferSeason, 6);
+assert.equal(game.teamOfferHistory.at(-1).choice, "accepted");
 assert.equal(game.offseasonView.type, "Roster Review");
 game.chooseOffseason("keep");
 assert.equal(game.seasonYear, 3);
+assert.equal(game.teamOfferForTest(4).favorite, false);
+assert.equal(game.teamOfferForTest(5).favorite, false);
+assert.equal(game.teamOfferForTest(6).favorite, true);
+assert.equal(game.teamOfferForTest(6).teamName, "Chiefs");
 assert.equal(elements.get("moraleOperation").hidden, false);
 assert.equal(elements.get("stadiumOperation").hidden, false);
 assert.equal(elements.get("trainingOperation").hidden, false);
@@ -2558,8 +2663,27 @@ assert.equal(game.activeFeatureCount(1), 0);
 assert.equal(game.activeFeatureCount(2), 1);
 assert.equal(game.activeFeatureCount(12), 1);
 
-game.beginTestOffseason(3, 11, 7, "L");
-assert.deepEqual([...game.offseasonEventTypes], ["roster"]);
+game.setCareerState({
+  teamName: "49ers",
+  favoriteTeamName: "Chiefs",
+  favoriteOfferSeason: 4,
+  lastTeamSwitchSeason: 1,
+  teamOfferHistory: [],
+});
+game.beginTestOffseason(2, 11, 1, "W");
+assert.equal(game.offseasonView.type, "Team Offer");
+game.chooseOffseason("stay");
+assert.equal(game.favoriteOfferSeason, 4);
+assert.equal(game.homeTeamName, "49ers");
+assert.equal(game.teamOfferHistory.at(-1).choice, "stayed");
+game.chooseOffseason("keep");
+assert.equal(game.seasonYear, 3);
+game.beginTestOffseason(3, 11, 1, "W");
+assert.equal(game.offseasonView.type, "Favorite Team Offer");
+assert.match(game.offseasonView.title, /Chiefs/);
+game.chooseOffseason("accept-offer");
+assert.equal(game.homeTeamName, "Chiefs");
+assert.equal(game.favoriteOfferSeason, null);
 game.chooseOffseason("keep");
 assert.equal(game.seasonYear, 4);
 

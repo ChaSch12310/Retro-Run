@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260907-monitor-fit" />
+    <link rel="stylesheet" href="styles.css?v=20260907-franchise-paths" />
   </head>
   <body>
     <main class="game-shell">
@@ -676,8 +676,27 @@
                   <h3 id="createCareerTitle">Create Franchise</h3>
                   <span>Career Start</span>
                 </div>
+                <div class="career-path-picker" role="radiogroup" aria-label="Choose how to start your career">
+                  <label class="career-path-option">
+                    <input id="careerPathCustom" type="radio" name="careerPath" value="custom" checked />
+                    <span><strong>1. Make Your Own Team</strong><small>Create the name, colors, and player yourself.</small></span>
+                  </label>
+                  <label class="career-path-option">
+                    <input id="careerPathJourney" type="radio" name="careerPath" value="journey" />
+                    <span><strong>2. Start With a Random Pro Team</strong><small>Build your career and work toward your favorite team.</small></span>
+                  </label>
+                  <label class="career-path-option">
+                    <input id="careerPathFavorite" type="radio" name="careerPath" value="favorite" />
+                    <span><strong>3. Start With Your Favorite Team</strong><small>Begin your first season with the team you choose.</small></span>
+                  </label>
+                </div>
+                <label class="setup-field favorite-team-field">
+                  <span class="label">Favorite Team</span>
+                  <select id="favoriteTeamSelect" aria-describedby="careerPathSummary"></select>
+                </label>
+                <p class="career-path-summary" id="careerPathSummary">Create your own team now. Pro team offers begin before Season 3.</p>
                 <div class="setup-grid">
-                  <label class="setup-field">
+                  <label class="setup-field" id="customTeamNameField">
                     <span class="label">Team Name</span>
                     <input id="teamNameInput" type="text" maxlength="28" value="Bay City Falcons" />
                   </label>
@@ -685,11 +704,11 @@
                     <span class="label" id="playerNameLabel">Runner Name</span>
                     <input id="runnerNameInput" type="text" maxlength="24" value="D. Carter" />
                   </label>
-                  <label class="setup-field">
+                  <label class="setup-field" id="customPrimaryField">
                     <span class="label">Primary</span>
                     <input id="teamPrimaryInput" type="color" value="#f0bf43" />
                   </label>
-                  <label class="setup-field">
+                  <label class="setup-field" id="customSecondaryField">
                     <span class="label">Secondary</span>
                     <input id="teamSecondaryInput" type="color" value="#2e3547" />
                   </label>
@@ -748,6 +767,7 @@
                 <div>
                   <p class="label">Your Team</p>
                   <strong id="homeTeamName">Bay City Falcons</strong>
+                  <span class="career-target" id="careerTarget">Favorite Team: Not Set</span>
                 </div>
                 <div>
                   <p class="label" id="nextOpponentLabel">Next Opponent</p>
@@ -1045,11 +1065,11 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260907-monitor-fit"></script>
-    <script src="pocket-dynasty.js?v=20260907-monitor-fit"></script>
-    <script src="seasonal-profile.js?v=20260907-monitor-fit"></script>
+    <script src="game.js?v=20260907-franchise-paths"></script>
+    <script src="pocket-dynasty.js?v=20260907-franchise-paths"></script>
+    <script src="seasonal-profile.js?v=20260907-franchise-paths"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
-    <script src="seasonal-games.js?v=20260907-monitor-fit"></script>
-    <script src="seasonal-parity.js?v=20260907-monitor-fit"></script>
+    <script src="seasonal-games.js?v=20260907-franchise-paths"></script>
+    <script src="seasonal-parity.js?v=20260907-franchise-paths"></script>
   </body>
 </html>
