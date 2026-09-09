@@ -3783,6 +3783,7 @@ body[data-game="dodgeball"] .soccer-keeper {
   --keeper-dive-y: 0px;
   --keeper-dive-rotate: 0deg;
   --keeper-dive-mid-rotate: 0deg;
+  --dodgeball-target-left: 50%;
   position: absolute;
   z-index: 3;
   left: 50%;
@@ -3795,10 +3796,15 @@ body[data-game="dodgeball"] .soccer-keeper {
   border: 3px solid #111016;
   box-shadow: -11px 8px 0 -7px #efc79d, 11px 8px 0 -7px #efc79d;
   transform-origin: 50% 70%;
+  will-change: left, transform;
 }
 
-body[data-game="dodgeball"] .soccer-keeper.diving {
-  animation: soccer-keeper-dive 720ms cubic-bezier(0.18, 0.75, 0.24, 1) 70ms forwards;
+body[data-game="dodgeball"] .soccer-keeper.targeting {
+  animation: dodgeball-target-brace 900ms steps(5, end) forwards;
+}
+
+body[data-game="dodgeball"] .soccer-keeper.targeting.hit {
+  animation-name: dodgeball-target-impact;
 }
 
 body[data-game="dodgeball"] .soccer-keeper::before {
@@ -3823,6 +3829,39 @@ body[data-game="dodgeball"] .soccer-keeper::after {
   background: var(--team-secondary);
   border-inline: 2px solid #111016;
   box-shadow: 11px 0 0 var(--team-secondary), 9px 0 0 2px #111016;
+}
+
+@keyframes dodgeball-target-brace {
+  0%, 64% { transform: translateY(0) scale(1); }
+  78% { transform: translateY(3px) scale(1.08, 0.9); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes dodgeball-target-impact {
+  0% {
+    left: 50%;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+
+  58% {
+    left: var(--dodgeball-target-left);
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+
+  78% {
+    left: var(--dodgeball-target-left);
+    transform: translateY(3px) rotate(0deg) scale(1.08, 0.9);
+  }
+
+  88% {
+    left: var(--dodgeball-target-left);
+    transform: translateY(-3px) rotate(-18deg) scale(1.12, 0.88);
+  }
+
+  100% {
+    left: var(--dodgeball-target-left);
+    transform: translate(9px, 13px) rotate(78deg) scale(1.12, 0.88);
+  }
 }
 
 @keyframes soccer-keeper-dive {

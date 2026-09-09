@@ -4860,19 +4860,28 @@ function startSoccerKeeperDive() {
     return;
   }
 
+  if (isDodgeballMode()) {
+    startDodgeballTargetImpact();
+    return;
+  }
+
   const aimDeadZone = 6;
   const centeredDiveRight = Math.round(fieldGoalPower) % 2 === 0;
-  const diveRight = isDodgeballMode()
-    ? fieldGoalAim > aimDeadZone ||
-      (Math.abs(fieldGoalAim) <= aimDeadZone && centeredDiveRight)
-    : fieldGoalAim < -aimDeadZone ||
-      (Math.abs(fieldGoalAim) <= aimDeadZone && centeredDiveRight);
+  const diveRight = fieldGoalAim < -aimDeadZone ||
+    (Math.abs(fieldGoalAim) <= aimDeadZone && centeredDiveRight);
   soccerKeeperEl.style.setProperty("--keeper-dive-x", diveRight ? "82px" : "-82px");
   soccerKeeperEl.style.setProperty("--keeper-dive-mid-x", diveRight ? "20px" : "-20px");
   soccerKeeperEl.style.setProperty("--keeper-dive-y", fieldGoalPower >= 70 ? "-18px" : "-8px");
   soccerKeeperEl.style.setProperty("--keeper-dive-rotate", diveRight ? "72deg" : "-72deg");
   soccerKeeperEl.style.setProperty("--keeper-dive-mid-rotate", diveRight ? "22deg" : "-22deg");
   soccerKeeperEl.classList.add("diving");
+}
+
+function startDodgeballTargetImpact() {
+  const targetLeft = 50 + fieldGoalAim * 0.45;
+  soccerKeeperEl.style.setProperty("--dodgeball-target-left", `${targetLeft}%`);
+  soccerKeeperEl.classList.add("targeting");
+  soccerKeeperEl.classList.toggle("hit", fieldGoalKickMade);
 }
 
 function startHockeyGoalieSlide() {
@@ -4988,6 +4997,8 @@ function resetFieldGoalBall() {
             : "0.72 1.18";
   fieldGoalBallEl.style.rotate = usesShotChallenge() ? "0deg" : "-15deg";
   soccerKeeperEl.classList.remove("diving");
+  soccerKeeperEl.classList.remove("targeting", "hit");
+  soccerKeeperEl.style.setProperty("--dodgeball-target-left", "50%");
   soccerKeeperEl.style.setProperty("--keeper-dive-x", "0px");
   soccerKeeperEl.style.setProperty("--keeper-dive-mid-x", "0px");
   soccerKeeperEl.style.setProperty("--keeper-dive-y", "0px");
