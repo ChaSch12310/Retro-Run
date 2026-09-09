@@ -112,6 +112,7 @@ const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8"
 const seasonalSource = fs.readFileSync(new URL("../seasonal-games.js", import.meta.url), "utf8");
 const seasonalParitySource = fs.readFileSync(new URL("../seasonal-parity.js", import.meta.url), "utf8");
 const seasonalProfile = fs.readFileSync(new URL("../seasonal-profile.js", import.meta.url), "utf8");
+const buildSource = fs.readFileSync(new URL("./build.mjs", import.meta.url), "utf8");
 const seasonalDeploymentSource = fs.readFileSync(
   new URL("./deploy-seasonal-versions.mjs", import.meta.url),
   "utf8"
@@ -344,7 +345,8 @@ assert.match(html, /id="seasonalAimMeter"/);
 assert.match(html, /seasonal-profile\.js/);
 assert.match(html, /seasonal-games\.js/);
 assert.match(html, /seasonal-parity\.js/);
-assert.match(seasonalProfile, /holiday-season/);
+assert.match(seasonalProfile, /standard/);
+assert.match(buildSource, /RETRO_RUN_SEASONAL_PROFILE \|\| "standard"/);
 assert.match(seasonalDeploymentSource, /wrangler[\s\S]*versions[\s\S]*upload/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_RELEASE_NAME/);
 assert.match(seasonalDeploymentSource, /releaseName \? `\$\{releaseName\} - \$\{deployment\.message\}`/);

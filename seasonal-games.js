@@ -549,7 +549,7 @@ const seasonalOverlayText = document.getElementById("seasonalOverlayText");
 const arcadeHomeButton = document.getElementById("arcadeHomeButton");
 const gameLibrary = document.getElementById("gameLibraryScreen");
 
-const seasonalProfileId = globalThis.RETRO_RUN_SEASONAL_PROFILE || "holiday-season";
+const seasonalProfileId = globalThis.RETRO_RUN_SEASONAL_PROFILE || "standard";
 const seasonalProfileGameIds = SEASONAL_PROFILES[seasonalProfileId] || [];
 const seasonalProfileGames = seasonalProfileGameIds
   .map((gameId) => SEASONAL_GAMES.find((game) => game.id === gameId))

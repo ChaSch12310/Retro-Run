@@ -119,7 +119,7 @@ const PARITY_FIELD_THEMES = {
   "winter-solstice-star-quest": { surface: ["#203454", "#192b49"], edge: "#101d3b", detail: "#f3d66b", decor: "stars" },
 };
 
-const parityProfileId = globalThis.RETRO_RUN_SEASONAL_PROFILE || "holiday-season";
+const parityProfileId = globalThis.RETRO_RUN_SEASONAL_PROFILE || "standard";
 const parityProfileGames = (SEASONAL_PROFILES[parityProfileId] || [])
   .map((gameId) => SEASONAL_GAMES.find((game) => game.id === gameId))
   .filter(Boolean);

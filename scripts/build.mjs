@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const distDirectory = fileURLToPath(new URL("../dist/", import.meta.url));
-const seasonalProfile = process.env.RETRO_RUN_SEASONAL_PROFILE || "holiday-season";
+const seasonalProfile = process.env.RETRO_RUN_SEASONAL_PROFILE || "standard";
 
 if (!/^[a-z0-9-]+$/.test(seasonalProfile)) {
   throw new Error(`Invalid seasonal profile: ${seasonalProfile}`);
