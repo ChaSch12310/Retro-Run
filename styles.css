@@ -2123,6 +2123,12 @@ body.franchise-slot-selecting #loadSavePanel {
   font-size: 0.72rem;
 }
 
+.leaderboard-button {
+  color: var(--menu-accent);
+  background: #173652;
+  border-color: var(--menu-accent);
+}
+
 #cloudSyncStatus {
   color: #dce4d2;
   font-family: "Trebuchet MS", sans-serif;
@@ -2140,7 +2146,8 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal,
-.account-modal {
+.account-modal,
+.leaderboard-modal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -2151,7 +2158,8 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal[hidden],
-.account-modal[hidden] {
+.account-modal[hidden],
+.leaderboard-modal[hidden] {
   display: none !important;
 }
 
@@ -2166,6 +2174,125 @@ body.franchise-slot-selecting #loadSavePanel {
   box-shadow:
     inset 0 0 0 4px rgba(255, 255, 255, 0.05),
     0 12px 0 rgba(8, 15, 22, 0.35);
+}
+
+.leaderboard-card {
+  width: min(96vw, 1120px);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: clamp(14px, 2vw, 24px);
+  color: var(--text);
+  background: #132d46;
+  border: 5px solid var(--menu-accent);
+  box-shadow:
+    inset 0 0 0 5px #081522,
+    0 12px 0 rgba(5, 11, 18, 0.55);
+}
+
+.leaderboard-head {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.leaderboard-head h3 {
+  margin: 3px 0 0;
+  color: var(--menu-accent);
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+.leaderboard-clock {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 18px;
+  align-items: center;
+  padding: 14px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+  border-left: 8px solid var(--menu-accent);
+}
+
+.leaderboard-clock > div {
+  grid-row: span 2;
+}
+
+.leaderboard-clock span,
+.leaderboard-clock small {
+  color: #cbd8c8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.leaderboard-clock strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--menu-accent);
+  font-size: clamp(1.45rem, 4vw, 2.4rem);
+  letter-spacing: 0.08em;
+}
+
+.leaderboard-clock p {
+  margin: 0;
+  color: var(--text);
+  font-family: "Trebuchet MS", sans-serif;
+  font-weight: 900;
+}
+
+.leaderboard-message {
+  min-height: 1.25em;
+  margin: 12px 0;
+  color: #dce4d2;
+  font-family: "Trebuchet MS", sans-serif;
+  font-weight: 900;
+}
+
+.leaderboard-message.error {
+  color: #ff9b8f;
+}
+
+.leaderboard-table-wrap {
+  overflow-x: auto;
+  border: 3px solid #07131e;
+}
+
+.leaderboard-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  background: #10263a;
+  text-align: left;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 11px 10px;
+  border-bottom: 2px solid #29445f;
+}
+
+.leaderboard-table th {
+  color: #14283f;
+  background: var(--menu-accent);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.leaderboard-table td {
+  color: #dce4d2;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.leaderboard-table td:first-child,
+.leaderboard-table td:nth-child(n + 5) {
+  color: var(--menu-accent);
+  font-family: inherit;
+}
+
+.leaderboard-empty-row td {
+  padding-block: 28px;
+  color: #cbd8c8 !important;
+  text-align: center;
 }
 
 .account-card {
@@ -4195,6 +4322,39 @@ body[data-game="dodgeball"] .soccer-keeper::after {
   padding: 14px;
 }
 
+.postgame-score-panel {
+  border-color: var(--team-accent);
+  background: #10283e;
+}
+
+.postgame-score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.postgame-score-card {
+  display: grid;
+  gap: 4px;
+  padding: 11px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+  border-top-color: var(--team-accent);
+}
+
+.postgame-score-card span,
+.postgame-score-card small {
+  color: #cbd8c8;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.postgame-score-card strong {
+  color: var(--team-accent);
+  font-size: clamp(0.92rem, 2vw, 1.2rem);
+}
+
 .load-save-panel {
   --team-accent: var(--menu-accent);
   display: grid;
@@ -5955,6 +6115,31 @@ body[data-device="mobile"] .season-strip,
 body[data-device="mobile"] .franchise-dashboard,
 body[data-device="mobile"] .franchise-card {
   grid-template-columns: 1fr;
+}
+
+body[data-device="mobile"] .account-strip {
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+body[data-device="mobile"] #cloudSyncStatus {
+  flex-basis: 100%;
+  text-align: center;
+}
+
+body[data-device="mobile"] .leaderboard-card {
+  width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  padding: 11px;
+}
+
+body[data-device="mobile"] .leaderboard-clock,
+body[data-device="mobile"] .postgame-score-grid {
+  grid-template-columns: 1fr;
+}
+
+body[data-device="mobile"] .leaderboard-clock > div {
+  grid-row: auto;
 }
 
 body[data-device="mobile"] .runner-grid {

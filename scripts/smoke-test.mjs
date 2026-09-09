@@ -177,7 +177,7 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260907-postgame-doubleheader/);
+assert.match(html, /game\.js\?v=20260908-midnight-leaderboard/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
 assert.match(html, /id="careerPathJourney"[^>]*value="journey"/);
 assert.match(html, /id="careerPathFavorite"[^>]*value="favorite"/);
@@ -186,7 +186,7 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260907-postgame-doubleheader/);
+assert.match(html, /pocket-dynasty\.js\?v=20260908-midnight-leaderboard/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -291,8 +291,16 @@ assert.match(html, /No email required/);
 assert.match(html, /id="accountUsernameInput"/);
 assert.match(html, /id="accountPasscodeInput" type="password"/);
 assert.match(html, /id="accountSyncButton"/);
+assert.match(html, /id="leaderboardButton"/);
+assert.match(html, /id="leaderboardModal"/);
+assert.match(html, /id="leaderboardCountdown"/);
+assert.match(html, /id="postgameScorePanel"/);
 assert.match(source, /function mergeClientCloudBundles/);
 assert.match(source, /function scheduleCloudSync/);
+assert.match(source, /function queueLeaderboardScore/);
+assert.match(source, /function flushLeaderboardQueue/);
+assert.match(source, /function calculateLeaderboardScores/);
+assert.match(source, /America\/Chicago/);
 assert.match(source, /markCloudSlotChanged/);
 assert.doesNotMatch(source, /accountEmail|requiresVerification|Confirmation sent/);
 assert.match(source, /Sign in with only your username and passcode\. No email required\./);
@@ -308,6 +316,12 @@ assert.match(workerSource, /PBKDF2/);
 assert.match(workerSource, /PASSWORD_ITERATIONS = 100000/);
 assert.match(workerSource, /SameSite=Lax/);
 assert.match(workerSource, /MAX_AUTH_ATTEMPTS/);
+assert.match(workerSource, /CREATE TABLE IF NOT EXISTS leaderboard_entries/);
+assert.match(workerSource, /\/api\/leaderboard/);
+assert.match(workerSource, /async alarm\(\)/);
+assert.match(workerSource, /America\/Chicago/);
+assert.match(styles, /\.leaderboard-table/);
+assert.match(styles, /\.postgame-score-grid/);
 assert.match(workerSource, /Incorrect username or passcode/);
 assert.doesNotMatch(styles, /Scheduled preview|#f0bf43 !important/);
 assert.doesNotMatch(source, /scheduledOriginalFillText/);
@@ -446,7 +460,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260907-postgame-doubleheader/);
+assert.match(html, /20260908-midnight-leaderboard/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
@@ -1223,6 +1237,7 @@ globalThis.__retroRunTest = {
   get pendingProblem() { return franchise.pendingProblem ? { ...franchise.pendingProblem } : null; },
   get problemHistory() { return franchise.problemHistory.map((entry) => ({ ...entry })); },
   get pendingPressConference() { return franchise.pendingPressConference ? { ...franchise.pendingPressConference } : null; },
+  get lastGameScores() { return franchise.lastGameScores ? { ...franchise.lastGameScores } : null; },
   get pressConferenceHistory() { return franchise.pressConferenceHistory.map((entry) => ({ ...entry })); },
   get activeRunnerId() { return currentRunner().id; },
   get rosterUnlocked() { return franchise.rosterUnlocked; },
@@ -1372,6 +1387,8 @@ globalThis.__retroRunTest = {
   moraleChangeForGame,
   playerMoraleChangeForGame,
   playerMoraleMood,
+  calculateLeaderboardScores,
+  nextCentralMidnight,
   shouldCreateBetweenGameProblem,
   shouldCreatePressConference,
   get problemDeckSize() { return BETWEEN_GAME_PROBLEMS.length; },
@@ -2745,6 +2762,11 @@ assert.equal(game.seasonYear, 4);
 game.setRunnerRatings({ speed: 100, power: 55, cut: 55 });
 assert.equal(game.runnerHasMaxRating(), true);
 game.completeGameForTest(54, 2);
+assert.equal(elements.get("postgameScorePanel").hidden, false);
+assert.ok(game.lastGameScores.gameScore > 0 && game.lastGameScores.gameScore <= 1_000_000);
+assert.ok(game.lastGameScores.playerScore > 0 && game.lastGameScores.playerScore <= 1_000_000);
+assert.ok(game.lastGameScores.franchiseScore > 0 && game.lastGameScores.franchiseScore <= 1_000_000);
+assert.equal(elements.get("postgameGameScore").textContent, game.lastGameScores.gameScore.toLocaleString("en-US"));
 assert.equal(game.pendingUpgrade, false);
 assert.equal(game.pendingUpgradeChoices.length, 0);
 assert.notEqual(game.pendingProblem, null);

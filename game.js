@@ -115,6 +115,7 @@ const upgradeActionsEl = document.getElementById("upgradeActions");
 const creatorTriggerEl = document.getElementById("creatorTrigger");
 const arcadeHomeButtonEl = document.getElementById("arcadeHomeButton");
 const accountButtonEl = document.getElementById("accountButton");
+const leaderboardButtonEl = document.getElementById("leaderboardButton");
 const cloudSyncStatusEl = document.getElementById("cloudSyncStatus");
 const accountModalEl = document.getElementById("accountModal");
 const accountTitleEl = document.getElementById("accountTitle");
@@ -133,6 +134,18 @@ const accountUsernameValueEl = document.getElementById("accountUsernameValue");
 const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
 const accountSignoutButtonEl = document.getElementById("accountSignoutButton");
 const accountSyncButtonEl = document.getElementById("accountSyncButton");
+const leaderboardModalEl = document.getElementById("leaderboardModal");
+const leaderboardCloseButtonEl = document.getElementById("leaderboardCloseButton");
+const leaderboardCountdownEl = document.getElementById("leaderboardCountdown");
+const leaderboardLocalTimeEl = document.getElementById("leaderboardLocalTime");
+const leaderboardQueueStatusEl = document.getElementById("leaderboardQueueStatus");
+const leaderboardMessageEl = document.getElementById("leaderboardMessage");
+const leaderboardRowsEl = document.getElementById("leaderboardRows");
+const postgameScorePanelEl = document.getElementById("postgameScorePanel");
+const postgameScoreStatusEl = document.getElementById("postgameScoreStatus");
+const postgameGameScoreEl = document.getElementById("postgameGameScore");
+const postgamePlayerScoreEl = document.getElementById("postgamePlayerScore");
+const postgameFranchiseScoreEl = document.getElementById("postgameFranchiseScore");
 const creatorModalEl = document.getElementById("creatorModal");
 const creatorLoginFormEl = document.getElementById("creatorLoginForm");
 const creatorLevelsFormEl = document.getElementById("creatorLevelsForm");
@@ -1041,6 +1054,7 @@ const legacySeasonStorageKey = "gridiron-dash-season-progress";
 const legacyFranchiseStorageKey = "gridiron-dash-franchise";
 const MAX_FRANCHISE_SLOTS = 5;
 const CLOUD_SAVE_META_KEY = "retro-run-cloud-save-meta-v1";
+const LEADERBOARD_QUEUE_KEY = "retro-run-leaderboard-queue-v1";
 const CLOUD_SYNC_DELAY_MS = 1200;
 const CREATOR_USERNAME = "creator";
 const CREATOR_PASSWORD_HASH = "bc6bfd848ebd7819c9a82bf124d65e7f739d08e002601e23bb906aacd40a3d81";
@@ -1378,6 +1392,7 @@ const DEFAULT_FRANCHISE = {
   problemHistory: [],
   pendingPressConference: null,
   pressConferenceHistory: [],
+  lastGameScores: null,
   coach: null,
   morale: 55,
   stadiumQuality: 50,
@@ -1424,6 +1439,9 @@ let cloudSyncTimer = null;
 let cloudSyncPromise = null;
 let cloudSyncQueued = false;
 let cloudSyncState = "local";
+let leaderboardFlushPromise = null;
+let leaderboardNextUpdateAt = 0;
+let leaderboardCountdownTimer = null;
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
 let fieldGoalPhaseStarted = 0;
@@ -1944,8 +1962,80 @@ function savedNumber(value, fallback) {
   return Number.isFinite(numericValue) ? numericValue : fallback;
 }
 
+function normalizeLastGameScores(value) {
+  if (!value || typeof value !== "object") return null;
+  return {
+    gameScore: clamp(Math.round(savedNumber(value.gameScore, 0)), 0, 1000000),
+    playerScore: clamp(Math.round(savedNumber(value.playerScore, 0)), 0, 1000000),
+    franchiseScore: clamp(Math.round(savedNumber(value.franchiseScore, 0)), 0, 1000000),
+    playedAt: Math.max(0, Math.round(savedNumber(value.playedAt, 0))),
+    gameId: String(value.gameId || "gridiron"),
+    gameName: String(value.gameName || "Retro Run"),
+  };
+}
+
 function formatNumber(value) {
   return Math.round(Number(value) || 0).toLocaleString("en-US");
+}
+
+function calculateLeaderboardScores(metrics = {}) {
+  const tries = clamp(Math.round(savedNumber(metrics.tries, 1)), 1, 99);
+  const difficulty = clamp(savedNumber(metrics.difficulty, 1), 1, 2);
+  const efficiency = clamp(1 - (tries - 1) / 10, 0, 1);
+  const difficultyBonus = clamp((difficulty - 1) / 0.55, 0, 1);
+  const gameScore = clamp(Math.round(
+    (metrics.result === "W" ? 580000 : 320000)
+      + efficiency * 300000
+      + difficultyBonus * 120000
+  ), 0, 1000000);
+
+  const averageRating = (
+    clamp(savedNumber(metrics.speed, 50), 1, 100)
+      + clamp(savedNumber(metrics.power, 50), 1, 100)
+      + clamp(savedNumber(metrics.cut, 50), 1, 100)
+  ) / 300;
+  const playerScore = clamp(Math.round(
+    averageRating * 650000
+      + clamp(savedNumber(metrics.playerMorale, 50), 0, 100) / 100 * 250000
+      + clamp(savedNumber(metrics.upgrades, 0), 0, 20) / 20 * 100000
+  ), 0, 1000000);
+
+  const gamesPlayed = Math.max(1, Math.round(savedNumber(metrics.wins, 0)) + Math.round(savedNumber(metrics.losses, 0)));
+  const winRate = clamp(savedNumber(metrics.wins, 0) / gamesPlayed, 0, 1);
+  const organizationRating = (
+    clamp(savedNumber(metrics.stadiumQuality, 50), 0, 100)
+      + clamp(savedNumber(metrics.trainingQuality, 50), 0, 100)
+      + clamp(savedNumber(metrics.coachRating, 50), 0, 100)
+  ) / 300;
+  const franchiseScore = clamp(Math.round(
+    clamp(savedNumber(metrics.fans, 0), 0, MAX_FANS) / MAX_FANS * 300000
+      + clamp(savedNumber(metrics.teamMorale, 50), 0, 100) / 100 * 200000
+      + organizationRating * 250000
+      + winRate * 250000
+  ), 0, 1000000);
+
+  return { gameScore, playerScore, franchiseScore };
+}
+
+function leaderboardMetrics(result, tries) {
+  const runner = currentRunner();
+  return {
+    result,
+    tries,
+    difficulty: difficultyForLevel(currentLevel),
+    speed: runner.speed,
+    power: runner.power,
+    cut: runner.cut,
+    playerMorale: runner.morale,
+    upgrades: runner.upgrades,
+    fans: franchise.fans,
+    teamMorale: franchise.morale,
+    stadiumQuality: franchise.stadiumQuality,
+    trainingQuality: franchise.trainingQuality,
+    coachRating: franchise.coach?.rating || 50,
+    wins: franchise.wins,
+    losses: franchise.losses,
+  };
 }
 
 function formatMoney(value) {
@@ -2095,6 +2185,7 @@ function createDefaultFranchise(forcedName = null) {
     pendingUpgradeChoices: [],
     pendingPressConference: null,
     pressConferenceHistory: [],
+    lastGameScores: null,
     seasonCheckpointLevel: 0,
     savedAt: Date.now(),
   };
@@ -2180,6 +2271,7 @@ function normalizeFranchise(rawFranchise, fallbackSetupComplete = false) {
     problemHistory: Array.isArray(parsed.problemHistory) ? parsed.problemHistory.slice(-12) : [],
     pendingPressConference: normalizePendingPressConference(parsed.pendingPressConference),
     pressConferenceHistory: Array.isArray(parsed.pressConferenceHistory) ? parsed.pressConferenceHistory.slice(-16) : [],
+    lastGameScores: normalizeLastGameScores(parsed.lastGameScores),
     coach: normalizeCoach(parsed.coach, `${teamProfile.name}-${playerProfile.name}`),
     fans: clamp(Math.round(savedFans * fanScale), 0, MAX_FANS),
     fanCapacity: MAX_FANS,
@@ -2386,6 +2478,7 @@ function renderCloudAccount() {
     accountSyncButtonEl.hidden = false;
     setCloudSyncStatus("Local saves only");
   }
+  renderPostgameScores();
 }
 
 function setAccountMode(mode) {
@@ -2438,6 +2531,237 @@ async function accountApi(path, options = {}) {
     throw error;
   }
   return data;
+}
+
+function readLeaderboardQueue() {
+  try {
+    const queue = JSON.parse(localStorage.getItem(LEADERBOARD_QUEUE_KEY) || "[]");
+    return Array.isArray(queue) ? queue.slice(-100) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLeaderboardQueue(queue) {
+  localStorage.setItem(LEADERBOARD_QUEUE_KEY, JSON.stringify(queue.slice(-100)));
+}
+
+function queueLeaderboardScore(entry) {
+  if (!cloudAccount) return false;
+  const queue = readLeaderboardQueue();
+  queue.push({
+    ...entry,
+    username: cloudAccount.username,
+    clientEntryId: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  });
+  writeLeaderboardQueue(queue);
+  flushLeaderboardQueue();
+  return true;
+}
+
+async function performLeaderboardFlush() {
+  if (!cloudAccount || typeof fetch !== "function") return false;
+  const username = cloudAccount.username;
+  const queue = readLeaderboardQueue();
+  const remaining = [];
+  for (const entry of queue) {
+    if (entry.username !== username) {
+      remaining.push(entry);
+      continue;
+    }
+    try {
+      await accountApi("/api/leaderboard", {
+        method: "POST",
+        body: JSON.stringify(entry),
+      });
+    } catch (error) {
+      if (!error.status || error.status === 401 || error.status === 429 || error.status >= 500) {
+        remaining.push(entry);
+      }
+    }
+  }
+  writeLeaderboardQueue(remaining);
+  renderPostgameScores();
+  return remaining.length < queue.length;
+}
+
+function flushLeaderboardQueue() {
+  if (leaderboardFlushPromise) return leaderboardFlushPromise;
+  leaderboardFlushPromise = performLeaderboardFlush().finally(() => {
+    leaderboardFlushPromise = null;
+  });
+  return leaderboardFlushPromise;
+}
+
+function centralTimeParts(timestamp) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  return Object.fromEntries(parts
+    .filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+}
+
+function centralOffsetMs(timestamp) {
+  const parts = centralTimeParts(timestamp);
+  const roundedTimestamp = Math.floor(timestamp / 1000) * 1000;
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+    - roundedTimestamp;
+}
+
+function centralMidnightUtc(year, month, day) {
+  const wallClock = Date.UTC(year, month - 1, day, 0, 0, 0);
+  let timestamp = wallClock;
+  for (let index = 0; index < 3; index += 1) {
+    timestamp = wallClock - centralOffsetMs(timestamp);
+  }
+  return timestamp;
+}
+
+function nextCentralMidnight(timestamp = Date.now()) {
+  const parts = centralTimeParts(timestamp);
+  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+  return centralMidnightUtc(
+    nextDay.getUTCFullYear(),
+    nextDay.getUTCMonth() + 1,
+    nextDay.getUTCDate()
+  );
+}
+
+function localLeaderboardUpdateLabel(timestamp) {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  return `Your time: ${formatter.format(new Date(timestamp))}`;
+}
+
+function updateLeaderboardCountdown() {
+  if (!leaderboardNextUpdateAt || leaderboardNextUpdateAt <= Date.now()) {
+    leaderboardNextUpdateAt = nextCentralMidnight();
+  }
+  const remaining = Math.max(0, leaderboardNextUpdateAt - Date.now());
+  const totalSeconds = Math.floor(remaining / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  leaderboardCountdownEl.textContent = [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+  leaderboardLocalTimeEl.textContent = `${localLeaderboardUpdateLabel(leaderboardNextUpdateAt)}. Midnight Central.`;
+}
+
+function renderLeaderboardRows(entries) {
+  leaderboardRowsEl.replaceChildren();
+  if (!entries.length) {
+    const row = document.createElement("tr");
+    row.className = "leaderboard-empty-row";
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.textContent = "No published scores yet. Finish a game and check back after midnight Central.";
+    row.appendChild(cell);
+    leaderboardRowsEl.appendChild(row);
+    return;
+  }
+  entries.forEach((entry, index) => {
+    const row = document.createElement("tr");
+    const values = [
+      index + 1,
+      `@${entry.username}`,
+      new Date(entry.playedAt).toLocaleDateString(),
+      entry.gameName,
+      formatNumber(entry.gameScore),
+      formatNumber(entry.playerScore),
+      formatNumber(entry.franchiseScore),
+    ];
+    values.forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    leaderboardRowsEl.appendChild(row);
+  });
+}
+
+async function refreshLeaderboard() {
+  leaderboardMessageEl.textContent = "Loading the latest standings...";
+  leaderboardMessageEl.classList.remove("error");
+  try {
+    await flushLeaderboardQueue();
+    const data = await accountApi("/api/leaderboard");
+    leaderboardNextUpdateAt = Number(data.nextUpdateAt) || nextCentralMidnight();
+    renderLeaderboardRows(Array.isArray(data.entries) ? data.entries : []);
+    const localPending = readLeaderboardQueue().filter(
+      (entry) => entry.username === cloudAccount?.username
+    ).length;
+    const pendingCount = (Number(data.pendingCount) || 0) + localPending;
+    leaderboardQueueStatusEl.textContent = pendingCount === 1
+      ? "1 score is queued for the next update."
+      : `${pendingCount} scores are queued for the next update.`;
+    leaderboardMessageEl.textContent = data.lastUpdatedAt
+      ? `Last published ${new Date(data.lastUpdatedAt).toLocaleString()}.`
+      : "The first scores will publish at the next midnight Central update.";
+    updateLeaderboardCountdown();
+  } catch (error) {
+    leaderboardMessageEl.textContent = error.message;
+    leaderboardMessageEl.classList.add("error");
+    renderLeaderboardRows([]);
+  }
+}
+
+function openLeaderboard() {
+  if (!cloudAccount) {
+    setAccountMode("signin");
+    openAccountModal();
+    accountMessageEl.textContent = "Sign in to view and enter the Midnight Leaderboard.";
+    return;
+  }
+  leaderboardModalEl.hidden = false;
+  leaderboardNextUpdateAt = nextCentralMidnight();
+  updateLeaderboardCountdown();
+  if (typeof setInterval === "function") {
+    clearInterval(leaderboardCountdownTimer);
+    leaderboardCountdownTimer = setInterval(updateLeaderboardCountdown, 1000);
+  }
+  refreshLeaderboard();
+  leaderboardCloseButtonEl.focus();
+}
+
+function closeLeaderboard() {
+  leaderboardModalEl.hidden = true;
+  if (leaderboardCountdownTimer && typeof clearInterval === "function") {
+    clearInterval(leaderboardCountdownTimer);
+    leaderboardCountdownTimer = null;
+  }
+  leaderboardButtonEl.focus();
+}
+
+function renderPostgameScores() {
+  const scores = normalizeLastGameScores(franchise.lastGameScores);
+  postgameScorePanelEl.hidden = !scores;
+  if (!scores) return;
+  postgameGameScoreEl.textContent = formatNumber(scores.gameScore);
+  postgamePlayerScoreEl.textContent = formatNumber(scores.playerScore);
+  postgameFranchiseScoreEl.textContent = formatNumber(scores.franchiseScore);
+  if (!cloudAccount) {
+    postgameScoreStatusEl.textContent = "Sign in to enter";
+    return;
+  }
+  const locallyQueued = readLeaderboardQueue().some(
+    (entry) => entry.username === cloudAccount.username && entry.playedAt === scores.playedAt
+  );
+  postgameScoreStatusEl.textContent = locallyQueued ? "Queued for midnight" : "Leaderboard entered";
 }
 
 function refreshCurrentGameAfterCloudSync() {
@@ -2533,6 +2857,7 @@ async function submitCloudAccount(event) {
       : "Signed in. Merging your newest saves...";
     renderCloudAccount();
     await syncCloudSaves({ manual: true });
+    await flushLeaderboardQueue();
   } catch (error) {
     accountMessageEl.textContent = error.message;
     accountMessageEl.classList.add("error");
@@ -2544,6 +2869,7 @@ async function submitCloudAccount(event) {
 async function signOutCloudAccount() {
   accountSignoutButtonEl.disabled = true;
   await syncCloudSaves();
+  await flushLeaderboardQueue();
   try {
     await accountApi("/api/auth/signout", { method: "POST" });
   } catch {
@@ -2568,6 +2894,7 @@ async function initializeCloudAccount() {
       cloudSyncState = "syncing";
       renderCloudAccount();
       await syncCloudSaves();
+      await flushLeaderboardQueue();
     }
   } catch {
     setCloudSyncStatus("Offline - local saves", "error");
@@ -5374,6 +5701,15 @@ function completeLevel() {
   franchise.teamFunds += gameRevenue;
   franchise.morale = clamp(franchise.morale + moraleChangeForGame(result, tries), 0, 100);
   applyPlayerMoraleForGame(result, tries);
+  const playedAt = Date.now();
+  const scoreMetrics = leaderboardMetrics(result, tries);
+  const scores = calculateLeaderboardScores(scoreMetrics);
+  franchise.lastGameScores = {
+    ...scores,
+    playedAt,
+    gameId: currentGameMode().id,
+    gameName: currentGameMode().title,
+  };
   franchise.history = franchise.history.filter(
     (entry) => !(entry.season === seasonYear && entry.week === week)
   );
@@ -5385,6 +5721,7 @@ function completeLevel() {
     tries,
     fanChange,
     revenue: gameRevenue,
+    scores,
   });
   franchise.history = franchise.history.slice(-24);
   delete franchise.attemptsByGame[gameKey];
@@ -5431,6 +5768,13 @@ function completeLevel() {
     franchise.lastResult += ` Fan support ${fanChange >= 0 ? "+" : ""}${formatNumber(fanChange)}. Ticket revenue ${formatMoney(gameRevenue)}.`;
   }
   saveFranchise();
+  queueLeaderboardScore({
+    playedAt,
+    gameId: currentGameMode().id,
+    season: seasonYear,
+    week,
+    metrics: scoreMetrics,
+  });
   const nextTeam = teamForSeasonGame(currentSeasonWeek() - 1);
   nextOpponentNameEl.textContent = nextTeam.name;
   overlayTitleEl.textContent = isDodgeballMode() ? "Knockout!" : isSurfingMode() ? "Aerial Landed!" : isSkiingMode() ? "Perfect Landing!" : isBaseballMode() ? "Run Scored!" : isBasketballMode() ? "Swish!" : isSoccerMode() || isHockeyMode() || isWaterPoloMode() || isLacrosseMode() ? "Goal!" : "Field Goal Good";
@@ -6112,6 +6456,7 @@ function renderFranchiseDashboard() {
   seasonStatusValueEl.textContent = franchise.offseason
     ? "Offseason"
     : `Week ${currentSeasonWeek()} of ${GAMES_PER_SEASON}`;
+  renderPostgameScores();
   renderTeamOperations();
 
   runnerFeatureRoleEl.textContent = runner.archetype;
@@ -8700,6 +9045,8 @@ createFranchiseButton.addEventListener("click", createFranchiseFromForm);
 creatorTriggerEl.addEventListener("click", openCreatorTools);
 arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 accountButtonEl.addEventListener("click", openAccountModal);
+leaderboardButtonEl.addEventListener("click", openLeaderboard);
+leaderboardCloseButtonEl.addEventListener("click", closeLeaderboard);
 accountCloseButtonEl.addEventListener("click", closeAccountModal);
 accountSigninModeButtonEl.addEventListener("click", () => setAccountMode("signin"));
 accountSignupModeButtonEl.addEventListener("click", () => setAccountMode("signup"));
@@ -8708,6 +9055,9 @@ accountSignoutButtonEl.addEventListener("click", signOutCloudAccount);
 accountSyncButtonEl.addEventListener("click", () => syncCloudSaves({ manual: true }));
 accountModalEl.addEventListener("click", (event) => {
   if (event.target === accountModalEl) closeAccountModal();
+});
+leaderboardModalEl.addEventListener("click", (event) => {
+  if (event.target === leaderboardModalEl) closeLeaderboard();
 });
 [
   teamPrimaryInputEl,

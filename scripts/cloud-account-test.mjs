@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import worker, {
+  calculateLeaderboardScores,
+  LEADERBOARD_GAMES,
   SAVE_KEYS,
   hashPassword,
   mergeSaveBundles,
+  nextCentralMidnight,
+  normalizeLeaderboardSubmission,
   normalizeSaveBundle,
   normalizeUsername,
   verifyPassword,
@@ -11,6 +15,55 @@ import siteWorker from "../site-worker.js";
 
 assert.equal(normalizeUsername("  Player_One  "), "player_one");
 assert.equal(SAVE_KEYS.length, 10);
+assert.equal(Object.keys(LEADERBOARD_GAMES).length, 10);
+
+const leaderboardMetrics = {
+  result: "W",
+  tries: 2,
+  difficulty: 1.25,
+  speed: 72,
+  power: 68,
+  cut: 74,
+  playerMorale: 80,
+  upgrades: 5,
+  fans: 2100,
+  teamMorale: 75,
+  stadiumQuality: 65,
+  trainingQuality: 60,
+  coachRating: 70,
+  wins: 7,
+  losses: 2,
+};
+const leaderboardScores = calculateLeaderboardScores(leaderboardMetrics);
+Object.values(leaderboardScores).forEach((score) => {
+  assert.equal(Number.isInteger(score), true);
+  assert.ok(score >= 0 && score <= 1_000_000);
+});
+assert.ok(leaderboardScores.gameScore > calculateLeaderboardScores({ ...leaderboardMetrics, tries: 9 }).gameScore);
+assert.equal(
+  new Date(nextCentralMidnight(Date.parse("2026-09-07T23:30:00-05:00"))).toISOString(),
+  "2026-09-08T05:00:00.000Z"
+);
+assert.equal(
+  new Date(nextCentralMidnight(Date.parse("2026-01-07T23:30:00-06:00"))).toISOString(),
+  "2026-01-08T06:00:00.000Z"
+);
+const normalizedLeaderboardEntry = normalizeLeaderboardSubmission({
+  clientEntryId: "entry-test-1234",
+  playedAt: Date.parse("2026-09-08T12:00:00Z"),
+  gameId: "soccer",
+  season: 3,
+  week: 7,
+  metrics: leaderboardMetrics,
+}, Date.parse("2026-09-08T12:01:00Z"));
+assert.equal(normalizedLeaderboardEntry.gameName, "Goal Rush");
+assert.deepEqual(normalizedLeaderboardEntry.scores, leaderboardScores);
+assert.throws(() => normalizeLeaderboardSubmission({
+  clientEntryId: "entry-test-1234",
+  playedAt: Date.parse("2026-09-08T12:00:00Z"),
+  gameId: "unknown",
+  metrics: leaderboardMetrics,
+}, Date.parse("2026-09-08T12:01:00Z")), /Unknown Retro Run game/);
 
 const credentials = await hashPassword("strong-pass-42");
 assert.equal(await verifyPassword("strong-pass-42", credentials.salt, credentials.hash), true);

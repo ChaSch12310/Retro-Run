@@ -5,6 +5,21 @@ const MAX_BODY_BYTES = 1_500_000;
 const MAX_AUTH_ATTEMPTS = 12;
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const SAVE_SLOTS_PER_GAME = 5;
+const MAX_LEADERBOARD_SUBMISSIONS_PER_DAY = 200;
+const MAX_FANS = 3000;
+
+export const LEADERBOARD_GAMES = {
+  gridiron: "Gridiron Dash",
+  soccer: "Goal Rush",
+  basketball: "Hoop Hustle",
+  hockey: "Rink Rush",
+  waterPolo: "Splash Strike",
+  surfing: "Wave Rider",
+  skiing: "Slope Sprint",
+  baseball: "Diamond Dash",
+  lacrosse: "Crosse Clash",
+  dodgeball: "Dodgeball Dash",
+};
 
 export const SAVE_KEYS = [
   "gridiron-dash-franchise-slots",
@@ -131,6 +146,118 @@ export function mergeSaveBundles(firstBundle, secondBundle) {
   return { version: 1, games };
 }
 
+function boundedNumber(value, fallback, minimum, maximum) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : fallback;
+}
+
+export function calculateLeaderboardScores(metrics = {}) {
+  const tries = Math.round(boundedNumber(metrics.tries, 1, 1, 99));
+  const difficulty = boundedNumber(metrics.difficulty, 1, 1, 2);
+  const efficiency = Math.min(1, Math.max(0, 1 - (tries - 1) / 10));
+  const difficultyBonus = Math.min(1, Math.max(0, (difficulty - 1) / 0.55));
+  const gameScore = Math.min(1000000, Math.max(0, Math.round(
+    (metrics.result === "W" ? 580000 : 320000)
+      + efficiency * 300000
+      + difficultyBonus * 120000
+  )));
+
+  const averageRating = (
+    boundedNumber(metrics.speed, 50, 1, 100)
+      + boundedNumber(metrics.power, 50, 1, 100)
+      + boundedNumber(metrics.cut, 50, 1, 100)
+  ) / 300;
+  const playerScore = Math.min(1000000, Math.max(0, Math.round(
+    averageRating * 650000
+      + boundedNumber(metrics.playerMorale, 50, 0, 100) / 100 * 250000
+      + boundedNumber(metrics.upgrades, 0, 0, 20) / 20 * 100000
+  )));
+
+  const wins = Math.round(boundedNumber(metrics.wins, 0, 0, 9999));
+  const losses = Math.round(boundedNumber(metrics.losses, 0, 0, 9999));
+  const gamesPlayed = Math.max(1, wins + losses);
+  const organizationRating = (
+    boundedNumber(metrics.stadiumQuality, 50, 0, 100)
+      + boundedNumber(metrics.trainingQuality, 50, 0, 100)
+      + boundedNumber(metrics.coachRating, 50, 0, 100)
+  ) / 300;
+  const franchiseScore = Math.min(1000000, Math.max(0, Math.round(
+    boundedNumber(metrics.fans, 0, 0, MAX_FANS) / MAX_FANS * 300000
+      + boundedNumber(metrics.teamMorale, 50, 0, 100) / 100 * 200000
+      + organizationRating * 250000
+      + Math.min(1, Math.max(0, wins / gamesPlayed)) * 250000
+  )));
+
+  return { gameScore, playerScore, franchiseScore };
+}
+
+function centralTimeParts(timestamp) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  return Object.fromEntries(parts
+    .filter((part) => part.type !== "literal")
+    .map((part) => [part.type, Number(part.value)]));
+}
+
+function centralOffsetMs(timestamp) {
+  const parts = centralTimeParts(timestamp);
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+    - Math.floor(timestamp / 1000) * 1000;
+}
+
+function centralMidnightUtc(year, month, day) {
+  const wallClock = Date.UTC(year, month - 1, day, 0, 0, 0);
+  let timestamp = wallClock;
+  for (let index = 0; index < 3; index += 1) {
+    timestamp = wallClock - centralOffsetMs(timestamp);
+  }
+  return timestamp;
+}
+
+export function nextCentralMidnight(timestamp = Date.now()) {
+  const parts = centralTimeParts(timestamp);
+  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+  return centralMidnightUtc(
+    nextDay.getUTCFullYear(),
+    nextDay.getUTCMonth() + 1,
+    nextDay.getUTCDate()
+  );
+}
+
+export function normalizeLeaderboardSubmission(body, now = Date.now()) {
+  const clientEntryId = String(body?.clientEntryId || "");
+  const gameId = String(body?.gameId || "");
+  const playedAt = Number(body?.playedAt);
+  if (!/^[a-zA-Z0-9-]{8,80}$/.test(clientEntryId)) {
+    throw new Error("Invalid leaderboard entry ID.");
+  }
+  if (!LEADERBOARD_GAMES[gameId]) throw new Error("Unknown Retro Run game.");
+  if (!Number.isSafeInteger(playedAt) || playedAt < now - 90 * 24 * 60 * 60 * 1000 || playedAt > now + 5 * 60 * 1000) {
+    throw new Error("Invalid game date.");
+  }
+  const season = Math.round(boundedNumber(body?.season, 1, 1, 999));
+  const week = Math.round(boundedNumber(body?.week, 1, 1, 12));
+  const metrics = body?.metrics && typeof body.metrics === "object" ? body.metrics : {};
+  return {
+    clientEntryId,
+    playedAt,
+    gameId,
+    gameName: LEADERBOARD_GAMES[gameId],
+    season,
+    week,
+    metrics,
+    scores: calculateLeaderboardScores(metrics),
+  };
+}
+
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -189,6 +316,7 @@ function randomToken() {
 
 export class AccountStore {
   constructor(ctx) {
+    this.ctx = ctx;
     this.sql = ctx.storage.sql;
     this.sql.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -216,6 +344,30 @@ export class AccountStore {
         rate_key TEXT PRIMARY KEY,
         attempts INTEGER NOT NULL,
         reset_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS leaderboard_entries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        client_entry_id TEXT NOT NULL,
+        played_at INTEGER NOT NULL,
+        submitted_at INTEGER NOT NULL,
+        publish_at INTEGER NOT NULL,
+        published_at INTEGER,
+        game_id TEXT NOT NULL,
+        game_name TEXT NOT NULL,
+        season INTEGER NOT NULL,
+        week INTEGER NOT NULL,
+        game_score INTEGER NOT NULL,
+        player_score INTEGER NOT NULL,
+        franchise_score INTEGER NOT NULL,
+        UNIQUE(user_id, client_entry_id)
+      );
+      CREATE INDEX IF NOT EXISTS leaderboard_publish_at ON leaderboard_entries(publish_at);
+      CREATE INDEX IF NOT EXISTS leaderboard_scores ON leaderboard_entries(game_score, player_score, franchise_score);
+      CREATE TABLE IF NOT EXISTS leaderboard_meta (
+        meta_key TEXT PRIMARY KEY,
+        meta_value TEXT NOT NULL
       );
     `);
   }
@@ -397,6 +549,117 @@ export class AccountStore {
     return jsonResponse({ saves: merged, updatedAt });
   }
 
+  async scheduleLeaderboardAlarm(timestamp) {
+    const currentAlarm = await this.ctx.storage.getAlarm();
+    if (currentAlarm === null || timestamp < currentAlarm) {
+      await this.ctx.storage.setAlarm(timestamp);
+    }
+  }
+
+  publishDueLeaderboardEntries(now = Date.now()) {
+    const due = this.one(
+      "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE published_at IS NULL AND publish_at <= ?",
+      now
+    );
+    if (Number(due?.count) <= 0) return false;
+    this.sql.exec(
+      "UPDATE leaderboard_entries SET published_at = ? WHERE published_at IS NULL AND publish_at <= ?",
+      now,
+      now
+    );
+    this.sql.exec(
+      `INSERT INTO leaderboard_meta (meta_key, meta_value) VALUES ('last_updated_at', ?)
+       ON CONFLICT(meta_key) DO UPDATE SET meta_value = excluded.meta_value`,
+      String(now)
+    );
+    return true;
+  }
+
+  async handleLeaderboardRead(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to view the leaderboard.", 401);
+    const now = Date.now();
+    this.publishDueLeaderboardEntries(now);
+    const rows = this.sql.exec(
+      `SELECT username, played_at, game_name, season, week,
+              game_score, player_score, franchise_score
+       FROM leaderboard_entries
+       WHERE published_at IS NOT NULL
+       ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC
+       LIMIT 100`
+    ).toArray();
+    const pending = this.one(
+      "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND published_at IS NULL",
+      user.id
+    );
+    const lastUpdated = this.one(
+      "SELECT meta_value FROM leaderboard_meta WHERE meta_key = 'last_updated_at'"
+    );
+    return jsonResponse({
+      entries: rows.map((row) => ({
+        username: row.username,
+        playedAt: Number(row.played_at),
+        gameName: row.game_name,
+        season: Number(row.season),
+        week: Number(row.week),
+        gameScore: Number(row.game_score),
+        playerScore: Number(row.player_score),
+        franchiseScore: Number(row.franchise_score),
+      })),
+      pendingCount: Number(pending?.count) || 0,
+      nextUpdateAt: nextCentralMidnight(now),
+      lastUpdatedAt: Number(lastUpdated?.meta_value) || 0,
+    });
+  }
+
+  async handleLeaderboardWrite(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to enter the leaderboard.", 401);
+    const now = Date.now();
+    const recent = this.one(
+      "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND submitted_at >= ?",
+      user.id,
+      now - 24 * 60 * 60 * 1000
+    );
+    if (Number(recent?.count) >= MAX_LEADERBOARD_SUBMISSIONS_PER_DAY) {
+      return errorResponse("Leaderboard entry limit reached. Try again tomorrow.", 429);
+    }
+    const submission = normalizeLeaderboardSubmission(await readJson(request), now);
+    const publishAt = nextCentralMidnight(now);
+    this.sql.exec(
+      `INSERT OR IGNORE INTO leaderboard_entries (
+         id, user_id, username, client_entry_id, played_at, submitted_at, publish_at,
+         game_id, game_name, season, week, game_score, player_score, franchise_score
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      crypto.randomUUID(),
+      user.id,
+      user.username,
+      submission.clientEntryId,
+      submission.playedAt,
+      now,
+      publishAt,
+      submission.gameId,
+      submission.gameName,
+      submission.season,
+      submission.week,
+      submission.scores.gameScore,
+      submission.scores.playerScore,
+      submission.scores.franchiseScore
+    );
+    await this.scheduleLeaderboardAlarm(publishAt);
+    return jsonResponse({
+      accepted: true,
+      scores: submission.scores,
+      publishAt,
+    }, 202);
+  }
+
+  async alarm() {
+    const now = Date.now();
+    this.publishDueLeaderboardEntries(now);
+    await this.ctx.storage.setAlarm(nextCentralMidnight(now));
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     if (["POST", "PUT", "DELETE"].includes(request.method) && !sameOriginRequest(request)) {
@@ -423,6 +686,12 @@ export class AccountStore {
       }
       if (url.pathname === "/api/saves" && request.method === "PUT") {
         return this.handleSaveWrite(request);
+      }
+      if (url.pathname === "/api/leaderboard" && request.method === "GET") {
+        return this.handleLeaderboardRead(request);
+      }
+      if (url.pathname === "/api/leaderboard" && request.method === "POST") {
+        return this.handleLeaderboardWrite(request);
       }
       return errorResponse("API route not found.", 404);
     } catch (error) {
