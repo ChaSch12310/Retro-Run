@@ -134,8 +134,7 @@ const accountUsernameValueEl = document.getElementById("accountUsernameValue");
 const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
 const accountSignoutButtonEl = document.getElementById("accountSignoutButton");
 const accountSyncButtonEl = document.getElementById("accountSyncButton");
-const leaderboardModalEl = document.getElementById("leaderboardModal");
-const leaderboardCloseButtonEl = document.getElementById("leaderboardCloseButton");
+const leaderboardBoardEl = document.getElementById("leaderboardBoard");
 const leaderboardCountdownEl = document.getElementById("leaderboardCountdown");
 const leaderboardLocalTimeEl = document.getElementById("leaderboardLocalTime");
 const leaderboardQueueStatusEl = document.getElementById("leaderboardQueueStatus");
@@ -143,9 +142,9 @@ const leaderboardMessageEl = document.getElementById("leaderboardMessage");
 const leaderboardRowsEl = document.getElementById("leaderboardRows");
 const postgameScorePanelEl = document.getElementById("postgameScorePanel");
 const postgameScoreStatusEl = document.getElementById("postgameScoreStatus");
-const postgameGameScoreEl = document.getElementById("postgameGameScore");
-const postgamePlayerScoreEl = document.getElementById("postgamePlayerScore");
-const postgameFranchiseScoreEl = document.getElementById("postgameFranchiseScore");
+const postgameTackleScoreEl = document.getElementById("postgameTackleScore");
+const postgameSpeedScoreEl = document.getElementById("postgameSpeedScore");
+const postgameFanScoreEl = document.getElementById("postgameFanScore");
 const creatorModalEl = document.getElementById("creatorModal");
 const creatorLoginFormEl = document.getElementById("creatorLoginForm");
 const creatorLevelsFormEl = document.getElementById("creatorLevelsForm");
@@ -1965,9 +1964,9 @@ function savedNumber(value, fallback) {
 function normalizeLastGameScores(value) {
   if (!value || typeof value !== "object") return null;
   return {
-    gameScore: clamp(Math.round(savedNumber(value.gameScore, 0)), 0, 1000000),
-    playerScore: clamp(Math.round(savedNumber(value.playerScore, 0)), 0, 1000000),
-    franchiseScore: clamp(Math.round(savedNumber(value.franchiseScore, 0)), 0, 1000000),
+    tackleScore: clamp(Math.round(savedNumber(value.tackleScore, value.gameScore || 0)), 0, 1000000),
+    speedScore: clamp(Math.round(savedNumber(value.speedScore, value.playerScore || 0)), 0, 1000000),
+    fanScore: clamp(Math.round(savedNumber(value.fanScore, value.franchiseScore || 0)), 0, 1000000),
     playedAt: Math.max(0, Math.round(savedNumber(value.playedAt, 0))),
     gameId: String(value.gameId || "gridiron"),
     gameName: String(value.gameName || "Retro Run"),
@@ -1980,41 +1979,16 @@ function formatNumber(value) {
 
 function calculateLeaderboardScores(metrics = {}) {
   const tries = clamp(Math.round(savedNumber(metrics.tries, 1)), 1, 99);
-  const difficulty = clamp(savedNumber(metrics.difficulty, 1), 1, 2);
-  const efficiency = clamp(1 - (tries - 1) / 10, 0, 1);
-  const difficultyBonus = clamp((difficulty - 1) / 0.55, 0, 1);
-  const gameScore = clamp(Math.round(
-    (metrics.result === "W" ? 580000 : 320000)
-      + efficiency * 300000
-      + difficultyBonus * 120000
+  const tackles = clamp(tries - 1, 0, 10);
+  const tackleScore = clamp(Math.round((1 - tackles / 10) * 1000000), 0, 1000000);
+  const speedScore = clamp(Math.round(
+    clamp(savedNumber(metrics.speed, 50), 0, 100) / 100 * 1000000
+  ), 0, 1000000);
+  const fanScore = clamp(Math.round(
+    clamp(savedNumber(metrics.fans, 0), 0, MAX_FANS) / MAX_FANS * 1000000
   ), 0, 1000000);
 
-  const averageRating = (
-    clamp(savedNumber(metrics.speed, 50), 1, 100)
-      + clamp(savedNumber(metrics.power, 50), 1, 100)
-      + clamp(savedNumber(metrics.cut, 50), 1, 100)
-  ) / 300;
-  const playerScore = clamp(Math.round(
-    averageRating * 650000
-      + clamp(savedNumber(metrics.playerMorale, 50), 0, 100) / 100 * 250000
-      + clamp(savedNumber(metrics.upgrades, 0), 0, 20) / 20 * 100000
-  ), 0, 1000000);
-
-  const gamesPlayed = Math.max(1, Math.round(savedNumber(metrics.wins, 0)) + Math.round(savedNumber(metrics.losses, 0)));
-  const winRate = clamp(savedNumber(metrics.wins, 0) / gamesPlayed, 0, 1);
-  const organizationRating = (
-    clamp(savedNumber(metrics.stadiumQuality, 50), 0, 100)
-      + clamp(savedNumber(metrics.trainingQuality, 50), 0, 100)
-      + clamp(savedNumber(metrics.coachRating, 50), 0, 100)
-  ) / 300;
-  const franchiseScore = clamp(Math.round(
-    clamp(savedNumber(metrics.fans, 0), 0, MAX_FANS) / MAX_FANS * 300000
-      + clamp(savedNumber(metrics.teamMorale, 50), 0, 100) / 100 * 200000
-      + organizationRating * 250000
-      + winRate * 250000
-  ), 0, 1000000);
-
-  return { gameScore, playerScore, franchiseScore };
+  return { tackleScore, speedScore, fanScore };
 }
 
 function leaderboardMetrics(result, tries) {
@@ -2681,9 +2655,9 @@ function renderLeaderboardRows(entries) {
       `@${entry.username}`,
       new Date(entry.playedAt).toLocaleDateString(),
       entry.gameName,
-      formatNumber(entry.gameScore),
-      formatNumber(entry.playerScore),
-      formatNumber(entry.franchiseScore),
+      formatNumber(entry.tackleScore),
+      formatNumber(entry.speedScore),
+      formatNumber(entry.fanScore),
     ];
     values.forEach((value) => {
       const cell = document.createElement("td");
@@ -2706,9 +2680,11 @@ async function refreshLeaderboard() {
       (entry) => entry.username === cloudAccount?.username
     ).length;
     const pendingCount = (Number(data.pendingCount) || 0) + localPending;
-    leaderboardQueueStatusEl.textContent = pendingCount === 1
-      ? "1 score is queued for the next update."
-      : `${pendingCount} scores are queued for the next update.`;
+    leaderboardQueueStatusEl.textContent = cloudAccount
+      ? (pendingCount === 1
+        ? "1 score is queued for the next update."
+        : `${pendingCount} scores are queued for the next update.`)
+      : "Sign in and finish a game to enter the next update.";
     leaderboardMessageEl.textContent = data.lastUpdatedAt
       ? `Last published ${new Date(data.lastUpdatedAt).toLocaleString()}.`
       : "The first scores will publish at the next midnight Central update.";
@@ -2721,39 +2697,27 @@ async function refreshLeaderboard() {
 }
 
 function openLeaderboard() {
-  if (!cloudAccount) {
-    setAccountMode("signin");
-    openAccountModal();
-    accountMessageEl.textContent = "Sign in to view and enter the Midnight Leaderboard.";
-    return;
-  }
-  leaderboardModalEl.hidden = false;
+  openGameLibrary();
+  refreshLeaderboard();
+  leaderboardBoardEl.scrollIntoView?.({ behavior: "smooth", block: "start" });
+}
+
+function initializeLeaderboard() {
   leaderboardNextUpdateAt = nextCentralMidnight();
   updateLeaderboardCountdown();
   if (typeof setInterval === "function") {
-    clearInterval(leaderboardCountdownTimer);
     leaderboardCountdownTimer = setInterval(updateLeaderboardCountdown, 1000);
   }
   refreshLeaderboard();
-  leaderboardCloseButtonEl.focus();
-}
-
-function closeLeaderboard() {
-  leaderboardModalEl.hidden = true;
-  if (leaderboardCountdownTimer && typeof clearInterval === "function") {
-    clearInterval(leaderboardCountdownTimer);
-    leaderboardCountdownTimer = null;
-  }
-  leaderboardButtonEl.focus();
 }
 
 function renderPostgameScores() {
   const scores = normalizeLastGameScores(franchise.lastGameScores);
   postgameScorePanelEl.hidden = !scores;
   if (!scores) return;
-  postgameGameScoreEl.textContent = formatNumber(scores.gameScore);
-  postgamePlayerScoreEl.textContent = formatNumber(scores.playerScore);
-  postgameFranchiseScoreEl.textContent = formatNumber(scores.franchiseScore);
+  postgameTackleScoreEl.textContent = formatNumber(scores.tackleScore);
+  postgameSpeedScoreEl.textContent = formatNumber(scores.speedScore);
+  postgameFanScoreEl.textContent = formatNumber(scores.fanScore);
   if (!cloudAccount) {
     postgameScoreStatusEl.textContent = "Sign in to enter";
     return;
@@ -2858,6 +2822,7 @@ async function submitCloudAccount(event) {
     renderCloudAccount();
     await syncCloudSaves({ manual: true });
     await flushLeaderboardQueue();
+    await refreshLeaderboard();
   } catch (error) {
     accountMessageEl.textContent = error.message;
     accountMessageEl.classList.add("error");
@@ -2880,6 +2845,7 @@ async function signOutCloudAccount() {
   accountSignedInMessageEl.classList.remove("error");
   setAccountMode("signin");
   renderCloudAccount();
+  refreshLeaderboard();
   accountSignoutButtonEl.disabled = false;
 }
 
@@ -2895,6 +2861,7 @@ async function initializeCloudAccount() {
       renderCloudAccount();
       await syncCloudSaves();
       await flushLeaderboardQueue();
+      await refreshLeaderboard();
     }
   } catch {
     setCloudSyncStatus("Offline - local saves", "error");
@@ -6099,6 +6066,7 @@ function openGameLibrary() {
   tutorialPanelEl.hidden = true;
   updateGameLibrarySelection();
   syncFranchiseSetupState();
+  refreshLeaderboard();
 }
 
 function updateStartOverlay() {
@@ -9046,7 +9014,6 @@ creatorTriggerEl.addEventListener("click", openCreatorTools);
 arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 accountButtonEl.addEventListener("click", openAccountModal);
 leaderboardButtonEl.addEventListener("click", openLeaderboard);
-leaderboardCloseButtonEl.addEventListener("click", closeLeaderboard);
 accountCloseButtonEl.addEventListener("click", closeAccountModal);
 accountSigninModeButtonEl.addEventListener("click", () => setAccountMode("signin"));
 accountSignupModeButtonEl.addEventListener("click", () => setAccountMode("signup"));
@@ -9055,9 +9022,6 @@ accountSignoutButtonEl.addEventListener("click", signOutCloudAccount);
 accountSyncButtonEl.addEventListener("click", () => syncCloudSaves({ manual: true }));
 accountModalEl.addEventListener("click", (event) => {
   if (event.target === accountModalEl) closeAccountModal();
-});
-leaderboardModalEl.addEventListener("click", (event) => {
-  if (event.target === leaderboardModalEl) closeLeaderboard();
 });
 [
   teamPrimaryInputEl,
@@ -9104,5 +9068,6 @@ syncFranchiseSetupState();
 showOverlay();
 updateStartOverlay();
 updateHud();
+initializeLeaderboard();
 initializeCloudAccount();
 requestAnimationFrame(update);

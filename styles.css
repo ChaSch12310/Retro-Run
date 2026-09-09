@@ -2146,8 +2146,7 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal,
-.account-modal,
-.leaderboard-modal {
+.account-modal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -2158,8 +2157,7 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal[hidden],
-.account-modal[hidden],
-.leaderboard-modal[hidden] {
+.account-modal[hidden] {
   display: none !important;
 }
 
@@ -2176,10 +2174,18 @@ body.franchise-slot-selecting #loadSavePanel {
     0 12px 0 rgba(8, 15, 22, 0.35);
 }
 
+.leaderboard-board {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 10px;
+  scroll-margin-top: 12px;
+}
+
 .leaderboard-card {
-  width: min(96vw, 1120px);
-  max-height: calc(100dvh - 36px);
-  overflow: auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   padding: clamp(14px, 2vw, 24px);
   color: var(--text);
   background: #132d46;
@@ -2236,6 +2242,7 @@ body.franchise-slot-selecting #loadSavePanel {
   color: var(--text);
   font-family: "Trebuchet MS", sans-serif;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .leaderboard-message {
@@ -6128,8 +6135,7 @@ body[data-device="mobile"] #cloudSyncStatus {
 }
 
 body[data-device="mobile"] .leaderboard-card {
-  width: calc(100vw - 16px);
-  max-height: calc(100dvh - 16px);
+  width: 100%;
   padding: 11px;
 }
 
@@ -6140,6 +6146,18 @@ body[data-device="mobile"] .postgame-score-grid {
 
 body[data-device="mobile"] .leaderboard-clock > div {
   grid-row: auto;
+}
+
+body[data-device="mobile"] .leaderboard-head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+body[data-device="mobile"] .leaderboard-clock > *,
+body[data-device="mobile"] #leaderboardQueueStatus {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 body[data-device="mobile"] .runner-grid {

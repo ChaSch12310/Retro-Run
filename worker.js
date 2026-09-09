@@ -153,42 +153,18 @@ function boundedNumber(value, fallback, minimum, maximum) {
 
 export function calculateLeaderboardScores(metrics = {}) {
   const tries = Math.round(boundedNumber(metrics.tries, 1, 1, 99));
-  const difficulty = boundedNumber(metrics.difficulty, 1, 1, 2);
-  const efficiency = Math.min(1, Math.max(0, 1 - (tries - 1) / 10));
-  const difficultyBonus = Math.min(1, Math.max(0, (difficulty - 1) / 0.55));
-  const gameScore = Math.min(1000000, Math.max(0, Math.round(
-    (metrics.result === "W" ? 580000 : 320000)
-      + efficiency * 300000
-      + difficultyBonus * 120000
+  const tackles = Math.min(10, Math.max(0, tries - 1));
+  const tackleScore = Math.min(1000000, Math.max(0, Math.round(
+    (1 - tackles / 10) * 1000000
+  )));
+  const speedScore = Math.min(1000000, Math.max(0, Math.round(
+    boundedNumber(metrics.speed, 50, 0, 100) / 100 * 1000000
+  )));
+  const fanScore = Math.min(1000000, Math.max(0, Math.round(
+    boundedNumber(metrics.fans, 0, 0, MAX_FANS) / MAX_FANS * 1000000
   )));
 
-  const averageRating = (
-    boundedNumber(metrics.speed, 50, 1, 100)
-      + boundedNumber(metrics.power, 50, 1, 100)
-      + boundedNumber(metrics.cut, 50, 1, 100)
-  ) / 300;
-  const playerScore = Math.min(1000000, Math.max(0, Math.round(
-    averageRating * 650000
-      + boundedNumber(metrics.playerMorale, 50, 0, 100) / 100 * 250000
-      + boundedNumber(metrics.upgrades, 0, 0, 20) / 20 * 100000
-  )));
-
-  const wins = Math.round(boundedNumber(metrics.wins, 0, 0, 9999));
-  const losses = Math.round(boundedNumber(metrics.losses, 0, 0, 9999));
-  const gamesPlayed = Math.max(1, wins + losses);
-  const organizationRating = (
-    boundedNumber(metrics.stadiumQuality, 50, 0, 100)
-      + boundedNumber(metrics.trainingQuality, 50, 0, 100)
-      + boundedNumber(metrics.coachRating, 50, 0, 100)
-  ) / 300;
-  const franchiseScore = Math.min(1000000, Math.max(0, Math.round(
-    boundedNumber(metrics.fans, 0, 0, MAX_FANS) / MAX_FANS * 300000
-      + boundedNumber(metrics.teamMorale, 50, 0, 100) / 100 * 200000
-      + organizationRating * 250000
-      + Math.min(1, Math.max(0, wins / gamesPlayed)) * 250000
-  )));
-
-  return { gameScore, playerScore, franchiseScore };
+  return { tackleScore, speedScore, fanScore };
 }
 
 function centralTimeParts(timestamp) {
@@ -577,7 +553,6 @@ export class AccountStore {
 
   async handleLeaderboardRead(request) {
     const user = await this.currentUser(request);
-    if (!user) return errorResponse("Sign in to view the leaderboard.", 401);
     const now = Date.now();
     this.publishDueLeaderboardEntries(now);
     const rows = this.sql.exec(
@@ -588,10 +563,12 @@ export class AccountStore {
        ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC
        LIMIT 100`
     ).toArray();
-    const pending = this.one(
-      "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND published_at IS NULL",
-      user.id
-    );
+    const pending = user
+      ? this.one(
+        "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND published_at IS NULL",
+        user.id
+      )
+      : null;
     const lastUpdated = this.one(
       "SELECT meta_value FROM leaderboard_meta WHERE meta_key = 'last_updated_at'"
     );
@@ -602,9 +579,9 @@ export class AccountStore {
         gameName: row.game_name,
         season: Number(row.season),
         week: Number(row.week),
-        gameScore: Number(row.game_score),
-        playerScore: Number(row.player_score),
-        franchiseScore: Number(row.franchise_score),
+        tackleScore: Number(row.game_score),
+        speedScore: Number(row.player_score),
+        fanScore: Number(row.franchise_score),
       })),
       pendingCount: Number(pending?.count) || 0,
       nextUpdateAt: nextCentralMidnight(now),
@@ -642,9 +619,9 @@ export class AccountStore {
       submission.gameName,
       submission.season,
       submission.week,
-      submission.scores.gameScore,
-      submission.scores.playerScore,
-      submission.scores.franchiseScore
+      submission.scores.tackleScore,
+      submission.scores.speedScore,
+      submission.scores.fanScore
     );
     await this.scheduleLeaderboardAlarm(publishAt);
     return jsonResponse({

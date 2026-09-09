@@ -39,7 +39,10 @@ Object.values(leaderboardScores).forEach((score) => {
   assert.equal(Number.isInteger(score), true);
   assert.ok(score >= 0 && score <= 1_000_000);
 });
-assert.ok(leaderboardScores.gameScore > calculateLeaderboardScores({ ...leaderboardMetrics, tries: 9 }).gameScore);
+assert.equal(leaderboardScores.tackleScore, 900_000);
+assert.equal(leaderboardScores.speedScore, 720_000);
+assert.equal(leaderboardScores.fanScore, 700_000);
+assert.ok(leaderboardScores.tackleScore > calculateLeaderboardScores({ ...leaderboardMetrics, tries: 9 }).tackleScore);
 assert.equal(
   new Date(nextCentralMidnight(Date.parse("2026-09-07T23:30:00-05:00"))).toISOString(),
   "2026-09-08T05:00:00.000Z"
