@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node scripts/test.mjs",
-    "cloudflare:preview": "pnpm run build && wrangler versions upload --preview-alias preview --strict",
+    "cloudflare:preview": "pnpm run build && wrangler versions upload --config wrangler.preview.jsonc --preview-alias preview --strict",
     "cloudflare:preview:isolated": "pnpm run build && wrangler versions upload --config wrangler.preview.jsonc --preview-alias preview --strict",
     "cloudflare:versions": "wrangler versions list",
     "cloudflare:promote": "wrangler versions deploy",

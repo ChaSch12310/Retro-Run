@@ -106,6 +106,7 @@ class FakeElement {
 }
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const packageSource = fs.readFileSync(new URL("../package.json", import.meta.url), "utf8");
 const source = fs.readFileSync(new URL("../game.js", import.meta.url), "utf8");
 const pocketDynastySource = fs.readFileSync(new URL("../pocket-dynasty.js", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles.css", import.meta.url), "utf8");
@@ -174,6 +175,7 @@ assert.match(accountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"
 assert.match(previewAccountWranglerConfig, /"name"\s*:\s*"retro-run-account-preview"/);
 assert.match(previewAccountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
 assert.match(previewWranglerConfig, /"service"\s*:\s*"retro-run-account-preview"/);
+assert.match(packageSource, /cloudflare:preview[^\n]+--config wrangler\.preview\.jsonc/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
