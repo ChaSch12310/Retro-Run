@@ -556,12 +556,20 @@ export class AccountStore {
     const now = Date.now();
     this.publishDueLeaderboardEntries(now);
     const rows = this.sql.exec(
-      `SELECT username, played_at, game_name, season, week,
+      `WITH personal_bests AS (
+         SELECT *, ROW_NUMBER() OVER (
+           PARTITION BY user_id, game_id
+           ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC, id ASC
+         ) AS personal_rank
+         FROM leaderboard_entries
+         WHERE published_at IS NOT NULL
+       )
+       SELECT username, played_at, game_name, season, week,
               game_score, player_score, franchise_score
-       FROM leaderboard_entries
-       WHERE published_at IS NOT NULL
-       ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC
-       LIMIT 100`
+       FROM personal_bests
+       WHERE personal_rank = 1
+       ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC, id ASC
+       LIMIT 25`
     ).toArray();
     const pending = user
       ? this.one(
