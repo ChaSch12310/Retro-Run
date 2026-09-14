@@ -160,6 +160,10 @@ const postgameDoubleheaderPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-postgame-doubleheader.yml", import.meta.url),
   "utf8"
 );
+const top25PromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-top-25-personal-bests.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -426,6 +430,19 @@ assert.match(postgameDoubleheaderPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE:
 assert.match(postgameDoubleheaderPromotionWorkflow, /pnpm test/);
 assert.match(postgameDoubleheaderPromotionWorkflow, /wrangler deploy/);
 assert.match(postgameDoubleheaderPromotionWorkflow, /Postgame Doubleheader - Production/);
+assert.match(top25PromotionWorkflow, /cron: "0 5 14 9 \*"/);
+assert.match(top25PromotionWorkflow, /TZ=America\/Chicago date \+%Y-%m-%d/);
+assert.match(top25PromotionWorkflow, /== "2026-09-14"/);
+assert.match(top25PromotionWorkflow, /if: needs\.release-window\.outputs\.promote == 'true'/);
+assert.match(top25PromotionWorkflow, /ref: 5991b7ef042dcdb78f1e4e5d8b66a7b3257995df/);
+assert.match(top25PromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(top25PromotionWorkflow, /pnpm test/);
+assert.match(top25PromotionWorkflow, /--config wrangler\.account\.jsonc/);
+assert.match(top25PromotionWorkflow, /--config wrangler\.jsonc/);
+assert.doesNotMatch(top25PromotionWorkflow, /--config wrangler\.(?:account-)?preview\.jsonc/);
+assert.ok(top25PromotionWorkflow.indexOf("--config wrangler.account.jsonc") < top25PromotionWorkflow.indexOf("--config wrangler.jsonc"));
+assert.match(top25PromotionWorkflow, /Top 25 Personal Bests - Production/);
+assert.match(top25PromotionWorkflow, /board\.entries\.length <= 25/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
