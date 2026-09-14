@@ -20,6 +20,18 @@
       }
     ]
   },
+  "send_email": [
+    {
+      "name": "PLAYER_REPORT_EMAIL",
+      "destination_address": "reports@retrorun.win",
+      "allowed_sender_addresses": ["noreply@retrorun.win"]
+    },
+    {
+      "name": "ISSUE_REPORT_EMAIL",
+      "destination_address": "updates@retrorun.win",
+      "allowed_sender_addresses": ["noreply@retrorun.win"]
+    }
+  ],
   "migrations": [
     {
       "tag": "v1",

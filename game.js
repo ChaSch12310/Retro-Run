@@ -116,6 +116,8 @@ const creatorTriggerEl = document.getElementById("creatorTrigger");
 const arcadeHomeButtonEl = document.getElementById("arcadeHomeButton");
 const accountButtonEl = document.getElementById("accountButton");
 const leaderboardButtonEl = document.getElementById("leaderboardButton");
+const communityButtonEl = document.getElementById("communityButton");
+const issueReportButtonEl = document.getElementById("issueReportButton");
 const cloudSyncStatusEl = document.getElementById("cloudSyncStatus");
 const accountModalEl = document.getElementById("accountModal");
 const accountTitleEl = document.getElementById("accountTitle");
@@ -140,6 +142,31 @@ const leaderboardLocalTimeEl = document.getElementById("leaderboardLocalTime");
 const leaderboardQueueStatusEl = document.getElementById("leaderboardQueueStatus");
 const leaderboardMessageEl = document.getElementById("leaderboardMessage");
 const leaderboardRowsEl = document.getElementById("leaderboardRows");
+const communityModalEl = document.getElementById("communityModal");
+const communityTitleEl = document.getElementById("communityTitle");
+const communityCloseButtonEl = document.getElementById("communityCloseButton");
+const communityChatModeButtonEl = document.getElementById("communityChatModeButton");
+const communityIssueModeButtonEl = document.getElementById("communityIssueModeButton");
+const communityChatPanelEl = document.getElementById("communityChatPanel");
+const communityIssuePanelEl = document.getElementById("communityIssuePanel");
+const communityMessagesEl = document.getElementById("communityMessages");
+const communityChatFormEl = document.getElementById("communityChatForm");
+const communityMessageInputEl = document.getElementById("communityMessageInput");
+const communityCharacterCountEl = document.getElementById("communityCharacterCount");
+const communitySendButtonEl = document.getElementById("communitySendButton");
+const communityMessageEl = document.getElementById("communityMessage");
+const playerReportFormEl = document.getElementById("playerReportForm");
+const playerReportUsernameEl = document.getElementById("playerReportUsername");
+const playerReportQuoteEl = document.getElementById("playerReportQuote");
+const playerReportReasonEl = document.getElementById("playerReportReason");
+const playerReportDetailsEl = document.getElementById("playerReportDetails");
+const playerReportCancelButtonEl = document.getElementById("playerReportCancelButton");
+const playerReportSubmitButtonEl = document.getElementById("playerReportSubmitButton");
+const issueReportFormEl = document.getElementById("issueReportForm");
+const issueReportCategoryEl = document.getElementById("issueReportCategory");
+const issueReportDetailsEl = document.getElementById("issueReportDetails");
+const issueReportMessageEl = document.getElementById("issueReportMessage");
+const issueReportSubmitButtonEl = document.getElementById("issueReportSubmitButton");
 const postgameScorePanelEl = document.getElementById("postgameScorePanel");
 const postgameScoreStatusEl = document.getElementById("postgameScoreStatus");
 const postgameTackleScoreEl = document.getElementById("postgameTackleScore");
@@ -1441,6 +1468,10 @@ let cloudSyncState = "local";
 let leaderboardFlushPromise = null;
 let leaderboardNextUpdateAt = 0;
 let leaderboardCountdownTimer = null;
+let communityMode = "chat";
+let communityPollTimer = null;
+let chatRefreshPromise = null;
+let playerReportTarget = null;
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
 let fieldGoalPhaseStarted = 0;
@@ -2437,6 +2468,12 @@ function setCloudSyncStatus(message, state = "") {
 function renderCloudAccount() {
   const signedIn = Boolean(cloudAccount);
   accountButtonEl.textContent = signedIn ? `@${cloudAccount.username}` : "Sign In";
+  communityButtonEl.setAttribute("aria-label", signedIn
+    ? `Open Locker Room as ${cloudAccount.username}`
+    : "Sign in to open the Locker Room");
+  issueReportButtonEl.setAttribute("aria-label", signedIn
+    ? "Report a Retro Run game issue"
+    : "Sign in to report a Retro Run game issue");
   accountSignedOutEl.hidden = signedIn;
   accountSignedInEl.hidden = !signedIn;
   if (signedIn) {
@@ -2505,6 +2542,231 @@ async function accountApi(path, options = {}) {
     throw error;
   }
   return data;
+}
+
+function setCommunityStatus(element, message, error = false) {
+  element.textContent = message;
+  element.classList.toggle("error", error);
+}
+
+function updateCommunityCharacterCount() {
+  communityCharacterCountEl.textContent = `${communityMessageInputEl.value.length} / 180`;
+}
+
+function renderCommunityMessages(messages) {
+  const shouldStickToBottom = communityMessagesEl.scrollHeight - communityMessagesEl.scrollTop
+    - communityMessagesEl.clientHeight < 60;
+  communityMessagesEl.replaceChildren();
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "community-empty";
+    empty.textContent = "The Locker Room is quiet. Start the conversation.";
+    communityMessagesEl.appendChild(empty);
+    return;
+  }
+  messages.forEach((message) => {
+    const item = document.createElement("article");
+    item.className = `community-message-item${message.mine ? " mine" : ""}`;
+    const head = document.createElement("div");
+    head.className = "community-message-head";
+    const username = document.createElement("strong");
+    username.textContent = `@${message.username}`;
+    const time = document.createElement("time");
+    time.dateTime = new Date(message.createdAt).toISOString();
+    time.textContent = new Date(message.createdAt).toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    head.append(username, time);
+    const body = document.createElement("p");
+    body.className = "community-message-body";
+    body.textContent = message.body;
+    item.append(head, body);
+    if (!message.mine) {
+      const reportButton = document.createElement("button");
+      reportButton.type = "button";
+      reportButton.className = "community-report-button";
+      reportButton.textContent = "Report Player";
+      reportButton.addEventListener("click", () => openPlayerReport(message));
+      item.appendChild(reportButton);
+    }
+    communityMessagesEl.appendChild(item);
+  });
+  if (shouldStickToBottom || !communityMessagesEl.dataset.loaded) {
+    communityMessagesEl.scrollTop = communityMessagesEl.scrollHeight;
+  }
+  communityMessagesEl.dataset.loaded = "true";
+}
+
+async function performChatRefresh({ quiet = false } = {}) {
+  if (!cloudAccount || communityModalEl.hidden || communityMode !== "chat") return;
+  if (!quiet) setCommunityStatus(communityMessageEl, "Loading Locker Room...");
+  try {
+    const data = await accountApi("/api/chat");
+    renderCommunityMessages(Array.isArray(data.messages) ? data.messages : []);
+    if (!quiet) setCommunityStatus(communityMessageEl, "Locker Room is live.");
+  } catch (error) {
+    setCommunityStatus(communityMessageEl, error.message, true);
+  }
+}
+
+function refreshChat(options) {
+  if (chatRefreshPromise) return chatRefreshPromise;
+  chatRefreshPromise = performChatRefresh(options).finally(() => {
+    chatRefreshPromise = null;
+  });
+  return chatRefreshPromise;
+}
+
+function closePlayerReport() {
+  playerReportTarget = null;
+  playerReportFormEl.reset();
+  playerReportFormEl.hidden = true;
+  communityChatFormEl.hidden = false;
+  setCommunityStatus(communityMessageEl, "Locker Room is live.");
+  communityMessageInputEl.focus();
+}
+
+function openPlayerReport(message) {
+  playerReportTarget = message;
+  playerReportUsernameEl.textContent = `@${message.username}`;
+  playerReportQuoteEl.textContent = `“${message.body}”`;
+  communityChatFormEl.hidden = true;
+  playerReportFormEl.hidden = false;
+  setCommunityStatus(communityMessageEl, "Choose why this message should be reviewed.");
+  playerReportReasonEl.focus();
+}
+
+function setCommunityMode(mode) {
+  communityMode = mode === "issue" ? "issue" : "chat";
+  const showingIssue = communityMode === "issue";
+  playerReportTarget = null;
+  playerReportFormEl.reset();
+  playerReportFormEl.hidden = true;
+  communityChatFormEl.hidden = false;
+  communityTitleEl.textContent = showingIssue ? "Report Game Issue" : "Locker Room";
+  communityChatPanelEl.hidden = showingIssue;
+  communityIssuePanelEl.hidden = !showingIssue;
+  communityChatModeButtonEl.classList.toggle("selected", !showingIssue);
+  communityIssueModeButtonEl.classList.toggle("selected", showingIssue);
+  communityChatModeButtonEl.setAttribute("aria-pressed", String(!showingIssue));
+  communityIssueModeButtonEl.setAttribute("aria-pressed", String(showingIssue));
+  if (showingIssue) {
+    issueReportDetailsEl.focus();
+  } else {
+    refreshChat();
+    communityMessageInputEl.focus();
+  }
+}
+
+function startCommunityPolling() {
+  if (communityPollTimer) clearInterval(communityPollTimer);
+  communityPollTimer = setInterval(() => refreshChat({ quiet: true }), 5000);
+}
+
+function openCommunity(mode = "chat") {
+  if (!cloudAccount) {
+    openAccountModal();
+    setCommunityStatus(accountMessageEl, "Sign in to use the Locker Room and report issues.");
+    return;
+  }
+  communityModalEl.hidden = false;
+  communityMessagesEl.removeAttribute("data-loaded");
+  setCommunityMode(mode);
+  startCommunityPolling();
+}
+
+function closeCommunity() {
+  communityModalEl.hidden = true;
+  if (communityPollTimer) clearInterval(communityPollTimer);
+  communityPollTimer = null;
+  playerReportTarget = null;
+  playerReportFormEl.hidden = true;
+  communityChatFormEl.hidden = false;
+  communityButtonEl.focus();
+}
+
+async function submitCommunityMessage(event) {
+  event.preventDefault();
+  const message = communityMessageInputEl.value.trim();
+  communitySendButtonEl.disabled = true;
+  setCommunityStatus(communityMessageEl, "Sending...");
+  try {
+    await accountApi("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    communityMessageInputEl.value = "";
+    updateCommunityCharacterCount();
+    await refreshChat();
+    communityMessageInputEl.focus();
+  } catch (error) {
+    setCommunityStatus(communityMessageEl, error.message, true);
+  } finally {
+    communitySendButtonEl.disabled = false;
+  }
+}
+
+async function submitPlayerReport(event) {
+  event.preventDefault();
+  if (!playerReportTarget) return;
+  playerReportSubmitButtonEl.disabled = true;
+  setCommunityStatus(communityMessageEl, "Sending report...");
+  try {
+    const result = await accountApi("/api/reports/player", {
+      method: "POST",
+      body: JSON.stringify({
+        messageId: playerReportTarget.id,
+        reason: playerReportReasonEl.value,
+        details: playerReportDetailsEl.value,
+      }),
+    });
+    playerReportTarget = null;
+    playerReportFormEl.reset();
+    playerReportFormEl.hidden = true;
+    communityChatFormEl.hidden = false;
+    setCommunityStatus(
+      communityMessageEl,
+      result.emailSent
+        ? "Report sent to the Retro Run safety inbox."
+        : "Report saved for review. Email delivery is temporarily unavailable."
+    );
+  } catch (error) {
+    setCommunityStatus(communityMessageEl, error.message, true);
+  } finally {
+    playerReportSubmitButtonEl.disabled = false;
+  }
+}
+
+async function submitIssueReport(event) {
+  event.preventDefault();
+  issueReportSubmitButtonEl.disabled = true;
+  setCommunityStatus(issueReportMessageEl, "Sending issue report...");
+  try {
+    const result = await accountApi("/api/reports/issue", {
+      method: "POST",
+      body: JSON.stringify({
+        category: issueReportCategoryEl.value,
+        details: issueReportDetailsEl.value,
+        gameId: gameLibraryOpen ? "arcade" : activeGameId,
+        device: document.body.dataset.device || "unknown",
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+      }),
+    });
+    issueReportFormEl.reset();
+    setCommunityStatus(
+      issueReportMessageEl,
+      result.emailSent
+        ? "Issue sent to updates@retrorun.win. Thank you."
+        : "Issue saved for review. Email delivery is temporarily unavailable."
+    );
+  } catch (error) {
+    setCommunityStatus(issueReportMessageEl, error.message, true);
+  } finally {
+    issueReportSubmitButtonEl.disabled = false;
+  }
 }
 
 function readLeaderboardQueue() {
@@ -2833,6 +3095,7 @@ async function submitCloudAccount(event) {
 
 async function signOutCloudAccount() {
   accountSignoutButtonEl.disabled = true;
+  if (!communityModalEl.hidden) closeCommunity();
   await syncCloudSaves();
   await flushLeaderboardQueue();
   try {
@@ -8896,6 +9159,11 @@ function renderRunnerCards() {
 }
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !communityModalEl.hidden) {
+    event.preventDefault();
+    closeCommunity();
+    return;
+  }
   if (event.key === "Escape" && !accountModalEl.hidden) {
     event.preventDefault();
     closeAccountModal();
@@ -9025,6 +9293,8 @@ creatorTriggerEl.addEventListener("click", openCreatorTools);
 arcadeHomeButtonEl.addEventListener("click", openGameLibrary);
 accountButtonEl.addEventListener("click", openAccountModal);
 leaderboardButtonEl.addEventListener("click", openLeaderboard);
+communityButtonEl.addEventListener("click", () => openCommunity("chat"));
+issueReportButtonEl.addEventListener("click", () => openCommunity("issue"));
 accountCloseButtonEl.addEventListener("click", closeAccountModal);
 accountSigninModeButtonEl.addEventListener("click", () => setAccountMode("signin"));
 accountSignupModeButtonEl.addEventListener("click", () => setAccountMode("signup"));
@@ -9033,6 +9303,17 @@ accountSignoutButtonEl.addEventListener("click", signOutCloudAccount);
 accountSyncButtonEl.addEventListener("click", () => syncCloudSaves({ manual: true }));
 accountModalEl.addEventListener("click", (event) => {
   if (event.target === accountModalEl) closeAccountModal();
+});
+communityCloseButtonEl.addEventListener("click", closeCommunity);
+communityChatModeButtonEl.addEventListener("click", () => setCommunityMode("chat"));
+communityIssueModeButtonEl.addEventListener("click", () => setCommunityMode("issue"));
+communityChatFormEl.addEventListener("submit", submitCommunityMessage);
+communityMessageInputEl.addEventListener("input", updateCommunityCharacterCount);
+playerReportFormEl.addEventListener("submit", submitPlayerReport);
+playerReportCancelButtonEl.addEventListener("click", closePlayerReport);
+issueReportFormEl.addEventListener("submit", submitIssueReport);
+communityModalEl.addEventListener("click", (event) => {
+  if (event.target === communityModalEl) closeCommunity();
 });
 [
   teamPrimaryInputEl,

@@ -1,0 +1,167 @@
+import assert from "node:assert/strict";
+import { DatabaseSync } from "node:sqlite";
+import { AccountStore, normalizeChatMessage, normalizeReportDetails } from "../worker.js";
+
+assert.equal(normalizeChatMessage("  Great   run!  "), "Great run!");
+assert.throws(() => normalizeChatMessage("Visit https://example.com"), /Links are not allowed/);
+assert.throws(() => normalizeChatMessage("Email me at player@example.com"), /email addresses or phone numbers/);
+assert.throws(() => normalizeChatMessage("Call 555-123-4567"), /email addresses or phone numbers/);
+assert.equal(normalizeReportDetails("line one\r\nline two"), "line one\nline two");
+
+const database = new DatabaseSync(":memory:");
+const sql = {
+  exec(query, ...bindings) {
+    if (query.trimStart().startsWith("CREATE TABLE")) {
+      database.exec(query);
+      return { toArray: () => [] };
+    }
+    const rows = database.prepare(query).all(...bindings);
+    return { toArray: () => rows };
+  },
+};
+const sentPlayerReports = [];
+const sentIssueReports = [];
+const store = new AccountStore(
+  {
+    storage: {
+      sql,
+      async getAlarm() { return null; },
+      async setAlarm() {},
+    },
+  },
+  {
+    PLAYER_REPORT_EMAIL: {
+      async send(message) { sentPlayerReports.push(message); },
+    },
+    ISSUE_REPORT_EMAIL: {
+      async send(message) { sentIssueReports.push(message); },
+    },
+  }
+);
+
+function sessionCookie(response) {
+  return response.headers.get("Set-Cookie").split(";")[0];
+}
+
+async function api(path, { method = "GET", body, cookie = "" } = {}) {
+  return store.fetch(new Request(`https://retrorun.test${path}`, {
+    method,
+    headers: {
+      Origin: "https://retrorun.test",
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  }));
+}
+
+async function createAccount(username) {
+  const response = await api("/api/auth/signup", {
+    method: "POST",
+    body: { username, passcode: "test-passcode-42" },
+  });
+  assert.equal(response.status, 201);
+  return sessionCookie(response);
+}
+
+try {
+  assert.equal((await api("/api/chat")).status, 401);
+  assert.equal((await api("/api/reports/issue", {
+    method: "POST",
+    body: { category: "bug", details: "The game froze during a run." },
+  })).status, 401);
+
+  const aliceCookie = await createAccount("alice_chat");
+  const bobCookie = await createAccount("bob_chat");
+
+  const sent = await api("/api/chat", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { message: "Great run, Bob!" },
+  });
+  assert.equal(sent.status, 201);
+  const sentMessage = (await sent.json()).message;
+  assert.equal(sentMessage.username, "alice_chat");
+
+  const linkAttempt = await api("/api/chat", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { message: "Visit https://example.com" },
+  });
+  assert.equal(linkAttempt.status, 400);
+
+  const bobRead = await api("/api/chat", { cookie: bobCookie });
+  assert.equal(bobRead.status, 200);
+  const bobMessages = (await bobRead.json()).messages;
+  assert.equal(bobMessages.length, 1);
+  assert.equal(bobMessages[0].mine, false);
+
+  const playerReport = await api("/api/reports/player", {
+    method: "POST",
+    cookie: bobCookie,
+    body: {
+      messageId: sentMessage.id,
+      reason: "harassment",
+      details: "Please review this message.",
+    },
+  });
+  assert.equal(playerReport.status, 201);
+  assert.equal((await playerReport.json()).emailSent, true);
+  assert.equal(sentPlayerReports.length, 1);
+  assert.equal(sentPlayerReports[0].to, "reports@retrorun.win");
+  assert.match(sentPlayerReports[0].text, /Reported player: @alice_chat/);
+  assert.match(sentPlayerReports[0].text, /Message: Great run, Bob!/);
+
+  assert.equal((await api("/api/reports/player", {
+    method: "POST",
+    cookie: bobCookie,
+    body: { messageId: sentMessage.id, reason: "spam" },
+  })).status, 409);
+  assert.equal((await api("/api/reports/player", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { messageId: sentMessage.id, reason: "other" },
+  })).status, 400);
+
+  const issueReport = await api("/api/reports/issue", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: {
+      category: "display",
+      details: "The game canvas looks squeezed on my monitor.",
+      gameId: "gridiron",
+      device: "desktop",
+      viewport: "1920x1080",
+    },
+  });
+  assert.equal(issueReport.status, 201);
+  assert.equal((await issueReport.json()).emailSent, true);
+  assert.equal(sentIssueReports.length, 1);
+  assert.equal(sentIssueReports[0].to, "updates@retrorun.win");
+  assert.match(sentIssueReports[0].text, /Game: Gridiron Dash/);
+  assert.match(sentIssueReports[0].text, /1920x1080/);
+
+  for (let index = 0; index < 5; index += 1) {
+    assert.equal((await api("/api/chat", {
+      method: "POST",
+      cookie: aliceCookie,
+      body: { message: `Message ${index + 2}` },
+    })).status, 201);
+  }
+  assert.equal((await api("/api/chat", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { message: "One message too many" },
+  })).status, 429);
+
+  const storedReports = sql.exec(
+    "SELECT report_type, email_status FROM community_reports ORDER BY created_at"
+  ).toArray().map((report) => ({ ...report }));
+  assert.deepEqual(storedReports, [
+    { report_type: "player", email_status: "sent" },
+    { report_type: "issue", email_status: "sent" },
+  ]);
+  console.log("Retro Run Locker Room and report tests passed.");
+} finally {
+  database.close();
+}

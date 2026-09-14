@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260908-dodgeball-direct-hit" />
+    <link rel="stylesheet" href="styles.css?v=20260913-locker-room-chat" />
   </head>
   <body>
     <main class="game-shell">
@@ -44,6 +44,8 @@
         </a>
         <div class="account-strip">
           <button id="leaderboardButton" class="account-button leaderboard-button" type="button">Leaderboard</button>
+          <button id="communityButton" class="account-button community-button" type="button">Locker Room</button>
+          <button id="issueReportButton" class="account-button issue-report-button" type="button">Report Issue</button>
           <button id="accountButton" class="account-button" type="button">Sign In</button>
           <span id="cloudSyncStatus" role="status" aria-live="polite">Local saves only</span>
         </div>
@@ -1046,6 +1048,89 @@
       </div>
     </div>
 
+    <div class="community-modal" id="communityModal" role="dialog" aria-modal="true" aria-labelledby="communityTitle" hidden>
+      <div class="community-card">
+        <div class="module-head account-card-head">
+          <div>
+            <p class="homepage-kicker">Signed-In Community</p>
+            <h3 id="communityTitle">Locker Room</h3>
+          </div>
+          <button id="communityCloseButton" class="account-close-button secondary-button" type="button" aria-label="Close community window">Close</button>
+        </div>
+
+        <div class="community-mode-switch" aria-label="Community section">
+          <button id="communityChatModeButton" class="account-mode-button selected" type="button" aria-pressed="true">Locker Room</button>
+          <button id="communityIssueModeButton" class="account-mode-button" type="button" aria-pressed="false">Report Game Issue</button>
+        </div>
+
+        <section id="communityChatPanel">
+          <p class="community-safety-note">Public chat for signed-in players. Be respectful and never share personal information or links.</p>
+          <div class="community-messages" id="communityMessages" role="log" aria-live="polite" aria-label="Locker Room messages"></div>
+          <form id="communityChatForm" class="community-chat-form">
+            <label class="setup-field" for="communityMessageInput">
+              <span class="label">Message</span>
+              <textarea id="communityMessageInput" maxlength="180" rows="3" placeholder="Say something to the arcade..." required></textarea>
+            </label>
+            <div class="community-compose-footer">
+              <span id="communityCharacterCount">0 / 180</span>
+              <button id="communitySendButton" type="submit">Send</button>
+            </div>
+          </form>
+          <p class="account-message" id="communityMessage" role="status" aria-live="polite"></p>
+
+          <form id="playerReportForm" class="community-report-form" hidden>
+            <div class="community-report-target">
+              <span>Reporting</span>
+              <strong id="playerReportUsername">@player</strong>
+              <p id="playerReportQuote"></p>
+            </div>
+            <label class="setup-field">
+              <span class="label">Reason</span>
+              <select id="playerReportReason" required>
+                <option value="">Choose a reason</option>
+                <option value="harassment">Harassment or bullying</option>
+                <option value="inappropriate">Inappropriate content</option>
+                <option value="personal-info">Sharing personal information</option>
+                <option value="spam">Spam</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label class="setup-field">
+              <span class="label">More Details (Optional)</span>
+              <textarea id="playerReportDetails" maxlength="500" rows="3"></textarea>
+            </label>
+            <div class="creator-actions">
+              <button id="playerReportCancelButton" class="secondary-button" type="button">Cancel</button>
+              <button id="playerReportSubmitButton" type="submit">Send Report</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="communityIssuePanel" hidden>
+          <p class="community-safety-note">Tell us what went wrong. Your username, selected game, device layout, and screen size are included automatically.</p>
+          <form id="issueReportForm" class="community-report-form">
+            <label class="setup-field">
+              <span class="label">Issue Type</span>
+              <select id="issueReportCategory" required>
+                <option value="">Choose a category</option>
+                <option value="bug">Bug or crash</option>
+                <option value="gameplay">Gameplay problem</option>
+                <option value="display">Display or device problem</option>
+                <option value="account">Sign-in or save problem</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label class="setup-field">
+              <span class="label">What Happened?</span>
+              <textarea id="issueReportDetails" minlength="10" maxlength="1000" rows="7" placeholder="Describe what you were doing, what happened, and what you expected..." required></textarea>
+            </label>
+            <p class="account-message" id="issueReportMessage" role="status" aria-live="polite"></p>
+            <button id="issueReportSubmitButton" type="submit">Send to Updates</button>
+          </form>
+        </section>
+      </div>
+    </div>
+
     <div class="creator-modal" id="creatorModal" hidden>
       <div class="creator-card">
         <div class="module-head">
@@ -1130,7 +1215,7 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260908-dodgeball-direct-hit"></script>
+    <script src="game.js?v=20260913-locker-room-chat"></script>
     <script src="pocket-dynasty.js?v=20260908-arcade-leaderboard-board-final"></script>
     <script src="seasonal-profile.js?v=20260908-normal-arcade-restore"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>

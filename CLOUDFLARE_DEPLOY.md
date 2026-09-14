@@ -22,6 +22,14 @@ reaches it through the `ACCOUNT_API` service binding, and `/api/*` requests are
 proxied by `site-worker.js`. Account passcodes are stored only as salted PBKDF2
 hashes; `.env` remains local and must never be committed.
 
+Locker Room player reports and game issue reports use restricted `send_email`
+bindings. Before production deployment, onboard `retrorun.win` to Cloudflare
+Email Service, verify `reports@retrorun.win` and `updates@retrorun.win` as
+destinations, and allow `noreply@retrorun.win` as a sender. Player reports can
+only go to `reports@retrorun.win`; game issue reports can only go to
+`updates@retrorun.win`. Every report is stored in the account Durable Object
+even if email delivery is temporarily unavailable.
+
 Cloud Locker accounts use only a username and passcode. There is no email
 address or confirmation step.
 

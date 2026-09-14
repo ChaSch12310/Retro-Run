@@ -2129,6 +2129,18 @@ body.franchise-slot-selecting #loadSavePanel {
   border-color: var(--menu-accent);
 }
 
+.community-button {
+  color: #172334;
+  background: #8ed0a0;
+  border-color: #07131e;
+}
+
+.issue-report-button {
+  color: #f7f2cf;
+  background: #9d3d38;
+  border-color: #07131e;
+}
+
 #cloudSyncStatus {
   color: #dce4d2;
   font-family: "Trebuchet MS", sans-serif;
@@ -2146,7 +2158,8 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal,
-.account-modal {
+.account-modal,
+.community-modal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -2157,12 +2170,14 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .creator-modal[hidden],
-.account-modal[hidden] {
+.account-modal[hidden],
+.community-modal[hidden] {
   display: none !important;
 }
 
 .creator-card,
-.account-card {
+.account-card,
+.community-card {
   width: min(94vw, 430px);
   max-height: calc(100dvh - 36px);
   overflow-y: auto;
@@ -2431,6 +2446,167 @@ body.franchise-slot-selecting #loadSavePanel {
   color: var(--menu-accent);
   font-size: 1.35rem;
   text-transform: uppercase;
+}
+
+.community-card {
+  width: min(94vw, 760px);
+  border-color: #0a111a;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.05),
+    0 12px 0 rgba(8, 15, 22, 0.5),
+    0 0 0 4px #8ed0a0;
+}
+
+.community-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 5px;
+  background: #0c1d2d;
+  border: 3px solid var(--line);
+}
+
+.community-safety-note {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  color: #dce4d2;
+  background: #10263a;
+  border-left: 6px solid #8ed0a0;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.community-messages {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  height: clamp(230px, 42vh, 390px);
+  overflow-y: auto;
+  padding: 10px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+}
+
+.community-empty {
+  align-self: center;
+  margin: 0;
+  color: #cbd8c8;
+  font-family: "Trebuchet MS", sans-serif;
+  font-weight: 900;
+  text-align: center;
+}
+
+.community-message-item {
+  display: grid;
+  gap: 5px;
+  padding: 9px 10px;
+  background: #18344f;
+  border: 2px solid #294b69;
+  border-left: 6px solid #6f91af;
+}
+
+.community-message-item.mine {
+  border-left-color: var(--menu-accent);
+}
+
+.community-message-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.community-message-head strong {
+  color: var(--menu-accent);
+  font-size: 0.76rem;
+}
+
+.community-message-head time {
+  color: #aebcaf;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.community-message-body {
+  margin: 0;
+  color: #f7f2cf;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.community-report-button {
+  justify-self: end;
+  width: auto;
+  padding: 4px 7px;
+  color: #ffb0a8;
+  background: transparent;
+  border: 2px solid #9d3d38;
+  font-size: 0.62rem;
+}
+
+.community-chat-form,
+.community-report-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.community-chat-form[hidden],
+.community-report-form[hidden],
+#communityChatPanel[hidden],
+#communityIssuePanel[hidden] {
+  display: none !important;
+}
+
+.community-compose-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.community-compose-footer span {
+  color: #cbd8c8;
+  font-size: 0.68rem;
+}
+
+.community-compose-footer button {
+  width: auto;
+  min-width: 120px;
+}
+
+.community-report-target {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  background: #10263a;
+  border: 3px solid var(--line);
+  border-left: 7px solid #d95850;
+}
+
+.community-report-target span {
+  color: #cbd8c8;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.community-report-target strong {
+  color: #ffaaa2;
+}
+
+.community-report-target p {
+  margin: 0;
+  color: #f7f2cf;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .account-profile small {
@@ -5234,7 +5410,8 @@ body.between-game-active .problem-choice small {
 }
 
 .setup-field input,
-.setup-field select {
+.setup-field select,
+.setup-field textarea {
   width: 100%;
   border: 3px solid var(--line);
   background: #12273c;
@@ -5242,6 +5419,12 @@ body.between-game-active .problem-choice small {
   padding: 10px 12px;
   font: inherit;
   font-size: 0.92rem;
+}
+
+.setup-field textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.35;
 }
 
 .setup-field select {
@@ -6166,6 +6349,20 @@ body[data-device="mobile"] .franchise-card {
 body[data-device="mobile"] .account-strip {
   flex-wrap: wrap;
   gap: 5px;
+}
+
+body[data-device="mobile"] .community-card {
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 16px);
+  padding: 11px;
+}
+
+body[data-device="mobile"] .community-messages {
+  height: min(38vh, 300px);
+}
+
+body[data-device="mobile"] .community-mode-switch {
+  grid-template-columns: 1fr;
 }
 
 body[data-device="mobile"] #cloudSyncStatus {

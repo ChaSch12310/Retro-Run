@@ -7,6 +7,26 @@ const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const SAVE_SLOTS_PER_GAME = 5;
 const MAX_LEADERBOARD_SUBMISSIONS_PER_DAY = 200;
 const MAX_FANS = 3000;
+const MAX_CHAT_MESSAGE_LENGTH = 180;
+const MAX_CHAT_MESSAGES_PER_MINUTE = 6;
+const MAX_CHAT_MESSAGES_PER_DAY = 100;
+const MAX_REPORTS_PER_DAY = 10;
+const CHAT_HISTORY_LIMIT = 50;
+const CHAT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const PLAYER_REPORT_REASONS = new Set([
+  "harassment",
+  "inappropriate",
+  "personal-info",
+  "spam",
+  "other",
+]);
+const ISSUE_REPORT_CATEGORIES = new Set([
+  "bug",
+  "gameplay",
+  "display",
+  "account",
+  "other",
+]);
 
 export const LEADERBOARD_GAMES = {
   gridiron: "Gridiron Dash",
@@ -33,6 +53,35 @@ export const SAVE_KEYS = [
   "crosse-clash-franchise-slots",
   "dodgeball-dash-franchise-slots",
 ];
+
+export function normalizeChatMessage(value) {
+  const message = String(value || "")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!message) throw new RangeError("Write a message before sending.");
+  if (message.length > MAX_CHAT_MESSAGE_LENGTH) {
+    throw new RangeError(`Messages can be up to ${MAX_CHAT_MESSAGE_LENGTH} characters.`);
+  }
+  if (/(?:https?:\/\/|www\.|(?:^|\s)[a-z0-9-]+\.(?:com|net|org|gg|io|co)(?:[\s/:]|$))/i.test(message)) {
+    throw new RangeError("Links are not allowed in the Locker Room.");
+  }
+  const possiblePhone = message.match(/\+?\d[\d\s().-]{5,}\d/);
+  if (/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(message)
+    || (possiblePhone && possiblePhone[0].replace(/\D/g, "").length >= 7)) {
+    throw new RangeError("Do not share email addresses or phone numbers in the Locker Room.");
+  }
+  return message;
+}
+
+export function normalizeReportDetails(value, maximum = 800) {
+  const details = String(value || "")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+  if (details.length > maximum) throw new RangeError(`Report details can be up to ${maximum} characters.`);
+  return details;
+}
 
 function base64FromBytes(bytes) {
   let binary = "";
@@ -291,8 +340,9 @@ function randomToken() {
 }
 
 export class AccountStore {
-  constructor(ctx) {
+  constructor(ctx, env = {}) {
     this.ctx = ctx;
+    this.env = env;
     this.sql = ctx.storage.sql;
     this.sql.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -345,6 +395,33 @@ export class AccountStore {
         meta_key TEXT PRIMARY KEY,
         meta_value TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        body TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS chat_messages_created_at ON chat_messages(created_at);
+      CREATE INDEX IF NOT EXISTS chat_messages_user_created_at ON chat_messages(user_id, created_at);
+      CREATE TABLE IF NOT EXISTS community_reports (
+        id TEXT PRIMARY KEY,
+        report_type TEXT NOT NULL,
+        reporter_user_id TEXT NOT NULL,
+        reporter_username TEXT NOT NULL,
+        message_id TEXT,
+        target_user_id TEXT,
+        target_username TEXT,
+        reason TEXT NOT NULL,
+        details TEXT NOT NULL,
+        context TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        email_status TEXT NOT NULL,
+        email_error TEXT NOT NULL,
+        UNIQUE(reporter_user_id, message_id)
+      );
+      CREATE INDEX IF NOT EXISTS community_reports_created_at ON community_reports(created_at);
+      CREATE INDEX IF NOT EXISTS community_reports_target ON community_reports(target_user_id, created_at);
     `);
   }
 
@@ -639,6 +716,221 @@ export class AccountStore {
     }, 202);
   }
 
+  recentUserCount(table, userId, since) {
+    return Number(this.one(
+      `SELECT COUNT(*) AS count FROM ${table} WHERE ${table === "chat_messages" ? "user_id" : "reporter_user_id"} = ? AND created_at >= ?`,
+      userId,
+      since
+    )?.count) || 0;
+  }
+
+  async handleChatRead(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to open the Locker Room.", 401);
+    const messages = this.sql.exec(
+      `SELECT id, username, body, created_at
+       FROM chat_messages
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+      CHAT_HISTORY_LIMIT
+    ).toArray().reverse();
+    return jsonResponse({
+      messages: messages.map((message) => ({
+        id: message.id,
+        username: message.username,
+        body: message.body,
+        createdAt: Number(message.created_at),
+        mine: message.username === user.username,
+      })),
+      username: user.username,
+      maximumLength: MAX_CHAT_MESSAGE_LENGTH,
+    });
+  }
+
+  async handleChatWrite(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to send Locker Room messages.", 401);
+    const now = Date.now();
+    if (this.recentUserCount("chat_messages", user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
+      return errorResponse("You're sending messages too quickly. Wait a minute and try again.", 429);
+    }
+    if (this.recentUserCount("chat_messages", user.id, now - 24 * 60 * 60 * 1000) >= MAX_CHAT_MESSAGES_PER_DAY) {
+      return errorResponse("Daily Locker Room message limit reached. Try again tomorrow.", 429);
+    }
+    const body = await readJson(request);
+    const message = normalizeChatMessage(body.message);
+    const id = crypto.randomUUID();
+    this.sql.exec(
+      "INSERT INTO chat_messages (id, user_id, username, body, created_at) VALUES (?, ?, ?, ?, ?)",
+      id,
+      user.id,
+      user.username,
+      message,
+      now
+    );
+    this.sql.exec(
+      `DELETE FROM chat_messages
+       WHERE created_at < ?
+       AND id NOT IN (SELECT message_id FROM community_reports WHERE message_id IS NOT NULL)`,
+      now - CHAT_RETENTION_MS
+    );
+    return jsonResponse({
+      message: { id, username: user.username, body: message, createdAt: now, mine: true },
+    }, 201);
+  }
+
+  async sendReportEmail(binding, recipient, subject, text) {
+    if (!binding?.send) return { sent: false, error: "Email binding is not configured." };
+    try {
+      await binding.send({
+        to: recipient,
+        from: { email: "noreply@retrorun.win", name: "Retro Run Reports" },
+        subject,
+        text,
+      });
+      return { sent: true, error: "" };
+    } catch (error) {
+      console.error("Retro Run report email failed", {
+        recipient,
+        code: error?.code || "unknown",
+        message: error instanceof Error ? error.message : "Unknown email error",
+      });
+      return {
+        sent: false,
+        error: error instanceof Error ? error.message.slice(0, 300) : "Unknown email error",
+      };
+    }
+  }
+
+  async reserveReport(user, report) {
+    const now = Date.now();
+    if (this.recentUserCount("community_reports", user.id, now - 24 * 60 * 60 * 1000) >= MAX_REPORTS_PER_DAY) {
+      return { response: errorResponse("Daily report limit reached. Try again tomorrow.", 429) };
+    }
+    const reportId = crypto.randomUUID();
+    this.sql.exec(
+      `INSERT INTO community_reports (
+         id, report_type, reporter_user_id, reporter_username, message_id,
+         target_user_id, target_username, reason, details, context, created_at,
+         email_status, email_error
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '')`,
+      reportId,
+      report.type,
+      user.id,
+      user.username,
+      report.messageId || null,
+      report.targetUserId || null,
+      report.targetUsername || null,
+      report.reason,
+      report.details,
+      JSON.stringify(report.context || {}),
+      now
+    );
+    return { reportId, now };
+  }
+
+  finishReportEmail(reportId, delivery) {
+    this.sql.exec(
+      "UPDATE community_reports SET email_status = ?, email_error = ? WHERE id = ?",
+      delivery.sent ? "sent" : "stored",
+      delivery.error,
+      reportId
+    );
+  }
+
+  async handlePlayerReport(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to report a player.", 401);
+    const body = await readJson(request);
+    const messageId = String(body.messageId || "");
+    if (!/^[a-f0-9-]{20,50}$/i.test(messageId)) return errorResponse("Choose a valid message to report.");
+    const reason = String(body.reason || "");
+    if (!PLAYER_REPORT_REASONS.has(reason)) return errorResponse("Choose a report reason.");
+    const details = normalizeReportDetails(body.details, 500);
+    const target = this.one(
+      "SELECT id, user_id, username, body, created_at FROM chat_messages WHERE id = ?",
+      messageId
+    );
+    if (!target) return errorResponse("That message is no longer available.", 404);
+    if (target.user_id === user.id) return errorResponse("You cannot report your own message.");
+    if (this.one(
+      "SELECT id FROM community_reports WHERE reporter_user_id = ? AND message_id = ?",
+      user.id,
+      messageId
+    )) return errorResponse("You already reported this message.", 409);
+
+    const reserved = await this.reserveReport(user, {
+      type: "player",
+      messageId,
+      targetUserId: target.user_id,
+      targetUsername: target.username,
+      reason,
+      details,
+      context: { message: target.body, messageCreatedAt: Number(target.created_at) },
+    });
+    if (reserved.response) return reserved.response;
+    const emailText = [
+      `Report ID: ${reserved.reportId}`,
+      `Reported by: @${user.username}`,
+      `Reported player: @${target.username}`,
+      `Reason: ${reason}`,
+      `Message date: ${new Date(Number(target.created_at)).toISOString()}`,
+      `Message: ${target.body}`,
+      `Additional details: ${details || "None"}`,
+    ].join("\n");
+    const delivery = await this.sendReportEmail(
+      this.env.PLAYER_REPORT_EMAIL,
+      "reports@retrorun.win",
+      `Retro Run player report: @${target.username}`,
+      emailText
+    );
+    this.finishReportEmail(reserved.reportId, delivery);
+    return jsonResponse({ accepted: true, reportId: reserved.reportId, emailSent: delivery.sent }, 201);
+  }
+
+  async handleIssueReport(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to report a game issue.", 401);
+    const body = await readJson(request);
+    const category = String(body.category || "");
+    if (!ISSUE_REPORT_CATEGORIES.has(category)) return errorResponse("Choose an issue category.");
+    const details = normalizeReportDetails(body.details, 1000);
+    if (details.length < 10) return errorResponse("Describe the issue using at least 10 characters.");
+    const gameId = String(body.gameId || "arcade");
+    if (gameId !== "arcade" && !LEADERBOARD_GAMES[gameId]) return errorResponse("Choose a valid game.");
+    const context = {
+      gameId,
+      gameName: gameId === "arcade" ? "Retro Run Arcade" : LEADERBOARD_GAMES[gameId],
+      device: String(body.device || "unknown").slice(0, 40),
+      viewport: String(body.viewport || "unknown").slice(0, 40),
+    };
+    const reserved = await this.reserveReport(user, {
+      type: "issue",
+      reason: category,
+      details,
+      context,
+    });
+    if (reserved.response) return reserved.response;
+    const emailText = [
+      `Report ID: ${reserved.reportId}`,
+      `Reported by: @${user.username}`,
+      `Category: ${category}`,
+      `Game: ${context.gameName} (${context.gameId})`,
+      `Device layout: ${context.device}`,
+      `Viewport: ${context.viewport}`,
+      "",
+      details,
+    ].join("\n");
+    const delivery = await this.sendReportEmail(
+      this.env.ISSUE_REPORT_EMAIL,
+      "updates@retrorun.win",
+      `Retro Run issue: ${context.gameName} - ${category}`,
+      emailText
+    );
+    this.finishReportEmail(reserved.reportId, delivery);
+    return jsonResponse({ accepted: true, reportId: reserved.reportId, emailSent: delivery.sent }, 201);
+  }
+
   async alarm() {
     const now = Date.now();
     this.publishDueLeaderboardEntries(now);
@@ -658,32 +950,46 @@ export class AccountStore {
           : { authenticated: false });
       }
       if (url.pathname === "/api/auth/signup" && request.method === "POST") {
-        return this.handleSignup(request);
+        return await this.handleSignup(request);
       }
       if (url.pathname === "/api/auth/signin" && request.method === "POST") {
-        return this.handleSignin(request);
+        return await this.handleSignin(request);
       }
       if (url.pathname === "/api/auth/signout" && request.method === "POST") {
-        return this.handleSignout(request);
+        return await this.handleSignout(request);
       }
       if (url.pathname === "/api/saves" && request.method === "GET") {
-        return this.handleSaveRead(request);
+        return await this.handleSaveRead(request);
       }
       if (url.pathname === "/api/saves" && request.method === "PUT") {
-        return this.handleSaveWrite(request);
+        return await this.handleSaveWrite(request);
       }
       if (url.pathname === "/api/leaderboard" && request.method === "GET") {
-        return this.handleLeaderboardRead(request);
+        return await this.handleLeaderboardRead(request);
       }
       if (url.pathname === "/api/leaderboard" && request.method === "POST") {
-        return this.handleLeaderboardWrite(request);
+        return await this.handleLeaderboardWrite(request);
+      }
+      if (url.pathname === "/api/chat" && request.method === "GET") {
+        return await this.handleChatRead(request);
+      }
+      if (url.pathname === "/api/chat" && request.method === "POST") {
+        return await this.handleChatWrite(request);
+      }
+      if (url.pathname === "/api/reports/player" && request.method === "POST") {
+        return await this.handlePlayerReport(request);
+      }
+      if (url.pathname === "/api/reports/issue" && request.method === "POST") {
+        return await this.handleIssueReport(request);
       }
       return errorResponse("API route not found.", 404);
     } catch (error) {
-      console.error("Retro Run account API error", error);
-      const knownMessage = error instanceof Error && (
+      const knownMessage = error instanceof RangeError || (error instanceof Error && (
         error.message === "Request is too large." || error.message === "Invalid JSON request."
-      ) ? error.message : "Account service is temporarily unavailable.";
+      )) ? error.message : "Account service is temporarily unavailable.";
+      if (knownMessage.startsWith("Account service")) {
+        console.error("Retro Run account API error", error);
+      }
       return errorResponse(knownMessage, knownMessage.startsWith("Account service") ? 500 : 400);
     }
   }
