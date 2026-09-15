@@ -40,6 +40,8 @@ export const LEADERBOARD_GAMES = {
   lacrosse: "Crosse Clash",
   dodgeball: "Dodgeball Dash",
 };
+const LEADERBOARD_GAME_IDS = Object.freeze(Object.keys(LEADERBOARD_GAMES));
+const LEADERBOARD_GAME_PLACEHOLDERS = LEADERBOARD_GAME_IDS.map(() => "?").join(", ");
 
 export const SAVE_KEYS = [
   "gridiron-dash-franchise-slots",
@@ -262,11 +264,11 @@ export function normalizeLeaderboardSubmission(body, now = Date.now()) {
   const gameId = String(body?.gameId || "");
   const playedAt = Number(body?.playedAt);
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(clientEntryId)) {
-    throw new Error("Invalid leaderboard entry ID.");
+    throw new RangeError("Invalid leaderboard entry ID.");
   }
-  if (!LEADERBOARD_GAMES[gameId]) throw new Error("Unknown Retro Run game.");
+  if (!LEADERBOARD_GAMES[gameId]) throw new RangeError("Only standard arcade games can enter the leaderboard.");
   if (!Number.isSafeInteger(playedAt) || playedAt < now - 90 * 24 * 60 * 60 * 1000 || playedAt > now + 5 * 60 * 1000) {
-    throw new Error("Invalid game date.");
+    throw new RangeError("Invalid game date.");
   }
   const season = Math.round(boundedNumber(body?.season, 1, 1, 999));
   const week = Math.round(boundedNumber(body?.week, 1, 1, 12));
@@ -423,10 +425,18 @@ export class AccountStore {
       CREATE INDEX IF NOT EXISTS community_reports_created_at ON community_reports(created_at);
       CREATE INDEX IF NOT EXISTS community_reports_target ON community_reports(target_user_id, created_at);
     `);
+    this.removeUnsupportedLeaderboardEntries();
   }
 
   one(query, ...bindings) {
     return this.sql.exec(query, ...bindings).toArray()[0] || null;
+  }
+
+  removeUnsupportedLeaderboardEntries() {
+    this.sql.exec(
+      `DELETE FROM leaderboard_entries WHERE game_id NOT IN (${LEADERBOARD_GAME_PLACEHOLDERS})`,
+      ...LEADERBOARD_GAME_IDS
+    );
   }
 
   async rateKey(request, route) {
@@ -610,15 +620,22 @@ export class AccountStore {
   }
 
   publishDueLeaderboardEntries(now = Date.now()) {
+    this.removeUnsupportedLeaderboardEntries();
     const due = this.one(
-      "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE published_at IS NULL AND publish_at <= ?",
-      now
+      `SELECT COUNT(*) AS count FROM leaderboard_entries
+       WHERE published_at IS NULL AND publish_at <= ?
+       AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})`,
+      now,
+      ...LEADERBOARD_GAME_IDS
     );
     if (Number(due?.count) <= 0) return false;
     this.sql.exec(
-      "UPDATE leaderboard_entries SET published_at = ? WHERE published_at IS NULL AND publish_at <= ?",
+      `UPDATE leaderboard_entries SET published_at = ?
+       WHERE published_at IS NULL AND publish_at <= ?
+       AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})`,
       now,
-      now
+      now,
+      ...LEADERBOARD_GAME_IDS
     );
     this.sql.exec(
       `INSERT INTO leaderboard_meta (meta_key, meta_value) VALUES ('last_updated_at', ?)
@@ -640,18 +657,23 @@ export class AccountStore {
          ) AS personal_rank
          FROM leaderboard_entries
          WHERE published_at IS NOT NULL
+         AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})
        )
-       SELECT username, played_at, game_name, season, week,
+       SELECT username, played_at, game_id, season, week,
               game_score, player_score, franchise_score
        FROM personal_bests
        WHERE personal_rank = 1
        ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC, id ASC
-       LIMIT 25`
+       LIMIT 25`,
+      ...LEADERBOARD_GAME_IDS
     ).toArray();
     const pending = user
       ? this.one(
-        "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND published_at IS NULL",
-        user.id
+        `SELECT COUNT(*) AS count FROM leaderboard_entries
+         WHERE user_id = ? AND published_at IS NULL
+         AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})`,
+        user.id,
+        ...LEADERBOARD_GAME_IDS
       )
       : null;
     const lastUpdated = this.one(
@@ -661,7 +683,7 @@ export class AccountStore {
       entries: rows.map((row) => ({
         username: row.username,
         playedAt: Number(row.played_at),
-        gameName: row.game_name,
+        gameName: LEADERBOARD_GAMES[row.game_id],
         season: Number(row.season),
         week: Number(row.week),
         tackleScore: Number(row.game_score),

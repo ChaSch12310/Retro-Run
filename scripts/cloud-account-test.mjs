@@ -66,7 +66,13 @@ assert.throws(() => normalizeLeaderboardSubmission({
   playedAt: Date.parse("2026-09-08T12:00:00Z"),
   gameId: "unknown",
   metrics: leaderboardMetrics,
-}, Date.parse("2026-09-08T12:01:00Z")), /Unknown Retro Run game/);
+}, Date.parse("2026-09-08T12:01:00Z")), /Only standard arcade games can enter the leaderboard/);
+assert.throws(() => normalizeLeaderboardSubmission({
+  clientEntryId: "holiday-entry-1234",
+  playedAt: Date.parse("2026-09-08T12:00:00Z"),
+  gameId: "sleigh-bell-sprint",
+  metrics: leaderboardMetrics,
+}, Date.parse("2026-09-08T12:01:00Z")), RangeError);
 
 const credentials = await hashPassword("strong-pass-42");
 assert.equal(await verifyPassword("strong-pass-42", credentials.salt, credentials.hash), true);
