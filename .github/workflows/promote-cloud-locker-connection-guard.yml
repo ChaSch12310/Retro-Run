@@ -1,0 +1,126 @@
+name: Cloud Locker Connection Guard Production
+
+run-name: Cloud Locker Connection Guard production promotion
+
+on:
+  workflow_dispatch:
+  schedule:
+    # September 18, 2026 at midnight America/Chicago (CDT).
+    - cron: "0 5 18 9 *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-run-production-release
+  cancel-in-progress: false
+
+jobs:
+  release-window:
+    runs-on: ubuntu-latest
+    outputs:
+      promote: ${{ steps.check.outputs.promote }}
+    steps:
+      - name: Check one-time Central release date
+        id: check
+        shell: bash
+        run: |
+          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-09-18" ]]; then
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+            echo "Cloud Locker Connection Guard is approved for production now."
+          else
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: this release is approved only for September 18, 2026, starting at midnight Central."
+          fi
+
+  deploy-production:
+    needs: release-window
+    if: needs.release-window.outputs.promote == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check out the approved preview source
+        uses: actions/checkout@v4
+        with:
+          ref: 636a1040fb622985fed47fdc2c057410fa271320
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Check deployment credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test the approved release
+        run: pnpm test
+
+      - name: Build the standard arcade without holiday games
+        env:
+          RETRO_RUN_SEASONAL_PROFILE: standard
+        run: pnpm run build
+
+      - name: Update the production account and community backend
+        run: >-
+          pnpm exec wrangler deploy
+          --config wrangler.account.jsonc
+          --strict --keep-vars
+          --message "Cloud Locker Connection Guard - Production API"
+
+      - name: Publish the approved website with production accounts
+        run: >-
+          pnpm exec wrangler deploy
+          --config wrangler.jsonc
+          --strict --keep-vars
+          --message "Cloud Locker Connection Guard - Production"
+
+      - name: Verify the production release
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { setTimeout } from "node:timers/promises";
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            try {
+              const read = async (path, options = {}) => {
+                const response = await fetch(`https://retrorun.win/${path}`, {
+                  cache: "no-store",
+                  signal: AbortSignal.timeout(15000),
+                  ...options,
+                });
+                return response;
+              };
+              const health = await read("api/health");
+              assert.equal(health.status, 200);
+              const boardResponse = await read("api/leaderboard");
+              assert.equal(boardResponse.status, 200);
+              const board = await boardResponse.json();
+              assert.ok(board.nextUpdateAt > Date.now());
+              assert.ok(board.nextUpdateAt - Date.now() <= 60 * 60 * 1000);
+              const friendChats = await read("api/friend-chats");
+              assert.equal(friendChats.status, 401);
+              assert.match(await (await read("")).text(), /cloud-locker-connection-guard/);
+              assert.match(await (await read("seasonal-profile.js")).text(), /"standard"/);
+              console.log("Verified Cloud Locker Connection Guard on production.");
+              break;
+            } catch (error) {
+              if (attempt === 6) throw error;
+              await setTimeout(10000);
+            }
+          }
+          NODE

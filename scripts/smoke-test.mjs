@@ -164,6 +164,10 @@ const top25PromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-top-25-personal-bests.yml", import.meta.url),
   "utf8"
 );
+const connectionGuardPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-cloud-locker-connection-guard.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -473,6 +477,18 @@ assert.doesNotMatch(top25PromotionWorkflow, /--config wrangler\.(?:account-)?pre
 assert.ok(top25PromotionWorkflow.indexOf("--config wrangler.account.jsonc") < top25PromotionWorkflow.indexOf("--config wrangler.jsonc"));
 assert.match(top25PromotionWorkflow, /Top 25 Personal Bests - Production/);
 assert.match(top25PromotionWorkflow, /board\.entries\.length <= 25/);
+assert.match(connectionGuardPromotionWorkflow, /name: Cloud Locker Connection Guard Production/);
+assert.match(connectionGuardPromotionWorkflow, /cron: "0 5 18 9 \*"/);
+assert.match(connectionGuardPromotionWorkflow, /== "2026-09-18"/);
+assert.match(connectionGuardPromotionWorkflow, /ref: 636a104/);
+assert.match(connectionGuardPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(connectionGuardPromotionWorkflow, /pnpm test/);
+assert.match(connectionGuardPromotionWorkflow, /--config wrangler\.account\.jsonc/);
+assert.match(connectionGuardPromotionWorkflow, /--config wrangler\.jsonc/);
+assert.ok(connectionGuardPromotionWorkflow.indexOf("--config wrangler.account.jsonc")
+  < connectionGuardPromotionWorkflow.indexOf("--config wrangler.jsonc"));
+assert.match(connectionGuardPromotionWorkflow, /Cloud Locker Connection Guard - Production/);
+assert.match(connectionGuardPromotionWorkflow, /friendChats\.status, 401/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
