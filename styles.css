@@ -2414,6 +2414,29 @@ body.franchise-slot-selecting #loadSavePanel {
   color: #ff9b8f;
 }
 
+.account-online-link {
+  display: block;
+  padding: 11px 14px;
+  color: #172334;
+  background: var(--menu-accent);
+  border: 3px solid var(--line);
+  box-shadow: inset 0 -5px 0 rgba(91, 69, 17, 0.24);
+  font-size: 0.76rem;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.account-online-link:hover,
+.account-online-link:focus-visible {
+  color: #f7f2cf;
+  background: #29445f;
+}
+
+.account-online-link[hidden] {
+  display: none !important;
+}
+
 .account-signed-in {
   display: grid;
   gap: 14px;

@@ -131,6 +131,7 @@ const accountUsernameInputEl = document.getElementById("accountUsernameInput");
 const accountPasscodeInputEl = document.getElementById("accountPasscodeInput");
 const accountHelpTextEl = document.getElementById("accountHelpText");
 const accountMessageEl = document.getElementById("accountMessage");
+const accountOnlineLinkEl = document.getElementById("accountOnlineLink");
 const accountSubmitButtonEl = document.getElementById("accountSubmitButton");
 const accountUsernameValueEl = document.getElementById("accountUsernameValue");
 const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
@@ -2539,6 +2540,7 @@ function setAccountMode(mode) {
     : "Sign in with only your username and passcode. No email required.";
   accountMessageEl.textContent = "";
   accountMessageEl.classList.remove("error");
+  accountOnlineLinkEl.hidden = globalThis.location?.protocol !== "file:";
 }
 
 function openAccountModal() {
@@ -2557,11 +2559,23 @@ function closeAccountModal() {
 }
 
 async function accountApi(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    headers: options.body ? { "Content-Type": "application/json" } : undefined,
-    ...options,
-  });
+  if (globalThis.location?.protocol === "file:") {
+    const error = new Error("Cloud Locker only works in the online game. Open the latest online preview below, then sign in or create your account there.");
+    error.networkFailure = true;
+    throw error;
+  }
+  let response;
+  try {
+    response = await fetch(path, {
+      credentials: "same-origin",
+      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      ...options,
+    });
+  } catch {
+    const error = new Error("Cloud Locker could not connect. Check your internet connection, reload the page, or open the latest online preview below.");
+    error.networkFailure = true;
+    throw error;
+  }
   let data = {};
   try {
     data = await response.json();
@@ -3441,6 +3455,7 @@ async function submitCloudAccount(event) {
       body: JSON.stringify({ username, passcode }),
     });
     cloudAccount = { username: result.username };
+    accountOnlineLinkEl.hidden = true;
     cloudSyncState = "syncing";
     accountPasscodeInputEl.value = "";
     accountSignedInMessageEl.classList.remove("error");
@@ -3454,6 +3469,7 @@ async function submitCloudAccount(event) {
   } catch (error) {
     accountMessageEl.textContent = error.message;
     accountMessageEl.classList.add("error");
+    accountOnlineLinkEl.hidden = !error.networkFailure;
   } finally {
     accountSubmitButtonEl.disabled = false;
   }
