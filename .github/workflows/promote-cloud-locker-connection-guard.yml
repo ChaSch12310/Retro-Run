@@ -5,8 +5,8 @@ run-name: Cloud Locker Connection Guard production promotion
 on:
   workflow_dispatch:
   schedule:
-    # September 18, 2026 at midnight America/Chicago (CDT).
-    - cron: "0 5 18 9 *"
+    # Prepare at 9:50 PM Central, then release with the 10:00 PM hourly leaderboard update.
+    - cron: "50 2 18 9 *"
 
 permissions:
   contents: read
@@ -25,19 +25,19 @@ jobs:
         id: check
         shell: bash
         run: |
-          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-09-18" ]]; then
+          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-09-17" ]]; then
             echo "promote=true" >> "$GITHUB_OUTPUT"
             echo "Cloud Locker Connection Guard is approved for production now."
           else
             echo "promote=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping: this release is approved only for September 18, 2026, starting at midnight Central."
+            echo "Skipping: this release is approved only for the September 17, 2026 10:00 PM Central leaderboard update."
           fi
 
   deploy-production:
     needs: release-window
     if: needs.release-window.outputs.promote == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -74,6 +74,16 @@ jobs:
         env:
           RETRO_RUN_SEASONAL_PROFILE: standard
         run: pnpm run build
+
+      - name: Wait for the hourly leaderboard boundary
+        shell: bash
+        run: |
+          target_epoch="$(date -u -d '2026-09-18 03:00:00Z' +%s)"
+          current_epoch="$(date -u +%s)"
+          if (( current_epoch < target_epoch )); then
+            sleep "$((target_epoch - current_epoch))"
+          fi
+          echo "Starting production promotion with the 10:00 PM Central leaderboard update."
 
       - name: Update the production account and community backend
         run: >-

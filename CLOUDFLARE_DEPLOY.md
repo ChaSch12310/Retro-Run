@@ -61,6 +61,14 @@ Record the version ID and preview URL printed by Wrangler.
 
 ## Promote an approved preview
 
+Production promotions share the leaderboard's hourly release boundary. Prepare
+and test the approved release before the next hour, then begin the production
+backend and website deployment at the top of the hour. One-time GitHub Actions
+workflows should start preparation about ten minutes early, wait until the exact
+UTC hour, deploy the account backend first, and deploy the standard website
+second. This keeps future promotions aligned with the hourly leaderboard update
+instead of using a separate midnight release window.
+
 In Cloudflare, open **Workers & Pages > retrorun > Deployments**, select the
 approved version, choose **Promote deployment**, assign it 100% of traffic, and
 confirm.

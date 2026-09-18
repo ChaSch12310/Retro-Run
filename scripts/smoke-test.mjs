@@ -478,8 +478,8 @@ assert.ok(top25PromotionWorkflow.indexOf("--config wrangler.account.jsonc") < to
 assert.match(top25PromotionWorkflow, /Top 25 Personal Bests - Production/);
 assert.match(top25PromotionWorkflow, /board\.entries\.length <= 25/);
 assert.match(connectionGuardPromotionWorkflow, /name: Cloud Locker Connection Guard Production/);
-assert.match(connectionGuardPromotionWorkflow, /cron: "0 5 18 9 \*"/);
-assert.match(connectionGuardPromotionWorkflow, /== "2026-09-18"/);
+assert.match(connectionGuardPromotionWorkflow, /cron: "50 2 18 9 \*"/);
+assert.match(connectionGuardPromotionWorkflow, /== "2026-09-17"/);
 assert.match(connectionGuardPromotionWorkflow, /ref: 636a104/);
 assert.match(connectionGuardPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
 assert.match(connectionGuardPromotionWorkflow, /pnpm test/);
@@ -489,6 +489,9 @@ assert.ok(connectionGuardPromotionWorkflow.indexOf("--config wrangler.account.js
   < connectionGuardPromotionWorkflow.indexOf("--config wrangler.jsonc"));
 assert.match(connectionGuardPromotionWorkflow, /Cloud Locker Connection Guard - Production/);
 assert.match(connectionGuardPromotionWorkflow, /friendChats\.status, 401/);
+assert.match(connectionGuardPromotionWorkflow, /2026-09-18 03:00:00Z/);
+assert.ok(connectionGuardPromotionWorkflow.indexOf("Wait for the hourly leaderboard boundary")
+  < connectionGuardPromotionWorkflow.indexOf("Update the production account and community backend"));
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
