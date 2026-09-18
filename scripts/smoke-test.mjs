@@ -186,9 +186,22 @@ assert.match(previewAccountWranglerConfig, /"name"\s*:\s*"ISSUE_REPORT_EMAIL"/);
 assert.match(html, /id="communityButton"/);
 assert.match(html, /id="issueReportButton"/);
 assert.match(html, /id="communityModal"/);
+assert.match(html, /id="communityFriendsModeButton"/);
+assert.match(html, /id="communityDirectModeButton"/);
+assert.match(html, /id="communityFriendsPanel"/);
+assert.match(html, /id="communityDirectPanel"/);
+assert.match(html, /id="followPlayerForm"/);
+assert.match(html, /id="friendsList"/);
+assert.match(html, /id="followingList"/);
+assert.match(html, /id="followersList"/);
 assert.match(html, /id="playerReportForm"/);
 assert.match(html, /id="issueReportForm"/);
 assert.match(workerSource, /url\.pathname === "\/api\/chat"/);
+assert.match(workerSource, /url\.pathname === "\/api\/social"/);
+assert.match(workerSource, /url\.pathname === "\/api\/social\/follow"/);
+assert.match(workerSource, /url\.pathname === "\/api\/social\/unfollow"/);
+assert.match(workerSource, /url\.pathname === "\/api\/friend-chats"/);
+assert.match(workerSource, /url\.pathname === "\/api\/friend-chats\/messages"/);
 assert.match(workerSource, /url\.pathname === "\/api\/reports\/player"/);
 assert.match(workerSource, /url\.pathname === "\/api\/reports\/issue"/);
 assert.match(previewAccountWranglerConfig, /"new_sqlite_classes"\s*:\s*\["AccountStore"\]/);
@@ -198,8 +211,8 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260913-locker-room-chat/);
-assert.match(html, /styles\.css\?v=20260913-locker-room-chat/);
+assert.match(html, /game\.js\?v=20260917-hourly-friends-chat/);
+assert.match(html, /styles\.css\?v=20260917-hourly-friends-chat/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
 assert.match(html, /id="careerPathJourney"[^>]*value="journey"/);
 assert.match(html, /id="careerPathFavorite"[^>]*value="favorite"/);
@@ -326,7 +339,7 @@ assert.match(source, /function scheduleCloudSync/);
 assert.match(source, /function queueLeaderboardScore/);
 assert.match(source, /function flushLeaderboardQueue/);
 assert.match(source, /function calculateLeaderboardScores/);
-assert.match(source, /America\/Chicago/);
+assert.match(source, /function nextHourlyUpdate/);
 assert.match(source, /markCloudSlotChanged/);
 assert.doesNotMatch(source, /accountEmail|requiresVerification|Confirmation sent/);
 assert.match(source, /Sign in with only your username and passcode\. No email required\./);
@@ -345,7 +358,7 @@ assert.match(workerSource, /MAX_AUTH_ATTEMPTS/);
 assert.match(workerSource, /CREATE TABLE IF NOT EXISTS leaderboard_entries/);
 assert.match(workerSource, /\/api\/leaderboard/);
 assert.match(workerSource, /async alarm\(\)/);
-assert.match(workerSource, /America\/Chicago/);
+assert.match(workerSource, /export function nextHourlyUpdate/);
 assert.doesNotMatch(workerSource, /Sign in to view the leaderboard/);
 assert.match(styles, /\.leaderboard-table/);
 assert.match(styles, /\.postgame-score-grid/);
@@ -1433,7 +1446,7 @@ globalThis.__retroRunTest = {
   playerMoraleChangeForGame,
   playerMoraleMood,
   calculateLeaderboardScores,
-  nextCentralMidnight,
+  nextHourlyUpdate,
   shouldCreateBetweenGameProblem,
   shouldCreatePressConference,
   get problemDeckSize() { return BETWEEN_GAME_PROBLEMS.length; },

@@ -2459,7 +2459,7 @@ body.franchise-slot-selecting #loadSavePanel {
 
 .community-mode-switch {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
   padding: 5px;
@@ -2542,7 +2542,6 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .community-report-button {
-  justify-self: end;
   width: auto;
   padding: 4px 7px;
   color: #ffb0a8;
@@ -2551,8 +2550,42 @@ body.franchise-slot-selecting #loadSavePanel {
   font-size: 0.62rem;
 }
 
+.community-message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.community-follow-button,
+.community-unfollow-button {
+  width: auto;
+  padding: 5px 8px;
+  font-size: 0.62rem;
+}
+
+.community-follow-button {
+  color: #0b1d2d;
+  background: #f5c542;
+  border-color: #f7f2cf;
+}
+
+.community-follow-button.following,
+.community-follow-button.friend,
+.community-unfollow-button {
+  color: #dce4d2;
+  background: #18344f;
+  border-color: #6f91af;
+}
+
+.community-follow-button.friend {
+  color: #d8f4df;
+  background: #276640;
+  border-color: #8ed0a0;
+}
+
 .community-chat-form,
-.community-report-form {
+.community-report-form,
+.community-follow-form {
   display: grid;
   gap: 10px;
   margin-top: 10px;
@@ -2561,8 +2594,208 @@ body.franchise-slot-selecting #loadSavePanel {
 .community-chat-form[hidden],
 .community-report-form[hidden],
 #communityChatPanel[hidden],
+#communityFriendsPanel[hidden],
+#communityDirectPanel[hidden],
 #communityIssuePanel[hidden] {
   display: none !important;
+}
+
+.community-follow-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  margin-bottom: 8px;
+}
+
+.community-follow-form button {
+  width: auto;
+  min-height: 48px;
+}
+
+.community-social-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  max-height: clamp(260px, 42vh, 390px);
+  overflow-y: auto;
+}
+
+.community-social-group {
+  min-width: 0;
+  padding: 9px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+}
+
+.community-social-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  border-bottom: 3px solid #294b69;
+}
+
+.community-social-head h4 {
+  margin: 0;
+  color: #f7f2cf;
+  font-size: 0.75rem;
+}
+
+.community-social-head span {
+  min-width: 26px;
+  padding: 3px 5px;
+  color: #0b1d2d;
+  background: var(--menu-accent);
+  border: 2px solid #f7f2cf;
+  font-size: 0.64rem;
+  text-align: center;
+}
+
+.community-social-list {
+  display: grid;
+  gap: 7px;
+}
+
+.community-social-player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  padding: 7px;
+  background: #18344f;
+  border-left: 5px solid #6f91af;
+}
+
+.community-social-player > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.community-social-actions {
+  display: flex !important;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, auto);
+  gap: 5px !important;
+}
+
+.community-chat-button {
+  width: auto;
+  padding: 5px 8px;
+  color: #0b1d2d;
+  background: #8ed0a0;
+  border-color: #d8f4df;
+  font-size: 0.62rem;
+}
+
+.friend-chat-layout {
+  display: grid;
+  grid-template-columns: minmax(175px, 0.42fr) minmax(0, 1fr);
+  gap: 9px;
+}
+
+.friend-conversation-column,
+.friend-message-column {
+  min-width: 0;
+  padding: 9px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+}
+
+.friend-conversation-list {
+  display: grid;
+  gap: 7px;
+  max-height: clamp(280px, 44vh, 410px);
+  overflow-y: auto;
+}
+
+.friend-conversation-button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 8px;
+  color: #f7f2cf;
+  background: #18344f;
+  border: 2px solid #294b69;
+  border-left: 5px solid #6f91af;
+  text-align: left;
+}
+
+.friend-conversation-button.selected {
+  color: #0b1d2d;
+  background: var(--menu-accent);
+  border-color: #f7f2cf;
+}
+
+.friend-conversation-button strong {
+  overflow: hidden;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-conversation-button span {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.friend-message-column {
+  display: grid;
+  gap: 8px;
+}
+
+.friend-chat-heading {
+  display: grid;
+  gap: 3px;
+  min-height: 42px;
+}
+
+.friend-chat-heading h4 {
+  margin: 0;
+  color: var(--menu-accent);
+  font-size: 0.76rem;
+}
+
+.friend-chat-heading span {
+  overflow: hidden;
+  color: #aebcaf;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-messages {
+  height: clamp(190px, 30vh, 280px);
+  padding: 7px;
+  border-width: 2px;
+}
+
+.community-group-form {
+  margin-bottom: 9px;
+}
+
+.community-social-player strong {
+  overflow: hidden;
+  color: #f7f2cf;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+}
+
+.community-social-player span,
+.community-social-empty {
+  color: #aebcaf;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.community-social-empty {
+  margin: 4px 0;
+  line-height: 1.35;
 }
 
 .community-compose-footer {
@@ -6362,7 +6595,35 @@ body[data-device="mobile"] .community-messages {
 }
 
 body[data-device="mobile"] .community-mode-switch {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-device="mobile"] .community-mode-switch button {
+  min-width: 0;
+  padding-inline: 4px;
+  font-size: 0.6rem;
+}
+
+body[data-device="mobile"] .community-follow-form,
+body[data-device="mobile"] .community-social-groups {
   grid-template-columns: 1fr;
+}
+
+body[data-device="mobile"] .community-social-groups {
+  max-height: none;
+}
+
+body[data-device="mobile"] .friend-chat-layout {
+  grid-template-columns: 1fr;
+}
+
+body[data-device="mobile"] .friend-conversation-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: 125px;
+}
+
+body[data-device="mobile"] .friend-messages {
+  height: min(30vh, 230px);
 }
 
 body[data-device="mobile"] #cloudSyncStatus {

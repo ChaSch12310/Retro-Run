@@ -66,6 +66,9 @@ async function createAccount(username) {
 
 try {
   assert.equal((await api("/api/chat")).status, 401);
+  assert.equal((await api("/api/social")).status, 401);
+  assert.equal((await api("/api/friend-chats")).status, 401);
+  assert.equal((await api("/api/friend-chats/messages?conversationId=missing")).status, 401);
   assert.equal((await api("/api/reports/issue", {
     method: "POST",
     body: { category: "bug", details: "The game froze during a run." },
@@ -73,6 +76,38 @@ try {
 
   const aliceCookie = await createAccount("alice_chat");
   const bobCookie = await createAccount("bob_chat");
+
+  const aliceFollowsBob = await api("/api/social/follow", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { username: "bob_chat" },
+  });
+  assert.equal(aliceFollowsBob.status, 201);
+  assert.deepEqual(await aliceFollowsBob.json(), {
+    username: "bob_chat",
+    following: true,
+    followsYou: false,
+    friend: false,
+  });
+  assert.equal((await api("/api/social/follow", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { username: "bob_chat" },
+  })).status, 200);
+  const aliceSocial = await (await api("/api/social", { cookie: aliceCookie })).json();
+  assert.equal(aliceSocial.friends.length, 0);
+  assert.equal(aliceSocial.following[0].username, "bob_chat");
+  assert.equal(aliceSocial.followers.length, 0);
+  assert.equal((await api("/api/social/follow", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { username: "alice_chat" },
+  })).status, 400);
+  assert.equal((await api("/api/social/follow", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { username: "missing_player" },
+  })).status, 404);
 
   const sent = await api("/api/chat", {
     method: "POST",
@@ -95,6 +130,111 @@ try {
   const bobMessages = (await bobRead.json()).messages;
   assert.equal(bobMessages.length, 1);
   assert.equal(bobMessages[0].mine, false);
+  assert.equal(bobMessages[0].following, false);
+  assert.equal(bobMessages[0].followsYou, true);
+  assert.equal(bobMessages[0].friend, false);
+
+  const bobFollowsAlice = await api("/api/social/follow", {
+    method: "POST",
+    cookie: bobCookie,
+    body: { username: "alice_chat" },
+  });
+  assert.equal(bobFollowsAlice.status, 201);
+  assert.equal((await bobFollowsAlice.json()).friend, true);
+  const bobSocial = await (await api("/api/social", { cookie: bobCookie })).json();
+  assert.equal(bobSocial.friends[0].username, "alice_chat");
+  assert.equal(bobSocial.following[0].friend, true);
+  assert.equal(bobSocial.followers[0].friend, true);
+
+  const aliceDirect = await api("/api/friend-chats", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { usernames: ["bob_chat"] },
+  });
+  assert.equal(aliceDirect.status, 201);
+  const directConversation = (await aliceDirect.json()).conversation;
+  assert.equal(directConversation.type, "direct");
+  assert.deepEqual(directConversation.members, ["alice_chat", "bob_chat"]);
+
+  const duplicateDirect = await api("/api/friend-chats", {
+    method: "POST",
+    cookie: bobCookie,
+    body: { usernames: ["alice_chat"] },
+  });
+  assert.equal(duplicateDirect.status, 200);
+  assert.equal((await duplicateDirect.json()).conversation.id, directConversation.id);
+
+  const charlieCookie = await createAccount("charlie_chat");
+  assert.equal((await api("/api/friend-chats", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { usernames: ["charlie_chat"] },
+  })).status, 403);
+  assert.equal((await api(`/api/friend-chats/messages?conversationId=${directConversation.id}`, {
+    cookie: charlieCookie,
+  })).status, 404);
+
+  const privateMessageResponse = await api("/api/friend-chats/messages", {
+    method: "POST",
+    cookie: bobCookie,
+    body: { conversationId: directConversation.id, message: "Private hello, Alice!" },
+  });
+  assert.equal(privateMessageResponse.status, 201);
+  const privateMessage = (await privateMessageResponse.json()).message;
+  const alicePrivateMessages = await api(
+    `/api/friend-chats/messages?conversationId=${directConversation.id}`,
+    { cookie: aliceCookie }
+  );
+  assert.equal(alicePrivateMessages.status, 200);
+  assert.equal((await alicePrivateMessages.json()).messages[0].body, "Private hello, Alice!");
+
+  const privateReport = await api("/api/reports/player", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { messageId: privateMessage.id, reason: "spam", details: "Private chat report test." },
+  });
+  assert.equal(privateReport.status, 201);
+  assert.equal(sentPlayerReports.length, 1);
+  assert.match(sentPlayerReports[0].text, /Location: Friend chat/);
+
+  for (const [cookie, username] of [
+    [aliceCookie, "charlie_chat"],
+    [charlieCookie, "alice_chat"],
+  ]) {
+    assert.ok([200, 201].includes((await api("/api/social/follow", {
+      method: "POST",
+      cookie,
+      body: { username },
+    })).status));
+  }
+  const groupResponse = await api("/api/friend-chats", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { usernames: ["bob_chat", "charlie_chat"] },
+  });
+  assert.equal(groupResponse.status, 201);
+  assert.equal((await groupResponse.json()).conversation.members.length, 3);
+  assert.equal((await api("/api/friend-chats", {
+    method: "POST",
+    cookie: aliceCookie,
+    body: { usernames: Array.from({ length: 10 }, (_, index) => `friend_${index}`) },
+  })).status, 409);
+  const aliceConversations = await (await api("/api/friend-chats", { cookie: aliceCookie })).json();
+  assert.equal(aliceConversations.conversations.length, 2);
+  assert.equal(aliceConversations.maximumMembers, 10);
+
+  const bobUnfollowsAlice = await api("/api/social/unfollow", {
+    method: "POST",
+    cookie: bobCookie,
+    body: { username: "alice_chat" },
+  });
+  assert.equal(bobUnfollowsAlice.status, 200);
+  assert.deepEqual(await bobUnfollowsAlice.json(), {
+    username: "alice_chat",
+    following: false,
+    followsYou: true,
+    friend: false,
+  });
 
   const playerReport = await api("/api/reports/player", {
     method: "POST",
@@ -107,10 +247,10 @@ try {
   });
   assert.equal(playerReport.status, 201);
   assert.equal((await playerReport.json()).emailSent, true);
-  assert.equal(sentPlayerReports.length, 1);
-  assert.equal(sentPlayerReports[0].to, "reports@retrorun.win");
-  assert.match(sentPlayerReports[0].text, /Reported player: @alice_chat/);
-  assert.match(sentPlayerReports[0].text, /Message: Great run, Bob!/);
+  assert.equal(sentPlayerReports.length, 2);
+  assert.equal(sentPlayerReports[1].to, "reports@retrorun.win");
+  assert.match(sentPlayerReports[1].text, /Reported player: @alice_chat/);
+  assert.match(sentPlayerReports[1].text, /Message: Great run, Bob!/);
 
   assert.equal((await api("/api/reports/player", {
     method: "POST",
@@ -159,9 +299,10 @@ try {
   ).toArray().map((report) => ({ ...report }));
   assert.deepEqual(storedReports, [
     { report_type: "player", email_status: "sent" },
+    { report_type: "player", email_status: "sent" },
     { report_type: "issue", email_status: "sent" },
   ]);
-  console.log("Retro Run Locker Room and report tests passed.");
+  console.log("Retro Run Locker Room, friend chat, and report tests passed.");
 } finally {
   database.close();
 }

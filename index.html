@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260913-locker-room-chat" />
+    <link rel="stylesheet" href="styles.css?v=20260917-hourly-friends-chat" />
   </head>
   <body>
     <main class="game-shell">
@@ -279,8 +279,8 @@
           <div class="leaderboard-card">
             <div class="module-head leaderboard-head">
               <div>
-                <p class="homepage-kicker">Nightly Rankings</p>
-                <h3 id="leaderboardTitle">Midnight Leaderboard</h3>
+                <p class="homepage-kicker">Hourly Rankings</p>
+                <h3 id="leaderboardTitle">On-The-Hour Leaderboard</h3>
               </div>
               <span>Top 25 Scores</span>
             </div>
@@ -290,7 +290,7 @@
                 <strong id="leaderboardCountdown">00:00:00</strong>
                 <small class="leaderboard-countdown-units">Hours : Minutes : Seconds</small>
               </div>
-              <p id="leaderboardLocalTime">Publishes nightly at 12:00 AM Central.</p>
+              <p id="leaderboardLocalTime">Publishes once an hour, on the hour.</p>
               <small id="leaderboardQueueStatus">Sign in and finish a game to enter the next update.</small>
             </div>
             <p class="leaderboard-message" id="leaderboardMessage" role="status" aria-live="polite">Loading the latest standings...</p>
@@ -827,7 +827,7 @@
                     <small>Your fan total converted to 1M</small>
                   </div>
                 </div>
-                <p>Each score is out of 1,000,000. Signed-in scores join the next midnight leaderboard update.</p>
+                <p>Each score is out of 1,000,000. Signed-in scores join the next hourly leaderboard update.</p>
               </section>
 
               <div class="franchise-card">
@@ -1060,11 +1060,13 @@
 
         <div class="community-mode-switch" aria-label="Community section">
           <button id="communityChatModeButton" class="account-mode-button selected" type="button" aria-pressed="true">Locker Room</button>
+          <button id="communityFriendsModeButton" class="account-mode-button" type="button" aria-pressed="false">Friends</button>
+          <button id="communityDirectModeButton" class="account-mode-button" type="button" aria-pressed="false">Messages</button>
           <button id="communityIssueModeButton" class="account-mode-button" type="button" aria-pressed="false">Report Game Issue</button>
         </div>
 
         <section id="communityChatPanel">
-          <p class="community-safety-note">Public chat for signed-in players. Be respectful and never share personal information or links.</p>
+          <p class="community-safety-note">Public chat for signed-in players. Use Follow or Report Player beneath another player's message. Never share personal information or links.</p>
           <div class="community-messages" id="communityMessages" role="log" aria-live="polite" aria-label="Locker Room messages"></div>
           <form id="communityChatForm" class="community-chat-form">
             <label class="setup-field" for="communityMessageInput">
@@ -1078,33 +1080,108 @@
           </form>
           <p class="account-message" id="communityMessage" role="status" aria-live="polite"></p>
 
-          <form id="playerReportForm" class="community-report-form" hidden>
-            <div class="community-report-target">
-              <span>Reporting</span>
-              <strong id="playerReportUsername">@player</strong>
-              <p id="playerReportQuote"></p>
-            </div>
-            <label class="setup-field">
-              <span class="label">Reason</span>
-              <select id="playerReportReason" required>
-                <option value="">Choose a reason</option>
-                <option value="harassment">Harassment or bullying</option>
-                <option value="inappropriate">Inappropriate content</option>
-                <option value="personal-info">Sharing personal information</option>
-                <option value="spam">Spam</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label class="setup-field">
-              <span class="label">More Details (Optional)</span>
-              <textarea id="playerReportDetails" maxlength="500" rows="3"></textarea>
-            </label>
-            <div class="creator-actions">
-              <button id="playerReportCancelButton" class="secondary-button" type="button">Cancel</button>
-              <button id="playerReportSubmitButton" type="submit">Send Report</button>
-            </div>
-          </form>
         </section>
+
+        <section id="communityFriendsPanel" hidden>
+          <p class="community-safety-note">Follow a player by exact username. When two players follow each other, they become friends.</p>
+          <form id="followPlayerForm" class="community-follow-form">
+            <label class="setup-field" for="followPlayerUsername">
+              <span class="label">Player Username</span>
+              <input id="followPlayerUsername" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="off" placeholder="player_name" required />
+            </label>
+            <button id="followPlayerSubmitButton" type="submit">Follow Player</button>
+          </form>
+          <p class="account-message" id="socialMessage" role="status" aria-live="polite"></p>
+          <div class="community-social-groups">
+            <section class="community-social-group" aria-labelledby="friendsListTitle">
+              <div class="community-social-head">
+                <h4 id="friendsListTitle">Friends</h4>
+                <span id="friendsCount">0</span>
+              </div>
+              <div id="friendsList" class="community-social-list"></div>
+            </section>
+            <section class="community-social-group" aria-labelledby="followingListTitle">
+              <div class="community-social-head">
+                <h4 id="followingListTitle">Following</h4>
+                <span id="followingCount">0</span>
+              </div>
+              <div id="followingList" class="community-social-list"></div>
+            </section>
+            <section class="community-social-group" aria-labelledby="followersListTitle">
+              <div class="community-social-head">
+                <h4 id="followersListTitle">Followers</h4>
+                <span id="followersCount">0</span>
+              </div>
+              <div id="followersList" class="community-social-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="communityDirectPanel" hidden>
+          <p class="community-safety-note">Chat privately with mutual friends. Enter one username for a direct chat or up to nine usernames for a group of 10 people total.</p>
+          <form id="friendChatCreateForm" class="community-follow-form community-group-form">
+            <label class="setup-field" for="friendChatUsernames">
+              <span class="label">Friend Usernames</span>
+              <input id="friendChatUsernames" type="text" maxlength="224" autocomplete="off" placeholder="friend_one, friend_two" required />
+            </label>
+            <button id="friendChatCreateButton" type="submit">Start Chat</button>
+          </form>
+          <div class="friend-chat-layout">
+            <aside class="friend-conversation-column" aria-label="Friend conversations">
+              <div class="community-social-head">
+                <h4>Chats</h4>
+                <span id="friendConversationCount">0</span>
+              </div>
+              <div id="friendConversationList" class="friend-conversation-list"></div>
+            </aside>
+            <section class="friend-message-column" aria-labelledby="friendChatTitle">
+              <div class="friend-chat-heading">
+                <h4 id="friendChatTitle">Choose a Chat</h4>
+                <span id="friendChatMembers">Your friend messages appear here.</span>
+              </div>
+              <div class="community-messages friend-messages" id="friendMessages" role="log" aria-live="polite" aria-label="Friend messages"></div>
+              <form id="friendMessageForm" class="community-chat-form" hidden>
+                <label class="setup-field" for="friendMessageInput">
+                  <span class="label">Message</span>
+                  <textarea id="friendMessageInput" maxlength="180" rows="2" placeholder="Message your friends..." required></textarea>
+                </label>
+                <div class="community-compose-footer">
+                  <span id="friendMessageCharacterCount">0 / 180</span>
+                  <button id="friendMessageSendButton" type="submit">Send</button>
+                </div>
+              </form>
+            </section>
+          </div>
+          <p class="account-message" id="friendChatMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <form id="playerReportForm" class="community-report-form" hidden>
+          <div class="community-report-target">
+            <span>Reporting</span>
+            <strong id="playerReportUsername">@player</strong>
+            <p id="playerReportQuote"></p>
+          </div>
+          <label class="setup-field">
+            <span class="label">Reason</span>
+            <select id="playerReportReason" required>
+              <option value="">Choose a reason</option>
+              <option value="harassment">Harassment or bullying</option>
+              <option value="inappropriate">Inappropriate content</option>
+              <option value="personal-info">Sharing personal information</option>
+              <option value="spam">Spam</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="setup-field">
+            <span class="label">More Details (Optional)</span>
+            <textarea id="playerReportDetails" maxlength="500" rows="3"></textarea>
+          </label>
+          <p class="account-message" id="playerReportMessage" role="status" aria-live="polite"></p>
+          <div class="creator-actions">
+            <button id="playerReportCancelButton" class="secondary-button" type="button">Cancel</button>
+            <button id="playerReportSubmitButton" type="submit">Send Report</button>
+          </div>
+        </form>
 
         <section id="communityIssuePanel" hidden>
           <p class="community-safety-note">Tell us what went wrong. Your username, selected game, device layout, and screen size are included automatically.</p>
@@ -1215,7 +1292,7 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260913-locker-room-chat"></script>
+    <script src="game.js?v=20260917-hourly-friends-chat"></script>
     <script src="pocket-dynasty.js?v=20260908-arcade-leaderboard-board-final"></script>
     <script src="seasonal-profile.js?v=20260908-normal-arcade-restore"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>

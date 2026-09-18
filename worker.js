@@ -11,6 +11,10 @@ const MAX_CHAT_MESSAGE_LENGTH = 180;
 const MAX_CHAT_MESSAGES_PER_MINUTE = 6;
 const MAX_CHAT_MESSAGES_PER_DAY = 100;
 const MAX_REPORTS_PER_DAY = 10;
+const MAX_FOLLOWS = 200;
+const MAX_FOLLOW_CHANGES_PER_DAY = 100;
+const MAX_FRIEND_CHAT_MEMBERS = 10;
+const MAX_FRIEND_CONVERSATIONS = 100;
 const CHAT_HISTORY_LIMIT = 50;
 const CHAT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const PLAYER_REPORT_REASONS = new Set([
@@ -218,45 +222,8 @@ export function calculateLeaderboardScores(metrics = {}) {
   return { tackleScore, speedScore, fanScore };
 }
 
-function centralTimeParts(timestamp) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(timestamp));
-  return Object.fromEntries(parts
-    .filter((part) => part.type !== "literal")
-    .map((part) => [part.type, Number(part.value)]));
-}
-
-function centralOffsetMs(timestamp) {
-  const parts = centralTimeParts(timestamp);
-  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
-    - Math.floor(timestamp / 1000) * 1000;
-}
-
-function centralMidnightUtc(year, month, day) {
-  const wallClock = Date.UTC(year, month - 1, day, 0, 0, 0);
-  let timestamp = wallClock;
-  for (let index = 0; index < 3; index += 1) {
-    timestamp = wallClock - centralOffsetMs(timestamp);
-  }
-  return timestamp;
-}
-
-export function nextCentralMidnight(timestamp = Date.now()) {
-  const parts = centralTimeParts(timestamp);
-  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
-  return centralMidnightUtc(
-    nextDay.getUTCFullYear(),
-    nextDay.getUTCMonth() + 1,
-    nextDay.getUTCDate()
-  );
+export function nextHourlyUpdate(timestamp = Date.now()) {
+  return Math.floor(timestamp / (60 * 60 * 1000)) * 60 * 60 * 1000 + 60 * 60 * 1000;
 }
 
 export function normalizeLeaderboardSubmission(body, now = Date.now()) {
@@ -424,6 +391,47 @@ export class AccountStore {
       );
       CREATE INDEX IF NOT EXISTS community_reports_created_at ON community_reports(created_at);
       CREATE INDEX IF NOT EXISTS community_reports_target ON community_reports(target_user_id, created_at);
+      CREATE TABLE IF NOT EXISTS follows (
+        follower_user_id TEXT NOT NULL,
+        followed_user_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (follower_user_id, followed_user_id)
+      );
+      CREATE INDEX IF NOT EXISTS follows_followed_user ON follows(followed_user_id, created_at);
+      CREATE TABLE IF NOT EXISTS follow_actions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS follow_actions_user_created_at ON follow_actions(user_id, created_at);
+      CREATE TABLE IF NOT EXISTS friend_conversations (
+        id TEXT PRIMARY KEY,
+        conversation_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        direct_key TEXT UNIQUE,
+        created_by TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS friend_conversation_members (
+        conversation_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        joined_at INTEGER NOT NULL,
+        PRIMARY KEY (conversation_id, user_id)
+      );
+      CREATE INDEX IF NOT EXISTS friend_conversation_members_user
+        ON friend_conversation_members(user_id, joined_at);
+      CREATE TABLE IF NOT EXISTS friend_messages (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        body TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS friend_messages_conversation_created
+        ON friend_messages(conversation_id, created_at);
+      CREATE INDEX IF NOT EXISTS friend_messages_user_created
+        ON friend_messages(user_id, created_at);
     `);
     this.removeUnsupportedLeaderboardEntries();
   }
@@ -613,6 +621,7 @@ export class AccountStore {
   }
 
   async scheduleLeaderboardAlarm(timestamp) {
+    if (!this.ctx.storage.getAlarm || !this.ctx.storage.setAlarm) return;
     const currentAlarm = await this.ctx.storage.getAlarm();
     if (currentAlarm === null || timestamp < currentAlarm) {
       await this.ctx.storage.setAlarm(timestamp);
@@ -648,6 +657,13 @@ export class AccountStore {
   async handleLeaderboardRead(request) {
     const user = await this.currentUser(request);
     const now = Date.now();
+    const nextUpdateAt = nextHourlyUpdate(now);
+    this.sql.exec(
+      `UPDATE leaderboard_entries SET publish_at = ?
+       WHERE published_at IS NULL AND publish_at > ?`,
+      nextUpdateAt,
+      nextUpdateAt
+    );
     this.publishDueLeaderboardEntries(now);
     const rows = this.sql.exec(
       `WITH personal_bests AS (
@@ -679,6 +695,12 @@ export class AccountStore {
     const lastUpdated = this.one(
       "SELECT meta_value FROM leaderboard_meta WHERE meta_key = 'last_updated_at'"
     );
+    const pendingAny = this.one(
+      `SELECT COUNT(*) AS count FROM leaderboard_entries
+       WHERE published_at IS NULL AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})`,
+      ...LEADERBOARD_GAME_IDS
+    );
+    if (Number(pendingAny?.count) > 0) await this.scheduleLeaderboardAlarm(nextUpdateAt);
     return jsonResponse({
       entries: rows.map((row) => ({
         username: row.username,
@@ -691,7 +713,7 @@ export class AccountStore {
         fanScore: Number(row.franchise_score),
       })),
       pendingCount: Number(pending?.count) || 0,
-      nextUpdateAt: nextCentralMidnight(now),
+      nextUpdateAt,
       lastUpdatedAt: Number(lastUpdated?.meta_value) || 0,
     });
   }
@@ -709,7 +731,7 @@ export class AccountStore {
       return errorResponse("Leaderboard entry limit reached. Try again tomorrow.", 429);
     }
     const submission = normalizeLeaderboardSubmission(await readJson(request), now);
-    const publishAt = nextCentralMidnight(now);
+    const publishAt = nextHourlyUpdate(now);
     this.sql.exec(
       `INSERT OR IGNORE INTO leaderboard_entries (
          id, user_id, username, client_entry_id, played_at, submitted_at, publish_at,
@@ -739,21 +761,171 @@ export class AccountStore {
   }
 
   recentUserCount(table, userId, since) {
+    const userColumn = table === "community_reports" ? "reporter_user_id" : "user_id";
     return Number(this.one(
-      `SELECT COUNT(*) AS count FROM ${table} WHERE ${table === "chat_messages" ? "user_id" : "reporter_user_id"} = ? AND created_at >= ?`,
+      `SELECT COUNT(*) AS count FROM ${table} WHERE ${userColumn} = ? AND created_at >= ?`,
       userId,
       since
     )?.count) || 0;
+  }
+
+  recentMessageCount(userId, since) {
+    return Number(this.one(
+      `SELECT (
+         (SELECT COUNT(*) FROM chat_messages WHERE user_id = ? AND created_at >= ?)
+         + (SELECT COUNT(*) FROM friend_messages WHERE user_id = ? AND created_at >= ?)
+       ) AS count`,
+      userId,
+      since,
+      userId,
+      since
+    )?.count) || 0;
+  }
+
+  relationship(userId, targetUserId) {
+    const following = Boolean(this.one(
+      "SELECT 1 AS found FROM follows WHERE follower_user_id = ? AND followed_user_id = ?",
+      userId,
+      targetUserId
+    ));
+    const followsYou = Boolean(this.one(
+      "SELECT 1 AS found FROM follows WHERE follower_user_id = ? AND followed_user_id = ?",
+      targetUserId,
+      userId
+    ));
+    return { following, followsYou, friend: following && followsYou };
+  }
+
+  consumeFollowChange(userId, now) {
+    this.sql.exec("DELETE FROM follow_actions WHERE created_at < ?", now - 24 * 60 * 60 * 1000);
+    const recent = this.one(
+      "SELECT COUNT(*) AS count FROM follow_actions WHERE user_id = ? AND created_at >= ?",
+      userId,
+      now - 24 * 60 * 60 * 1000
+    );
+    if (Number(recent?.count) >= MAX_FOLLOW_CHANGES_PER_DAY) return false;
+    this.sql.exec(
+      "INSERT INTO follow_actions (id, user_id, created_at) VALUES (?, ?, ?)",
+      crypto.randomUUID(),
+      userId,
+      now
+    );
+    return true;
+  }
+
+  async handleSocialRead(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to view friends and followers.", 401);
+    const following = this.sql.exec(
+      `SELECT users.username, follows.created_at,
+              EXISTS(
+                SELECT 1 FROM follows AS reverse_follow
+                WHERE reverse_follow.follower_user_id = follows.followed_user_id
+                AND reverse_follow.followed_user_id = follows.follower_user_id
+              ) AS follows_you
+       FROM follows JOIN users ON users.id = follows.followed_user_id
+       WHERE follows.follower_user_id = ?
+       ORDER BY users.username COLLATE NOCASE ASC
+       LIMIT ?`,
+      user.id,
+      MAX_FOLLOWS
+    ).toArray().map((entry) => ({
+      username: entry.username,
+      followedAt: Number(entry.created_at),
+      followsYou: Boolean(entry.follows_you),
+      friend: Boolean(entry.follows_you),
+    }));
+    const followers = this.sql.exec(
+      `SELECT users.username, follows.created_at,
+              EXISTS(
+                SELECT 1 FROM follows AS reverse_follow
+                WHERE reverse_follow.follower_user_id = follows.followed_user_id
+                AND reverse_follow.followed_user_id = follows.follower_user_id
+              ) AS following
+       FROM follows JOIN users ON users.id = follows.follower_user_id
+       WHERE follows.followed_user_id = ?
+       ORDER BY users.username COLLATE NOCASE ASC
+       LIMIT ?`,
+      user.id,
+      MAX_FOLLOWS
+    ).toArray().map((entry) => ({
+      username: entry.username,
+      followedAt: Number(entry.created_at),
+      following: Boolean(entry.following),
+      friend: Boolean(entry.following),
+    }));
+    return jsonResponse({
+      username: user.username,
+      friends: following.filter((entry) => entry.friend),
+      following,
+      followers,
+      maximumFollowing: MAX_FOLLOWS,
+    });
+  }
+
+  async handleFollowWrite(request, shouldFollow) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to follow players.", 401);
+    const body = await readJson(request);
+    const username = normalizeUsername(body.username);
+    const target = this.one("SELECT id, username FROM users WHERE username = ?", username);
+    if (!target) return errorResponse("That player was not found.", 404);
+    if (target.id === user.id) return errorResponse("You cannot follow yourself.");
+    const current = this.relationship(user.id, target.id);
+    if (current.following === shouldFollow) {
+      return jsonResponse({ username: target.username, ...current });
+    }
+    if (shouldFollow) {
+      const count = this.one(
+        "SELECT COUNT(*) AS count FROM follows WHERE follower_user_id = ?",
+        user.id
+      );
+      if (Number(count?.count) >= MAX_FOLLOWS) {
+        return errorResponse(`You can follow up to ${MAX_FOLLOWS} players.`, 409);
+      }
+    }
+    const now = Date.now();
+    if (!this.consumeFollowChange(user.id, now)) {
+      return errorResponse("Daily follow-change limit reached. Try again tomorrow.", 429);
+    }
+    if (shouldFollow) {
+      this.sql.exec(
+        "INSERT INTO follows (follower_user_id, followed_user_id, created_at) VALUES (?, ?, ?)",
+        user.id,
+        target.id,
+        now
+      );
+    } else {
+      this.sql.exec(
+        "DELETE FROM follows WHERE follower_user_id = ? AND followed_user_id = ?",
+        user.id,
+        target.id
+      );
+    }
+    return jsonResponse({
+      username: target.username,
+      ...this.relationship(user.id, target.id),
+    }, shouldFollow ? 201 : 200);
   }
 
   async handleChatRead(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to open the Locker Room.", 401);
     const messages = this.sql.exec(
-      `SELECT id, username, body, created_at
-       FROM chat_messages
-       ORDER BY created_at DESC, id DESC
+      `SELECT messages.id, messages.username, messages.body, messages.created_at,
+              EXISTS(
+                SELECT 1 FROM follows
+                WHERE follower_user_id = ? AND followed_user_id = messages.user_id
+              ) AS following,
+              EXISTS(
+                SELECT 1 FROM follows
+                WHERE follower_user_id = messages.user_id AND followed_user_id = ?
+              ) AS follows_you
+       FROM chat_messages AS messages
+       ORDER BY messages.created_at DESC, messages.id DESC
        LIMIT ?`,
+      user.id,
+      user.id,
       CHAT_HISTORY_LIMIT
     ).toArray().reverse();
     return jsonResponse({
@@ -763,6 +935,9 @@ export class AccountStore {
         body: message.body,
         createdAt: Number(message.created_at),
         mine: message.username === user.username,
+        following: Boolean(message.following),
+        followsYou: Boolean(message.follows_you),
+        friend: Boolean(message.following) && Boolean(message.follows_you),
       })),
       username: user.username,
       maximumLength: MAX_CHAT_MESSAGE_LENGTH,
@@ -773,10 +948,10 @@ export class AccountStore {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to send Locker Room messages.", 401);
     const now = Date.now();
-    if (this.recentUserCount("chat_messages", user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
+    if (this.recentMessageCount(user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
       return errorResponse("You're sending messages too quickly. Wait a minute and try again.", 429);
     }
-    if (this.recentUserCount("chat_messages", user.id, now - 24 * 60 * 60 * 1000) >= MAX_CHAT_MESSAGES_PER_DAY) {
+    if (this.recentMessageCount(user.id, now - 24 * 60 * 60 * 1000) >= MAX_CHAT_MESSAGES_PER_DAY) {
       return errorResponse("Daily Locker Room message limit reached. Try again tomorrow.", 429);
     }
     const body = await readJson(request);
@@ -792,6 +967,179 @@ export class AccountStore {
     );
     this.sql.exec(
       `DELETE FROM chat_messages
+       WHERE created_at < ?
+       AND id NOT IN (SELECT message_id FROM community_reports WHERE message_id IS NOT NULL)`,
+      now - CHAT_RETENTION_MS
+    );
+    return jsonResponse({
+      message: { id, username: user.username, body: message, createdAt: now, mine: true },
+    }, 201);
+  }
+
+  friendConversation(userId, conversationId) {
+    const conversation = this.one(
+      `SELECT conversations.id, conversations.conversation_type, conversations.title,
+              conversations.created_at
+       FROM friend_conversations AS conversations
+       JOIN friend_conversation_members AS membership
+         ON membership.conversation_id = conversations.id
+       WHERE conversations.id = ? AND membership.user_id = ?`,
+      conversationId,
+      userId
+    );
+    if (!conversation) return null;
+    const members = this.sql.exec(
+      `SELECT users.username
+       FROM friend_conversation_members AS membership
+       JOIN users ON users.id = membership.user_id
+       WHERE membership.conversation_id = ?
+       ORDER BY users.username COLLATE NOCASE ASC`,
+      conversationId
+    ).toArray().map((entry) => entry.username);
+    return {
+      id: conversation.id,
+      type: conversation.conversation_type,
+      title: conversation.title,
+      members,
+      createdAt: Number(conversation.created_at),
+    };
+  }
+
+  async handleFriendConversationsRead(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to open friend messages.", 401);
+    const conversations = this.sql.exec(
+      `SELECT conversations.id
+       FROM friend_conversations AS conversations
+       JOIN friend_conversation_members AS membership
+         ON membership.conversation_id = conversations.id
+       WHERE membership.user_id = ?
+       ORDER BY COALESCE(
+         (SELECT MAX(created_at) FROM friend_messages WHERE conversation_id = conversations.id),
+         conversations.created_at
+       ) DESC
+       LIMIT ?`,
+      user.id,
+      MAX_FRIEND_CONVERSATIONS
+    ).toArray().map((entry) => this.friendConversation(user.id, entry.id));
+    return jsonResponse({ conversations, maximumMembers: MAX_FRIEND_CHAT_MEMBERS });
+  }
+
+  async handleFriendConversationCreate(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to message friends.", 401);
+    const body = await readJson(request);
+    const usernames = [...new Set(
+      (Array.isArray(body.usernames) ? body.usernames : [])
+        .map(normalizeUsername)
+        .filter(Boolean)
+    )];
+    if (usernames.length < 1) return errorResponse("Choose at least one friend.");
+    if (usernames.length > MAX_FRIEND_CHAT_MEMBERS - 1) {
+      return errorResponse(`Friend chats can include up to ${MAX_FRIEND_CHAT_MEMBERS} people.`, 409);
+    }
+    if (usernames.includes(user.username)) return errorResponse("You are already included in the chat.");
+    const placeholders = usernames.map(() => "?").join(", ");
+    const targets = this.sql.exec(
+      `SELECT id, username FROM users WHERE username IN (${placeholders})`,
+      ...usernames
+    ).toArray();
+    if (targets.length !== usernames.length) return errorResponse("One or more players were not found.", 404);
+    const targetByUsername = new Map(targets.map((target) => [target.username, target]));
+    const orderedTargets = usernames.map((username) => targetByUsername.get(username));
+    if (orderedTargets.some((target) => !this.relationship(user.id, target.id).friend)) {
+      return errorResponse("You can only start chats with mutual friends.", 403);
+    }
+
+    const directKey = orderedTargets.length === 1
+      ? [user.id, orderedTargets[0].id].sort().join(":")
+      : null;
+    if (directKey) {
+      const existing = this.one("SELECT id FROM friend_conversations WHERE direct_key = ?", directKey);
+      if (existing) return jsonResponse({ conversation: this.friendConversation(user.id, existing.id) });
+    }
+
+    const now = Date.now();
+    const conversationId = crypto.randomUUID();
+    const title = orderedTargets.length === 1
+      ? `@${orderedTargets[0].username}`
+      : orderedTargets.map((target) => `@${target.username}`).join(", ").slice(0, 160);
+    this.sql.exec(
+      `INSERT INTO friend_conversations (
+         id, conversation_type, title, direct_key, created_by, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?)`,
+      conversationId,
+      orderedTargets.length === 1 ? "direct" : "group",
+      title,
+      directKey,
+      user.id,
+      now
+    );
+    [user, ...orderedTargets].forEach((member) => {
+      this.sql.exec(
+        `INSERT INTO friend_conversation_members (conversation_id, user_id, joined_at)
+         VALUES (?, ?, ?)`,
+        conversationId,
+        member.id,
+        now
+      );
+    });
+    return jsonResponse({ conversation: this.friendConversation(user.id, conversationId) }, 201);
+  }
+
+  async handleFriendMessagesRead(request, url) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to read friend messages.", 401);
+    const conversationId = String(url.searchParams.get("conversationId") || "");
+    const conversation = this.friendConversation(user.id, conversationId);
+    if (!conversation) return errorResponse("That friend chat was not found.", 404);
+    const messages = this.sql.exec(
+      `SELECT id, username, body, created_at
+       FROM friend_messages
+       WHERE conversation_id = ?
+       ORDER BY created_at DESC, id DESC
+       LIMIT ?`,
+      conversationId,
+      CHAT_HISTORY_LIMIT
+    ).toArray().reverse().map((message) => ({
+      id: message.id,
+      username: message.username,
+      body: message.body,
+      createdAt: Number(message.created_at),
+      mine: message.username === user.username,
+    }));
+    return jsonResponse({ conversation, messages, maximumLength: MAX_CHAT_MESSAGE_LENGTH });
+  }
+
+  async handleFriendMessageWrite(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to message friends.", 401);
+    const now = Date.now();
+    if (this.recentMessageCount(user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
+      return errorResponse("You're sending messages too quickly. Wait a minute and try again.", 429);
+    }
+    if (this.recentMessageCount(user.id, now - 24 * 60 * 60 * 1000) >= MAX_CHAT_MESSAGES_PER_DAY) {
+      return errorResponse("Daily Locker Room message limit reached. Try again tomorrow.", 429);
+    }
+    const body = await readJson(request);
+    const conversationId = String(body.conversationId || "");
+    if (!this.friendConversation(user.id, conversationId)) {
+      return errorResponse("That friend chat was not found.", 404);
+    }
+    const message = normalizeChatMessage(body.message);
+    const id = crypto.randomUUID();
+    this.sql.exec(
+      `INSERT INTO friend_messages (id, conversation_id, user_id, username, body, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      id,
+      conversationId,
+      user.id,
+      user.username,
+      message,
+      now
+    );
+    this.sql.exec(
+      `DELETE FROM friend_messages
        WHERE created_at < ?
        AND id NOT IN (SELECT message_id FROM community_reports WHERE message_id IS NOT NULL)`,
       now - CHAT_RETENTION_MS
@@ -869,10 +1217,24 @@ export class AccountStore {
     const reason = String(body.reason || "");
     if (!PLAYER_REPORT_REASONS.has(reason)) return errorResponse("Choose a report reason.");
     const details = normalizeReportDetails(body.details, 500);
-    const target = this.one(
+    let target = this.one(
       "SELECT id, user_id, username, body, created_at FROM chat_messages WHERE id = ?",
       messageId
     );
+    let messageLocation = "Public Locker Room";
+    if (!target) {
+      target = this.one(
+        `SELECT messages.id, messages.user_id, messages.username, messages.body,
+                messages.created_at, messages.conversation_id
+         FROM friend_messages AS messages
+         JOIN friend_conversation_members AS membership
+           ON membership.conversation_id = messages.conversation_id
+         WHERE messages.id = ? AND membership.user_id = ?`,
+        messageId,
+        user.id
+      );
+      messageLocation = "Friend chat";
+    }
     if (!target) return errorResponse("That message is no longer available.", 404);
     if (target.user_id === user.id) return errorResponse("You cannot report your own message.");
     if (this.one(
@@ -888,7 +1250,12 @@ export class AccountStore {
       targetUsername: target.username,
       reason,
       details,
-      context: { message: target.body, messageCreatedAt: Number(target.created_at) },
+      context: {
+        message: target.body,
+        messageCreatedAt: Number(target.created_at),
+        messageLocation,
+        conversationId: target.conversation_id || null,
+      },
     });
     if (reserved.response) return reserved.response;
     const emailText = [
@@ -896,6 +1263,7 @@ export class AccountStore {
       `Reported by: @${user.username}`,
       `Reported player: @${target.username}`,
       `Reason: ${reason}`,
+      `Location: ${messageLocation}`,
       `Message date: ${new Date(Number(target.created_at)).toISOString()}`,
       `Message: ${target.body}`,
       `Additional details: ${details || "None"}`,
@@ -956,7 +1324,7 @@ export class AccountStore {
   async alarm() {
     const now = Date.now();
     this.publishDueLeaderboardEntries(now);
-    await this.ctx.storage.setAlarm(nextCentralMidnight(now));
+    await this.ctx.storage.setAlarm(nextHourlyUpdate(now));
   }
 
   async fetch(request) {
@@ -997,6 +1365,27 @@ export class AccountStore {
       }
       if (url.pathname === "/api/chat" && request.method === "POST") {
         return await this.handleChatWrite(request);
+      }
+      if (url.pathname === "/api/social" && request.method === "GET") {
+        return await this.handleSocialRead(request);
+      }
+      if (url.pathname === "/api/social/follow" && request.method === "POST") {
+        return await this.handleFollowWrite(request, true);
+      }
+      if (url.pathname === "/api/social/unfollow" && request.method === "POST") {
+        return await this.handleFollowWrite(request, false);
+      }
+      if (url.pathname === "/api/friend-chats" && request.method === "GET") {
+        return await this.handleFriendConversationsRead(request);
+      }
+      if (url.pathname === "/api/friend-chats" && request.method === "POST") {
+        return await this.handleFriendConversationCreate(request);
+      }
+      if (url.pathname === "/api/friend-chats/messages" && request.method === "GET") {
+        return await this.handleFriendMessagesRead(request, url);
+      }
+      if (url.pathname === "/api/friend-chats/messages" && request.method === "POST") {
+        return await this.handleFriendMessageWrite(request);
       }
       if (url.pathname === "/api/reports/player" && request.method === "POST") {
         return await this.handlePlayerReport(request);

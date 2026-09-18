@@ -146,8 +146,12 @@ const communityModalEl = document.getElementById("communityModal");
 const communityTitleEl = document.getElementById("communityTitle");
 const communityCloseButtonEl = document.getElementById("communityCloseButton");
 const communityChatModeButtonEl = document.getElementById("communityChatModeButton");
+const communityFriendsModeButtonEl = document.getElementById("communityFriendsModeButton");
+const communityDirectModeButtonEl = document.getElementById("communityDirectModeButton");
 const communityIssueModeButtonEl = document.getElementById("communityIssueModeButton");
 const communityChatPanelEl = document.getElementById("communityChatPanel");
+const communityFriendsPanelEl = document.getElementById("communityFriendsPanel");
+const communityDirectPanelEl = document.getElementById("communityDirectPanel");
 const communityIssuePanelEl = document.getElementById("communityIssuePanel");
 const communityMessagesEl = document.getElementById("communityMessages");
 const communityChatFormEl = document.getElementById("communityChatForm");
@@ -160,8 +164,32 @@ const playerReportUsernameEl = document.getElementById("playerReportUsername");
 const playerReportQuoteEl = document.getElementById("playerReportQuote");
 const playerReportReasonEl = document.getElementById("playerReportReason");
 const playerReportDetailsEl = document.getElementById("playerReportDetails");
+const playerReportMessageEl = document.getElementById("playerReportMessage");
 const playerReportCancelButtonEl = document.getElementById("playerReportCancelButton");
 const playerReportSubmitButtonEl = document.getElementById("playerReportSubmitButton");
+const followPlayerFormEl = document.getElementById("followPlayerForm");
+const followPlayerUsernameEl = document.getElementById("followPlayerUsername");
+const followPlayerSubmitButtonEl = document.getElementById("followPlayerSubmitButton");
+const socialMessageEl = document.getElementById("socialMessage");
+const friendsCountEl = document.getElementById("friendsCount");
+const followingCountEl = document.getElementById("followingCount");
+const followersCountEl = document.getElementById("followersCount");
+const friendsListEl = document.getElementById("friendsList");
+const followingListEl = document.getElementById("followingList");
+const followersListEl = document.getElementById("followersList");
+const friendChatCreateFormEl = document.getElementById("friendChatCreateForm");
+const friendChatUsernamesEl = document.getElementById("friendChatUsernames");
+const friendChatCreateButtonEl = document.getElementById("friendChatCreateButton");
+const friendConversationCountEl = document.getElementById("friendConversationCount");
+const friendConversationListEl = document.getElementById("friendConversationList");
+const friendChatTitleEl = document.getElementById("friendChatTitle");
+const friendChatMembersEl = document.getElementById("friendChatMembers");
+const friendMessagesEl = document.getElementById("friendMessages");
+const friendMessageFormEl = document.getElementById("friendMessageForm");
+const friendMessageInputEl = document.getElementById("friendMessageInput");
+const friendMessageCharacterCountEl = document.getElementById("friendMessageCharacterCount");
+const friendMessageSendButtonEl = document.getElementById("friendMessageSendButton");
+const friendChatMessageEl = document.getElementById("friendChatMessage");
 const issueReportFormEl = document.getElementById("issueReportForm");
 const issueReportCategoryEl = document.getElementById("issueReportCategory");
 const issueReportDetailsEl = document.getElementById("issueReportDetails");
@@ -1471,7 +1499,11 @@ let leaderboardCountdownTimer = null;
 let communityMode = "chat";
 let communityPollTimer = null;
 let chatRefreshPromise = null;
+let socialRefreshPromise = null;
+let friendChatRefreshPromise = null;
+let activeFriendConversationId = "";
 let playerReportTarget = null;
+let playerReportReturnMode = "chat";
 let fieldGoalDeadline = 0;
 let fieldGoalPhase = "idle";
 let fieldGoalPhaseStarted = 0;
@@ -2553,6 +2585,330 @@ function updateCommunityCharacterCount() {
   communityCharacterCountEl.textContent = `${communityMessageInputEl.value.length} / 180`;
 }
 
+function updateFriendMessageCharacterCount() {
+  friendMessageCharacterCountEl.textContent = `${friendMessageInputEl.value.length} / 180`;
+}
+
+function followLabel(message) {
+  if (message.friend) return "Friends";
+  if (message.following) return "Following";
+  if (message.followsYou) return "Follow Back";
+  return "Follow";
+}
+
+async function changeFollow(username, shouldFollow, button = null) {
+  if (button) button.disabled = true;
+  setCommunityStatus(
+    communityMode === "friends" ? socialMessageEl : communityMessageEl,
+    shouldFollow ? `Following @${username}...` : `Unfollowing @${username}...`
+  );
+  try {
+    const relationship = await accountApi(
+      shouldFollow ? "/api/social/follow" : "/api/social/unfollow",
+      { method: "POST", body: JSON.stringify({ username }) }
+    );
+    setCommunityStatus(
+      communityMode === "friends" ? socialMessageEl : communityMessageEl,
+      relationship.friend
+        ? `You and @${username} are now friends.`
+        : relationship.following
+          ? `You are following @${username}.`
+          : `You unfollowed @${username}.`
+    );
+    if (communityMode === "friends") await refreshSocial({ quiet: true });
+    if (communityMode === "chat") await refreshChat({ quiet: true });
+    return relationship;
+  } catch (error) {
+    setCommunityStatus(
+      communityMode === "friends" ? socialMessageEl : communityMessageEl,
+      error.message,
+      true
+    );
+    return null;
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function renderSocialList(element, entries, listType) {
+  element.replaceChildren();
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "community-social-empty";
+    empty.textContent = listType === "friends"
+      ? "Mutual follows will appear here."
+      : listType === "following" ? "You are not following anyone yet." : "No followers yet.";
+    element.appendChild(empty);
+    return;
+  }
+  entries.forEach((entry) => {
+    const row = document.createElement("div");
+    row.className = "community-social-player";
+    const identity = document.createElement("div");
+    const username = document.createElement("strong");
+    username.textContent = `@${entry.username}`;
+    const relationship = document.createElement("span");
+    relationship.textContent = entry.friend
+      ? "Friend"
+      : listType === "followers" ? "Follows you" : "Following";
+    identity.append(username, relationship);
+    const actions = document.createElement("div");
+    actions.className = "community-social-actions";
+    if (entry.friend) {
+      const chatButton = document.createElement("button");
+      chatButton.type = "button";
+      chatButton.className = "community-chat-button";
+      chatButton.textContent = "Chat";
+      chatButton.addEventListener("click", () => startFriendChat([entry.username], chatButton));
+      actions.appendChild(chatButton);
+    }
+    const button = document.createElement("button");
+    button.type = "button";
+    const shouldFollow = listType === "followers" && !entry.following;
+    button.className = shouldFollow ? "community-follow-button" : "community-unfollow-button";
+    button.textContent = shouldFollow ? "Follow Back" : "Unfollow";
+    button.addEventListener("click", () => changeFollow(entry.username, shouldFollow, button));
+    actions.appendChild(button);
+    row.append(identity, actions);
+    element.appendChild(row);
+  });
+}
+
+function renderSocialLists(data) {
+  const friends = Array.isArray(data.friends) ? data.friends : [];
+  const following = Array.isArray(data.following) ? data.following : [];
+  const followers = Array.isArray(data.followers) ? data.followers : [];
+  friendsCountEl.textContent = String(friends.length);
+  followingCountEl.textContent = String(following.length);
+  followersCountEl.textContent = String(followers.length);
+  renderSocialList(friendsListEl, friends, "friends");
+  renderSocialList(followingListEl, following, "following");
+  renderSocialList(followersListEl, followers, "followers");
+}
+
+async function performSocialRefresh({ quiet = false } = {}) {
+  if (!cloudAccount || communityModalEl.hidden || communityMode !== "friends") return;
+  if (!quiet) setCommunityStatus(socialMessageEl, "Loading friends...");
+  try {
+    const data = await accountApi("/api/social");
+    renderSocialLists(data);
+    if (!quiet) setCommunityStatus(socialMessageEl, "Friends list is up to date.");
+  } catch (error) {
+    setCommunityStatus(socialMessageEl, error.message, true);
+  }
+}
+
+function refreshSocial(options) {
+  if (socialRefreshPromise) return socialRefreshPromise;
+  socialRefreshPromise = performSocialRefresh(options).finally(() => {
+    socialRefreshPromise = null;
+  });
+  return socialRefreshPromise;
+}
+
+function friendConversationTitle(conversation) {
+  const otherMembers = conversation.members.filter((username) => username !== cloudAccount?.username);
+  return conversation.type === "direct"
+    ? `@${otherMembers[0] || "friend"}`
+    : otherMembers.map((username) => `@${username}`).join(", ");
+}
+
+function renderFriendConversationList(conversations) {
+  friendConversationListEl.replaceChildren();
+  friendConversationCountEl.textContent = String(conversations.length);
+  if (!conversations.length) {
+    const empty = document.createElement("p");
+    empty.className = "community-social-empty";
+    empty.textContent = "Start a chat with one or more mutual friends.";
+    friendConversationListEl.appendChild(empty);
+    return;
+  }
+  conversations.forEach((conversation) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "friend-conversation-button";
+    button.classList.toggle("selected", conversation.id === activeFriendConversationId);
+    const title = document.createElement("strong");
+    title.textContent = friendConversationTitle(conversation);
+    const count = document.createElement("span");
+    count.textContent = conversation.type === "direct"
+      ? "Direct chat"
+      : `${conversation.members.length} people`;
+    button.append(title, count);
+    button.addEventListener("click", () => selectFriendConversation(conversation.id));
+    friendConversationListEl.appendChild(button);
+  });
+}
+
+function renderFriendMessages(messages) {
+  const shouldStickToBottom = friendMessagesEl.scrollHeight
+    - friendMessagesEl.scrollTop
+    - friendMessagesEl.clientHeight < 50;
+  friendMessagesEl.replaceChildren();
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "community-empty";
+    empty.textContent = "No messages yet. Start the conversation.";
+    friendMessagesEl.appendChild(empty);
+    return;
+  }
+  messages.forEach((message) => {
+    const item = document.createElement("article");
+    item.className = `community-message-item${message.mine ? " mine" : ""}`;
+    const head = document.createElement("div");
+    head.className = "community-message-head";
+    const username = document.createElement("strong");
+    username.textContent = `@${message.username}`;
+    const time = document.createElement("time");
+    time.dateTime = new Date(message.createdAt).toISOString();
+    time.textContent = new Date(message.createdAt).toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    head.append(username, time);
+    const body = document.createElement("p");
+    body.className = "community-message-body";
+    body.textContent = message.body;
+    item.append(head, body);
+    if (!message.mine) {
+      const actions = document.createElement("div");
+      actions.className = "community-message-actions";
+      const reportButton = document.createElement("button");
+      reportButton.type = "button";
+      reportButton.className = "community-report-button";
+      reportButton.textContent = "Report Player";
+      reportButton.addEventListener("click", () => openPlayerReport(message));
+      actions.appendChild(reportButton);
+      item.appendChild(actions);
+    }
+    friendMessagesEl.appendChild(item);
+  });
+  if (shouldStickToBottom || !friendMessagesEl.dataset.loaded) {
+    friendMessagesEl.scrollTop = friendMessagesEl.scrollHeight;
+  }
+  friendMessagesEl.dataset.loaded = "true";
+}
+
+async function refreshActiveFriendConversation({ quiet = false } = {}) {
+  if (!activeFriendConversationId) return;
+  const data = await accountApi(
+    `/api/friend-chats/messages?conversationId=${encodeURIComponent(activeFriendConversationId)}`
+  );
+  friendChatTitleEl.textContent = friendConversationTitle(data.conversation);
+  friendChatMembersEl.textContent = data.conversation.members
+    .map((username) => `@${username}`)
+    .join(" · ");
+  friendMessageFormEl.hidden = false;
+  renderFriendMessages(Array.isArray(data.messages) ? data.messages : []);
+  if (!quiet) setCommunityStatus(friendChatMessageEl, "Friend chat is live.");
+}
+
+async function selectFriendConversation(conversationId) {
+  activeFriendConversationId = conversationId;
+  friendMessagesEl.removeAttribute("data-loaded");
+  setCommunityStatus(friendChatMessageEl, "Opening friend chat...");
+  try {
+    await refreshFriendChats({ quiet: true });
+    friendMessageInputEl.focus();
+  } catch (error) {
+    setCommunityStatus(friendChatMessageEl, error.message, true);
+  }
+}
+
+async function performFriendChatRefresh({ quiet = false } = {}) {
+  if (!cloudAccount || communityModalEl.hidden || communityMode !== "direct") return;
+  if (!quiet) setCommunityStatus(friendChatMessageEl, "Loading friend chats...");
+  const data = await accountApi("/api/friend-chats");
+  const conversations = Array.isArray(data.conversations) ? data.conversations : [];
+  if (activeFriendConversationId
+    && !conversations.some((conversation) => conversation.id === activeFriendConversationId)) {
+    activeFriendConversationId = "";
+  }
+  renderFriendConversationList(conversations);
+  if (activeFriendConversationId) {
+    await refreshActiveFriendConversation({ quiet });
+  } else {
+    friendChatTitleEl.textContent = "Choose a Chat";
+    friendChatMembersEl.textContent = "Your friend messages appear here.";
+    friendMessageFormEl.hidden = true;
+    friendMessagesEl.replaceChildren();
+    const empty = document.createElement("p");
+    empty.className = "community-empty";
+    empty.textContent = "Select a chat or start a new one above.";
+    friendMessagesEl.appendChild(empty);
+    if (!quiet) setCommunityStatus(friendChatMessageEl, "Choose a friend to start chatting.");
+  }
+}
+
+function refreshFriendChats(options) {
+  if (friendChatRefreshPromise) return friendChatRefreshPromise;
+  friendChatRefreshPromise = performFriendChatRefresh(options).catch((error) => {
+    setCommunityStatus(friendChatMessageEl, error.message, true);
+  }).finally(() => {
+    friendChatRefreshPromise = null;
+  });
+  return friendChatRefreshPromise;
+}
+
+async function startFriendChat(usernames, button = null) {
+  if (button) button.disabled = true;
+  communityMode = "direct";
+  try {
+    const data = await accountApi("/api/friend-chats", {
+      method: "POST",
+      body: JSON.stringify({ usernames }),
+    });
+    activeFriendConversationId = data.conversation.id;
+    setCommunityMode("direct");
+    await refreshFriendChats();
+    return data.conversation;
+  } catch (error) {
+    setCommunityMode("direct");
+    setCommunityStatus(friendChatMessageEl, error.message, true);
+    return null;
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function submitFriendChatCreate(event) {
+  event.preventDefault();
+  const usernames = friendChatUsernamesEl.value
+    .split(",")
+    .map((username) => username.trim())
+    .filter(Boolean);
+  friendChatCreateButtonEl.disabled = true;
+  const conversation = await startFriendChat(usernames);
+  if (conversation) friendChatCreateFormEl.reset();
+  friendChatCreateButtonEl.disabled = false;
+}
+
+async function submitFriendMessage(event) {
+  event.preventDefault();
+  if (!activeFriendConversationId) return;
+  friendMessageSendButtonEl.disabled = true;
+  setCommunityStatus(friendChatMessageEl, "Sending...");
+  try {
+    await accountApi("/api/friend-chats/messages", {
+      method: "POST",
+      body: JSON.stringify({
+        conversationId: activeFriendConversationId,
+        message: friendMessageInputEl.value.trim(),
+      }),
+    });
+    friendMessageInputEl.value = "";
+    updateFriendMessageCharacterCount();
+    await refreshFriendChats();
+    friendMessageInputEl.focus();
+  } catch (error) {
+    setCommunityStatus(friendChatMessageEl, error.message, true);
+  } finally {
+    friendMessageSendButtonEl.disabled = false;
+  }
+}
+
 function renderCommunityMessages(messages) {
   const shouldStickToBottom = communityMessagesEl.scrollHeight - communityMessagesEl.scrollTop
     - communityMessagesEl.clientHeight < 60;
@@ -2585,12 +2941,21 @@ function renderCommunityMessages(messages) {
     body.textContent = message.body;
     item.append(head, body);
     if (!message.mine) {
+      const actions = document.createElement("div");
+      actions.className = "community-message-actions";
+      const followButton = document.createElement("button");
+      followButton.type = "button";
+      followButton.className = `community-follow-button${message.following ? " following" : ""}${message.friend ? " friend" : ""}`;
+      followButton.textContent = followLabel(message);
+      followButton.setAttribute("aria-label", `${message.following ? "Unfollow" : "Follow"} ${message.username}`);
+      followButton.addEventListener("click", () => changeFollow(message.username, !message.following, followButton));
       const reportButton = document.createElement("button");
       reportButton.type = "button";
       reportButton.className = "community-report-button";
       reportButton.textContent = "Report Player";
       reportButton.addEventListener("click", () => openPlayerReport(message));
-      item.appendChild(reportButton);
+      actions.append(followButton, reportButton);
+      item.appendChild(actions);
     }
     communityMessagesEl.appendChild(item);
   });
@@ -2624,37 +2989,59 @@ function closePlayerReport() {
   playerReportTarget = null;
   playerReportFormEl.reset();
   playerReportFormEl.hidden = true;
-  communityChatFormEl.hidden = false;
-  setCommunityStatus(communityMessageEl, "Locker Room is live.");
-  communityMessageInputEl.focus();
+  setCommunityMode(playerReportReturnMode);
 }
 
 function openPlayerReport(message) {
   playerReportTarget = message;
+  playerReportReturnMode = communityMode;
   playerReportUsernameEl.textContent = `@${message.username}`;
   playerReportQuoteEl.textContent = `“${message.body}”`;
-  communityChatFormEl.hidden = true;
+  setCommunityStatus(playerReportMessageEl, "Choose why this message should be reviewed.");
+  communityChatPanelEl.hidden = true;
+  communityFriendsPanelEl.hidden = true;
+  communityDirectPanelEl.hidden = true;
+  communityIssuePanelEl.hidden = true;
+  communityTitleEl.textContent = "Report Player";
   playerReportFormEl.hidden = false;
-  setCommunityStatus(communityMessageEl, "Choose why this message should be reviewed.");
   playerReportReasonEl.focus();
 }
 
 function setCommunityMode(mode) {
-  communityMode = mode === "issue" ? "issue" : "chat";
+  communityMode = mode === "issue"
+    ? "issue"
+    : mode === "friends" ? "friends" : mode === "direct" ? "direct" : "chat";
   const showingIssue = communityMode === "issue";
+  const showingFriends = communityMode === "friends";
+  const showingDirect = communityMode === "direct";
+  const showingChat = communityMode === "chat";
   playerReportTarget = null;
   playerReportFormEl.reset();
   playerReportFormEl.hidden = true;
-  communityChatFormEl.hidden = false;
-  communityTitleEl.textContent = showingIssue ? "Report Game Issue" : "Locker Room";
-  communityChatPanelEl.hidden = showingIssue;
+  communityTitleEl.textContent = showingIssue
+    ? "Report Game Issue"
+    : showingFriends ? "Friends" : showingDirect ? "Friend Messages" : "Locker Room";
+  communityChatPanelEl.hidden = !showingChat;
+  communityFriendsPanelEl.hidden = !showingFriends;
+  communityDirectPanelEl.hidden = !showingDirect;
   communityIssuePanelEl.hidden = !showingIssue;
-  communityChatModeButtonEl.classList.toggle("selected", !showingIssue);
+  communityChatModeButtonEl.classList.toggle("selected", showingChat);
+  communityFriendsModeButtonEl.classList.toggle("selected", showingFriends);
+  communityDirectModeButtonEl.classList.toggle("selected", showingDirect);
   communityIssueModeButtonEl.classList.toggle("selected", showingIssue);
-  communityChatModeButtonEl.setAttribute("aria-pressed", String(!showingIssue));
+  communityChatModeButtonEl.setAttribute("aria-pressed", String(showingChat));
+  communityFriendsModeButtonEl.setAttribute("aria-pressed", String(showingFriends));
+  communityDirectModeButtonEl.setAttribute("aria-pressed", String(showingDirect));
   communityIssueModeButtonEl.setAttribute("aria-pressed", String(showingIssue));
   if (showingIssue) {
     issueReportDetailsEl.focus();
+  } else if (showingFriends) {
+    refreshSocial();
+    followPlayerUsernameEl.focus();
+  } else if (showingDirect) {
+    refreshFriendChats();
+    if (activeFriendConversationId) friendMessageInputEl.focus();
+    else friendChatUsernamesEl.focus();
   } else {
     refreshChat();
     communityMessageInputEl.focus();
@@ -2663,7 +3050,12 @@ function setCommunityMode(mode) {
 
 function startCommunityPolling() {
   if (communityPollTimer) clearInterval(communityPollTimer);
-  communityPollTimer = setInterval(() => refreshChat({ quiet: true }), 5000);
+  communityPollTimer = setInterval(() => {
+    if (communityMode === "friends") refreshSocial({ quiet: true });
+    else if (communityMode === "direct") refreshFriendChats({ quiet: true });
+    else if (communityMode === "issue") return;
+    else refreshChat({ quiet: true });
+  }, 5000);
 }
 
 function openCommunity(mode = "chat") {
@@ -2684,7 +3076,6 @@ function closeCommunity() {
   communityPollTimer = null;
   playerReportTarget = null;
   playerReportFormEl.hidden = true;
-  communityChatFormEl.hidden = false;
   communityButtonEl.focus();
 }
 
@@ -2709,11 +3100,23 @@ async function submitCommunityMessage(event) {
   }
 }
 
+async function submitFollowPlayer(event) {
+  event.preventDefault();
+  const username = followPlayerUsernameEl.value.trim();
+  followPlayerSubmitButtonEl.disabled = true;
+  const relationship = await changeFollow(username, true);
+  if (relationship) {
+    followPlayerFormEl.reset();
+    followPlayerUsernameEl.focus();
+  }
+  followPlayerSubmitButtonEl.disabled = false;
+}
+
 async function submitPlayerReport(event) {
   event.preventDefault();
   if (!playerReportTarget) return;
   playerReportSubmitButtonEl.disabled = true;
-  setCommunityStatus(communityMessageEl, "Sending report...");
+  setCommunityStatus(playerReportMessageEl, "Sending report...");
   try {
     const result = await accountApi("/api/reports/player", {
       method: "POST",
@@ -2726,15 +3129,16 @@ async function submitPlayerReport(event) {
     playerReportTarget = null;
     playerReportFormEl.reset();
     playerReportFormEl.hidden = true;
-    communityChatFormEl.hidden = false;
+    const successMessage = result.emailSent
+      ? "Report sent to the Retro Run safety inbox."
+      : "Report saved for review. Email delivery is temporarily unavailable.";
+    setCommunityMode(playerReportReturnMode);
     setCommunityStatus(
-      communityMessageEl,
-      result.emailSent
-        ? "Report sent to the Retro Run safety inbox."
-        : "Report saved for review. Email delivery is temporarily unavailable."
+      playerReportReturnMode === "direct" ? friendChatMessageEl : communityMessageEl,
+      successMessage
     );
   } catch (error) {
-    setCommunityStatus(communityMessageEl, error.message, true);
+    setCommunityStatus(playerReportMessageEl, error.message, true);
   } finally {
     playerReportSubmitButtonEl.disabled = false;
   }
@@ -2829,46 +3233,8 @@ function flushLeaderboardQueue() {
   return leaderboardFlushPromise;
 }
 
-function centralTimeParts(timestamp) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(timestamp));
-  return Object.fromEntries(parts
-    .filter((part) => part.type !== "literal")
-    .map((part) => [part.type, Number(part.value)]));
-}
-
-function centralOffsetMs(timestamp) {
-  const parts = centralTimeParts(timestamp);
-  const roundedTimestamp = Math.floor(timestamp / 1000) * 1000;
-  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
-    - roundedTimestamp;
-}
-
-function centralMidnightUtc(year, month, day) {
-  const wallClock = Date.UTC(year, month - 1, day, 0, 0, 0);
-  let timestamp = wallClock;
-  for (let index = 0; index < 3; index += 1) {
-    timestamp = wallClock - centralOffsetMs(timestamp);
-  }
-  return timestamp;
-}
-
-function nextCentralMidnight(timestamp = Date.now()) {
-  const parts = centralTimeParts(timestamp);
-  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
-  return centralMidnightUtc(
-    nextDay.getUTCFullYear(),
-    nextDay.getUTCMonth() + 1,
-    nextDay.getUTCDate()
-  );
+function nextHourlyUpdate(timestamp = Date.now()) {
+  return Math.floor(timestamp / (60 * 60 * 1000)) * 60 * 60 * 1000 + 60 * 60 * 1000;
 }
 
 function localLeaderboardUpdateLabel(timestamp) {
@@ -2885,7 +3251,7 @@ function localLeaderboardUpdateLabel(timestamp) {
 
 function updateLeaderboardCountdown() {
   if (!leaderboardNextUpdateAt || leaderboardNextUpdateAt <= Date.now()) {
-    leaderboardNextUpdateAt = nextCentralMidnight();
+    leaderboardNextUpdateAt = nextHourlyUpdate();
   }
   const remaining = Math.max(0, leaderboardNextUpdateAt - Date.now());
   const totalSeconds = Math.floor(remaining / 1000);
@@ -2895,7 +3261,7 @@ function updateLeaderboardCountdown() {
   leaderboardCountdownEl.textContent = [hours, minutes, seconds]
     .map((value) => String(value).padStart(2, "0"))
     .join(":");
-  leaderboardLocalTimeEl.textContent = `${localLeaderboardUpdateLabel(leaderboardNextUpdateAt)}. Midnight Central.`;
+  leaderboardLocalTimeEl.textContent = `${localLeaderboardUpdateLabel(leaderboardNextUpdateAt)}. Updates on the hour.`;
 }
 
 function renderLeaderboardRows(entries) {
@@ -2905,7 +3271,7 @@ function renderLeaderboardRows(entries) {
     row.className = "leaderboard-empty-row";
     const cell = document.createElement("td");
     cell.colSpan = 7;
-    cell.textContent = "No published scores yet. Finish a game and check back after midnight Central.";
+    cell.textContent = "No published scores yet. Finish a game and check back at the next hour.";
     row.appendChild(cell);
     leaderboardRowsEl.appendChild(row);
     return;
@@ -2936,7 +3302,7 @@ async function refreshLeaderboard() {
   try {
     await flushLeaderboardQueue();
     const data = await accountApi("/api/leaderboard");
-    leaderboardNextUpdateAt = Number(data.nextUpdateAt) || nextCentralMidnight();
+    leaderboardNextUpdateAt = Number(data.nextUpdateAt) || nextHourlyUpdate();
     renderLeaderboardRows(Array.isArray(data.entries) ? data.entries : []);
     const localPending = readLeaderboardQueue().filter(
       (entry) => entry.username === cloudAccount?.username
@@ -2949,7 +3315,7 @@ async function refreshLeaderboard() {
       : "Sign in and finish a game to enter the next update.";
     leaderboardMessageEl.textContent = data.lastUpdatedAt
       ? `Last published ${new Date(data.lastUpdatedAt).toLocaleString()}.`
-      : "The first scores will publish at the next midnight Central update.";
+      : "The first scores will publish at the next hourly update.";
     updateLeaderboardCountdown();
   } catch (error) {
     leaderboardMessageEl.textContent = error.message;
@@ -2965,7 +3331,7 @@ function openLeaderboard() {
 }
 
 function initializeLeaderboard() {
-  leaderboardNextUpdateAt = nextCentralMidnight();
+  leaderboardNextUpdateAt = nextHourlyUpdate();
   updateLeaderboardCountdown();
   if (typeof setInterval === "function") {
     leaderboardCountdownTimer = setInterval(updateLeaderboardCountdown, 1000);
@@ -2987,7 +3353,7 @@ function renderPostgameScores() {
   const locallyQueued = readLeaderboardQueue().some(
     (entry) => entry.username === cloudAccount.username && entry.playedAt === scores.playedAt
   );
-  postgameScoreStatusEl.textContent = locallyQueued ? "Queued for midnight" : "Leaderboard entered";
+  postgameScoreStatusEl.textContent = locallyQueued ? "Queued for next hour" : "Leaderboard entered";
 }
 
 function refreshCurrentGameAfterCloudSync() {
@@ -9306,9 +9672,15 @@ accountModalEl.addEventListener("click", (event) => {
 });
 communityCloseButtonEl.addEventListener("click", closeCommunity);
 communityChatModeButtonEl.addEventListener("click", () => setCommunityMode("chat"));
+communityFriendsModeButtonEl.addEventListener("click", () => setCommunityMode("friends"));
+communityDirectModeButtonEl.addEventListener("click", () => setCommunityMode("direct"));
 communityIssueModeButtonEl.addEventListener("click", () => setCommunityMode("issue"));
 communityChatFormEl.addEventListener("submit", submitCommunityMessage);
 communityMessageInputEl.addEventListener("input", updateCommunityCharacterCount);
+followPlayerFormEl.addEventListener("submit", submitFollowPlayer);
+friendChatCreateFormEl.addEventListener("submit", submitFriendChatCreate);
+friendMessageFormEl.addEventListener("submit", submitFriendMessage);
+friendMessageInputEl.addEventListener("input", updateFriendMessageCharacterCount);
 playerReportFormEl.addEventListener("submit", submitPlayerReport);
 playerReportCancelButtonEl.addEventListener("click", closePlayerReport);
 issueReportFormEl.addEventListener("submit", submitIssueReport);
