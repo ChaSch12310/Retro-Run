@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260917-cloud-locker-connection-guard" />
+    <link rel="stylesheet" href="styles.css?v=20260927-player-identity-upgrade" />
   </head>
   <body>
     <main class="game-shell">
@@ -1013,24 +1013,33 @@
         </div>
 
         <section id="accountSignedOut">
-          <p class="account-credentials-note">Username + Passcode Only <span>No email required</span></p>
-          <div class="account-mode-switch" aria-label="Account action">
+          <p class="account-credentials-note" id="accountCredentialsNote"><strong id="accountCredentialFields">Tag + Password</strong><span>No email required</span></p>
+          <div class="account-mode-switch" id="accountModeSwitch" aria-label="Account action">
             <button id="accountSigninModeButton" class="account-mode-button selected" type="button" aria-pressed="true">Sign In</button>
             <button id="accountSignupModeButton" class="account-mode-button" type="button" aria-pressed="false">Create Account</button>
           </div>
           <form id="accountForm" class="creator-form account-form">
-            <label class="setup-field">
+            <label class="setup-field" id="accountUsernameField">
               <span class="label">Username</span>
-              <input id="accountUsernameInput" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+              <input id="accountUsernameInput" type="text" minlength="2" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9 _'-]+" autocomplete="nickname" spellcheck="false" />
             </label>
-            <label class="setup-field">
-              <span class="label">Passcode</span>
+            <label class="setup-field" id="accountTagField">
+              <span class="label">Tag</span>
+              <input id="accountTagInput" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+            </label>
+            <label class="setup-field" id="accountPasswordField">
+              <span class="label">Password</span>
               <input id="accountPasscodeInput" type="password" minlength="8" maxlength="128" autocomplete="current-password" required />
             </label>
-            <p class="account-help" id="accountHelpText">Sign in with only your username and passcode. No email required.</p>
+            <label class="setup-field" id="accountConfirmPasswordField" hidden>
+              <span class="label">Confirm Password</span>
+              <input id="accountConfirmPasswordInput" type="password" minlength="8" maxlength="128" autocomplete="new-password" />
+            </label>
+            <p class="account-help" id="accountHelpText">Sign in with your unique tag and password. No email required.</p>
             <p class="account-message" id="accountMessage" role="status" aria-live="polite"></p>
             <a id="accountOnlineLink" class="account-online-link" href="https://preview-retro-run.charlie-45b.workers.dev/" hidden>Open Latest Online Preview</a>
             <button id="accountSubmitButton" type="submit">Sign In</button>
+            <button id="accountProfileSignoutButton" class="secondary-button" type="button" hidden>Sign Out Instead</button>
           </form>
         </section>
 
@@ -1038,6 +1047,7 @@
           <div class="account-profile">
             <span>Signed in as</span>
             <strong id="accountUsernameValue">player</strong>
+            <small id="accountTagValue">@player_tag</small>
           </div>
           <p>Your ten game libraries and all five slots sync automatically. The newest version of each slot is kept.</p>
           <p class="account-message" id="accountSignedInMessage" role="status" aria-live="polite">Cloud saves ready.</p>
@@ -1084,10 +1094,10 @@
         </section>
 
         <section id="communityFriendsPanel" hidden>
-          <p class="community-safety-note">Follow a player by exact username. When two players follow each other, they become friends.</p>
+          <p class="community-safety-note">Follow a player by exact tag. When two players follow each other, they become friends.</p>
           <form id="followPlayerForm" class="community-follow-form">
             <label class="setup-field" for="followPlayerUsername">
-              <span class="label">Player Username</span>
+              <span class="label">Player Tag</span>
               <input id="followPlayerUsername" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="off" placeholder="player_name" required />
             </label>
             <button id="followPlayerSubmitButton" type="submit">Follow Player</button>
@@ -1119,10 +1129,10 @@
         </section>
 
         <section id="communityDirectPanel" hidden>
-          <p class="community-safety-note">Chat privately with mutual friends. Enter one username for a direct chat or up to nine usernames for a group of 10 people total.</p>
+          <p class="community-safety-note">Chat privately with mutual friends. Enter one tag for a direct chat or up to nine tags for a group of 10 people total.</p>
           <form id="friendChatCreateForm" class="community-follow-form community-group-form">
             <label class="setup-field" for="friendChatUsernames">
-              <span class="label">Friend Usernames</span>
+              <span class="label">Friend Tags</span>
               <input id="friendChatUsernames" type="text" maxlength="224" autocomplete="off" placeholder="friend_one, friend_two" required />
             </label>
             <button id="friendChatCreateButton" type="submit">Start Chat</button>
@@ -1185,7 +1195,7 @@
         </form>
 
         <section id="communityIssuePanel" hidden>
-          <p class="community-safety-note">Tell us what went wrong. Your username, selected game, device layout, and screen size are included automatically.</p>
+          <p class="community-safety-note">Tell us what went wrong. Your username and tag, selected game, device layout, and screen size are included automatically.</p>
           <form id="issueReportForm" class="community-report-form">
             <label class="setup-field">
               <span class="label">Issue Type</span>
@@ -1293,8 +1303,8 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260917-cloud-locker-connection-guard"></script>
-    <script src="pocket-dynasty.js?v=20260908-arcade-leaderboard-board-final"></script>
+    <script src="game.js?v=20260927-player-identity-upgrade"></script>
+    <script src="pocket-dynasty.js?v=20260927-player-identity-upgrade"></script>
     <script src="seasonal-profile.js?v=20260908-normal-arcade-restore"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
     <script src="seasonal-games.js?v=20260908-normal-arcade-restore"></script>

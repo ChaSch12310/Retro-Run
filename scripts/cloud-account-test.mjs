@@ -6,6 +6,7 @@ import worker, {
   hashPassword,
   mergeSaveBundles,
   nextHourlyUpdate,
+  normalizeDisplayName,
   normalizeLeaderboardSubmission,
   normalizeSaveBundle,
   normalizeUsername,
@@ -14,6 +15,7 @@ import worker, {
 import siteWorker from "../site-worker.js";
 
 assert.equal(normalizeUsername("  Player_One  "), "player_one");
+assert.equal(normalizeDisplayName("  Player   One  "), "Player One");
 assert.equal(SAVE_KEYS.length, 10);
 assert.equal(Object.keys(LEADERBOARD_GAMES).length, 10);
 
@@ -107,7 +109,7 @@ assert.equal(health.status, 200);
 assert.deepEqual(await health.json(), {
   ok: true,
   service: "retro-run-cloud-saves",
-  usernameOnlyAccounts: true,
+  usernameTagAccounts: true,
 });
 
 let forwardedUrl = "";

@@ -51,7 +51,7 @@ try {
   const initial = await readBoard();
   assert.equal(initial.entries.length, 4);
   assert.deepEqual(initial.entries[0], {
-    username: "alice", playedAt: now - 2000, gameName: LEADERBOARD_GAMES.gridiron,
+    username: "alice", tag: "alice", playedAt: now - 2000, gameName: LEADERBOARD_GAMES.gridiron,
     season: 1, week: 1, tackleScore: 600_000, speedScore: 700_000, fanScore: 800_000,
   });
   assert.ok(initial.entries.some((entry) => entry.username === "alice" && entry.gameName === LEADERBOARD_GAMES.soccer));

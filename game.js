@@ -126,14 +126,24 @@ const accountSignedOutEl = document.getElementById("accountSignedOut");
 const accountSignedInEl = document.getElementById("accountSignedIn");
 const accountSigninModeButtonEl = document.getElementById("accountSigninModeButton");
 const accountSignupModeButtonEl = document.getElementById("accountSignupModeButton");
+const accountModeSwitchEl = document.getElementById("accountModeSwitch");
+const accountCredentialFieldsEl = document.getElementById("accountCredentialFields");
 const accountFormEl = document.getElementById("accountForm");
+const accountUsernameFieldEl = document.getElementById("accountUsernameField");
 const accountUsernameInputEl = document.getElementById("accountUsernameInput");
+const accountTagFieldEl = document.getElementById("accountTagField");
+const accountTagInputEl = document.getElementById("accountTagInput");
+const accountPasswordFieldEl = document.getElementById("accountPasswordField");
 const accountPasscodeInputEl = document.getElementById("accountPasscodeInput");
+const accountConfirmPasswordFieldEl = document.getElementById("accountConfirmPasswordField");
+const accountConfirmPasswordInputEl = document.getElementById("accountConfirmPasswordInput");
 const accountHelpTextEl = document.getElementById("accountHelpText");
 const accountMessageEl = document.getElementById("accountMessage");
 const accountOnlineLinkEl = document.getElementById("accountOnlineLink");
 const accountSubmitButtonEl = document.getElementById("accountSubmitButton");
+const accountProfileSignoutButtonEl = document.getElementById("accountProfileSignoutButton");
 const accountUsernameValueEl = document.getElementById("accountUsernameValue");
+const accountTagValueEl = document.getElementById("accountTagValue");
 const accountSignedInMessageEl = document.getElementById("accountSignedInMessage");
 const accountSignoutButtonEl = document.getElementById("accountSignoutButton");
 const accountSyncButtonEl = document.getElementById("accountSyncButton");
@@ -2499,10 +2509,13 @@ function setCloudSyncStatus(message, state = "") {
 }
 
 function renderCloudAccount() {
-  const signedIn = Boolean(cloudAccount);
-  accountButtonEl.textContent = signedIn ? `@${cloudAccount.username}` : "Sign In";
+  const signedIn = Boolean(cloudAccount?.profileComplete);
+  const profilePending = Boolean(cloudAccount && !cloudAccount.profileComplete);
+  accountButtonEl.textContent = signedIn
+    ? cloudAccount.username
+    : profilePending ? "Finish Account" : "Sign In";
   communityButtonEl.setAttribute("aria-label", signedIn
-    ? `Open Locker Room as ${cloudAccount.username}`
+    ? `Open Locker Room as ${cloudAccount.username} at ${cloudAccount.tag}`
     : "Sign in to open the Locker Room");
   issueReportButtonEl.setAttribute("aria-label", signedIn
     ? "Report a Retro Run game issue"
@@ -2512,11 +2525,15 @@ function renderCloudAccount() {
   if (signedIn) {
     accountTitleEl.textContent = "Cloud Locker";
     accountUsernameValueEl.textContent = cloudAccount.username;
+    accountTagValueEl.textContent = `@${cloudAccount.tag}`;
     accountSyncButtonEl.hidden = cloudSyncState === "saved" || cloudSyncState === "syncing";
     if (cloudSyncState === "saved") setCloudSyncStatus("Cloud saved", "saved");
     else if (cloudSyncState === "syncing") setCloudSyncStatus("Syncing...");
     else if (cloudSyncState === "error") setCloudSyncStatus("Sync paused", "error");
     else setCloudSyncStatus("Cloud saves ready");
+  } else if (profilePending) {
+    setAccountMode("profile");
+    setCloudSyncStatus("Username update required", "error");
   } else {
     accountTitleEl.textContent = accountMode === "signup" ? "Create Account" : "Sign In";
     accountSyncButtonEl.hidden = false;
@@ -2526,18 +2543,39 @@ function renderCloudAccount() {
 }
 
 function setAccountMode(mode) {
-  accountMode = mode === "signup" ? "signup" : "signin";
+  accountMode = mode === "profile" ? "profile" : mode === "signup" ? "signup" : "signin";
+  accountFormEl.dataset.mode = accountMode;
   const creating = accountMode === "signup";
-  accountSigninModeButtonEl.classList.toggle("selected", !creating);
+  const completingProfile = accountMode === "profile";
+  accountModeSwitchEl.hidden = completingProfile;
+  accountSigninModeButtonEl.classList.toggle("selected", !creating && !completingProfile);
   accountSignupModeButtonEl.classList.toggle("selected", creating);
-  accountSigninModeButtonEl.setAttribute("aria-pressed", String(!creating));
+  accountSigninModeButtonEl.setAttribute("aria-pressed", String(!creating && !completingProfile));
   accountSignupModeButtonEl.setAttribute("aria-pressed", String(creating));
-  accountTitleEl.textContent = creating ? "Create Account" : "Sign In";
-  accountSubmitButtonEl.textContent = creating ? "Create Account" : "Sign In";
+  accountUsernameFieldEl.hidden = !creating && !completingProfile;
+  accountTagFieldEl.hidden = completingProfile;
+  accountPasswordFieldEl.hidden = completingProfile;
+  accountConfirmPasswordFieldEl.hidden = !creating;
+  accountUsernameInputEl.required = creating || completingProfile;
+  accountTagInputEl.required = !completingProfile;
+  accountPasscodeInputEl.required = !completingProfile;
+  accountConfirmPasswordInputEl.required = creating;
+  accountProfileSignoutButtonEl.hidden = !completingProfile;
+  accountTitleEl.textContent = completingProfile
+    ? "Choose Your Username"
+    : creating ? "Create Account" : "Sign In";
+  accountSubmitButtonEl.textContent = completingProfile
+    ? "Save Username"
+    : creating ? "Create Account" : "Sign In";
   accountPasscodeInputEl.autocomplete = creating ? "new-password" : "current-password";
-  accountHelpTextEl.textContent = creating
-    ? "Create an account with only a username and passcode. No email required. Passcode recovery is not available yet."
-    : "Sign in with only your username and passcode. No email required.";
+  accountCredentialFieldsEl.textContent = completingProfile
+    ? "One-Time Account Update"
+    : creating ? "Username + Tag + Password" : "Tag + Password";
+  accountHelpTextEl.textContent = completingProfile
+    ? `Keep @${cloudAccount?.tag || "your_tag"} as your sign-in tag and choose a separate username. This can only be set once.`
+    : creating
+      ? "Choose a display username and a unique sign-in tag, then enter and confirm your password. No email required."
+      : "Sign in with your unique tag and password. No email required.";
   accountMessageEl.textContent = "";
   accountMessageEl.classList.remove("error");
   accountOnlineLinkEl.hidden = globalThis.location?.protocol !== "file:";
@@ -2547,6 +2585,8 @@ function openAccountModal() {
   accountModalEl.hidden = false;
   renderCloudAccount();
   if (!cloudAccount) {
+    (accountMode === "signup" ? accountUsernameInputEl : accountTagInputEl).focus();
+  } else if (!cloudAccount.profileComplete) {
     accountUsernameInputEl.focus();
   }
   else (accountSyncButtonEl.hidden ? accountSignoutButtonEl : accountSyncButtonEl).focus();
@@ -2555,6 +2595,7 @@ function openAccountModal() {
 function closeAccountModal() {
   accountModalEl.hidden = true;
   accountPasscodeInputEl.value = "";
+  accountConfirmPasswordInputEl.value = "";
   accountButtonEl.focus();
 }
 
@@ -2610,24 +2651,24 @@ function followLabel(message) {
   return "Follow";
 }
 
-async function changeFollow(username, shouldFollow, button = null) {
+async function changeFollow(tag, shouldFollow, button = null) {
   if (button) button.disabled = true;
   setCommunityStatus(
     communityMode === "friends" ? socialMessageEl : communityMessageEl,
-    shouldFollow ? `Following @${username}...` : `Unfollowing @${username}...`
+    shouldFollow ? `Following @${tag}...` : `Unfollowing @${tag}...`
   );
   try {
     const relationship = await accountApi(
       shouldFollow ? "/api/social/follow" : "/api/social/unfollow",
-      { method: "POST", body: JSON.stringify({ username }) }
+      { method: "POST", body: JSON.stringify({ tag }) }
     );
     setCommunityStatus(
       communityMode === "friends" ? socialMessageEl : communityMessageEl,
       relationship.friend
-        ? `You and @${username} are now friends.`
+        ? `You and @${tag} are now friends.`
         : relationship.following
-          ? `You are following @${username}.`
-          : `You unfollowed @${username}.`
+          ? `You are following @${tag}.`
+          : `You unfollowed @${tag}.`
     );
     if (communityMode === "friends") await refreshSocial({ quiet: true });
     if (communityMode === "chat") await refreshChat({ quiet: true });
@@ -2660,12 +2701,14 @@ function renderSocialList(element, entries, listType) {
     row.className = "community-social-player";
     const identity = document.createElement("div");
     const username = document.createElement("strong");
-    username.textContent = `@${entry.username}`;
+    username.textContent = entry.username;
+    const tag = document.createElement("small");
+    tag.textContent = `@${entry.tag}`;
     const relationship = document.createElement("span");
     relationship.textContent = entry.friend
       ? "Friend"
       : listType === "followers" ? "Follows you" : "Following";
-    identity.append(username, relationship);
+    identity.append(username, tag, relationship);
     const actions = document.createElement("div");
     actions.className = "community-social-actions";
     if (entry.friend) {
@@ -2673,7 +2716,7 @@ function renderSocialList(element, entries, listType) {
       chatButton.type = "button";
       chatButton.className = "community-chat-button";
       chatButton.textContent = "Chat";
-      chatButton.addEventListener("click", () => startFriendChat([entry.username], chatButton));
+      chatButton.addEventListener("click", () => startFriendChat([entry.tag], chatButton));
       actions.appendChild(chatButton);
     }
     const button = document.createElement("button");
@@ -2681,7 +2724,7 @@ function renderSocialList(element, entries, listType) {
     const shouldFollow = listType === "followers" && !entry.following;
     button.className = shouldFollow ? "community-follow-button" : "community-unfollow-button";
     button.textContent = shouldFollow ? "Follow Back" : "Unfollow";
-    button.addEventListener("click", () => changeFollow(entry.username, shouldFollow, button));
+    button.addEventListener("click", () => changeFollow(entry.tag, shouldFollow, button));
     actions.appendChild(button);
     row.append(identity, actions);
     element.appendChild(row);
@@ -2721,7 +2764,7 @@ function refreshSocial(options) {
 }
 
 function friendConversationTitle(conversation) {
-  const otherMembers = conversation.members.filter((username) => username !== cloudAccount?.username);
+  const otherMembers = conversation.members.filter((tag) => tag !== cloudAccount?.tag);
   return conversation.type === "direct"
     ? `@${otherMembers[0] || "friend"}`
     : otherMembers.map((username) => `@${username}`).join(", ");
@@ -2772,7 +2815,9 @@ function renderFriendMessages(messages) {
     const head = document.createElement("div");
     head.className = "community-message-head";
     const username = document.createElement("strong");
-    username.textContent = `@${message.username}`;
+    username.textContent = message.tag && message.tag !== message.username
+      ? `${message.username} @${message.tag}`
+      : message.username;
     const time = document.createElement("time");
     time.dateTime = new Date(message.createdAt).toISOString();
     time.textContent = new Date(message.createdAt).toLocaleString([], {
@@ -2872,7 +2917,7 @@ async function startFriendChat(usernames, button = null) {
   try {
     const data = await accountApi("/api/friend-chats", {
       method: "POST",
-      body: JSON.stringify({ usernames }),
+      body: JSON.stringify({ tags: usernames }),
     });
     activeFriendConversationId = data.conversation.id;
     setCommunityMode("direct");
@@ -2940,7 +2985,9 @@ function renderCommunityMessages(messages) {
     const head = document.createElement("div");
     head.className = "community-message-head";
     const username = document.createElement("strong");
-    username.textContent = `@${message.username}`;
+    username.textContent = message.tag && message.tag !== message.username
+      ? `${message.username} @${message.tag}`
+      : message.username;
     const time = document.createElement("time");
     time.dateTime = new Date(message.createdAt).toISOString();
     time.textContent = new Date(message.createdAt).toLocaleString([], {
@@ -2961,8 +3008,8 @@ function renderCommunityMessages(messages) {
       followButton.type = "button";
       followButton.className = `community-follow-button${message.following ? " following" : ""}${message.friend ? " friend" : ""}`;
       followButton.textContent = followLabel(message);
-      followButton.setAttribute("aria-label", `${message.following ? "Unfollow" : "Follow"} ${message.username}`);
-      followButton.addEventListener("click", () => changeFollow(message.username, !message.following, followButton));
+      followButton.setAttribute("aria-label", `${message.following ? "Unfollow" : "Follow"} ${message.tag}`);
+      followButton.addEventListener("click", () => changeFollow(message.tag, !message.following, followButton));
       const reportButton = document.createElement("button");
       reportButton.type = "button";
       reportButton.className = "community-report-button";
@@ -3009,7 +3056,9 @@ function closePlayerReport() {
 function openPlayerReport(message) {
   playerReportTarget = message;
   playerReportReturnMode = communityMode;
-  playerReportUsernameEl.textContent = `@${message.username}`;
+  playerReportUsernameEl.textContent = message.tag
+    ? `${message.username} @${message.tag}`
+    : message.username;
   playerReportQuoteEl.textContent = `“${message.body}”`;
   setCommunityStatus(playerReportMessageEl, "Choose why this message should be reviewed.");
   communityChatPanelEl.hidden = true;
@@ -3073,9 +3122,12 @@ function startCommunityPolling() {
 }
 
 function openCommunity(mode = "chat") {
-  if (!cloudAccount) {
+  if (!cloudAccount?.profileComplete) {
     openAccountModal();
-    setCommunityStatus(accountMessageEl, "Sign in to use the Locker Room and report issues.");
+    setCommunityStatus(
+      accountMessageEl,
+      cloudAccount ? "Choose your username before using the Locker Room." : "Sign in to use the Locker Room and report issues."
+    );
     return;
   }
   communityModalEl.hidden = false;
@@ -3116,9 +3168,9 @@ async function submitCommunityMessage(event) {
 
 async function submitFollowPlayer(event) {
   event.preventDefault();
-  const username = followPlayerUsernameEl.value.trim();
+  const tag = followPlayerUsernameEl.value.trim();
   followPlayerSubmitButtonEl.disabled = true;
-  const relationship = await changeFollow(username, true);
+  const relationship = await changeFollow(tag, true);
   if (relationship) {
     followPlayerFormEl.reset();
     followPlayerUsernameEl.focus();
@@ -3201,11 +3253,11 @@ function writeLeaderboardQueue(queue) {
 }
 
 function queueLeaderboardScore(entry) {
-  if (!cloudAccount) return false;
+  if (!cloudAccount?.profileComplete) return false;
   const queue = readLeaderboardQueue();
   queue.push({
     ...entry,
-    username: cloudAccount.username,
+    accountTag: cloudAccount.tag,
     clientEntryId: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   });
   writeLeaderboardQueue(queue);
@@ -3214,12 +3266,12 @@ function queueLeaderboardScore(entry) {
 }
 
 async function performLeaderboardFlush() {
-  if (!cloudAccount || typeof fetch !== "function") return false;
-  const username = cloudAccount.username;
+  if (!cloudAccount?.profileComplete || typeof fetch !== "function") return false;
+  const accountTag = cloudAccount.tag;
   const queue = readLeaderboardQueue();
   const remaining = [];
   for (const entry of queue) {
-    if (entry.username !== username) {
+    if ((entry.accountTag || entry.username) !== accountTag) {
       remaining.push(entry);
       continue;
     }
@@ -3294,7 +3346,7 @@ function renderLeaderboardRows(entries) {
     const row = document.createElement("tr");
     const values = [
       index + 1,
-      `@${entry.username}`,
+      entry.tag && entry.tag !== entry.username ? `${entry.username} @${entry.tag}` : entry.username,
       new Date(entry.playedAt).toLocaleDateString(),
       entry.gameName,
       formatNumber(entry.tackleScore),
@@ -3319,10 +3371,10 @@ async function refreshLeaderboard() {
     leaderboardNextUpdateAt = Number(data.nextUpdateAt) || nextHourlyUpdate();
     renderLeaderboardRows(Array.isArray(data.entries) ? data.entries : []);
     const localPending = readLeaderboardQueue().filter(
-      (entry) => entry.username === cloudAccount?.username
+      (entry) => (entry.accountTag || entry.username) === cloudAccount?.tag
     ).length;
     const pendingCount = (Number(data.pendingCount) || 0) + localPending;
-    leaderboardQueueStatusEl.textContent = cloudAccount
+    leaderboardQueueStatusEl.textContent = cloudAccount?.profileComplete
       ? (pendingCount === 1
         ? "1 score is queued for the next update."
         : `${pendingCount} scores are queued for the next update.`)
@@ -3360,12 +3412,12 @@ function renderPostgameScores() {
   postgameTackleScoreEl.textContent = formatNumber(scores.tackleScore);
   postgameSpeedScoreEl.textContent = formatNumber(scores.speedScore);
   postgameFanScoreEl.textContent = formatNumber(scores.fanScore);
-  if (!cloudAccount) {
+  if (!cloudAccount?.profileComplete) {
     postgameScoreStatusEl.textContent = "Sign in to enter";
     return;
   }
   const locallyQueued = readLeaderboardQueue().some(
-    (entry) => entry.username === cloudAccount.username && entry.playedAt === scores.playedAt
+    (entry) => (entry.accountTag || entry.username) === cloudAccount.tag && entry.playedAt === scores.playedAt
   );
   postgameScoreStatusEl.textContent = locallyQueued ? "Queued for next hour" : "Leaderboard entered";
 }
@@ -3407,7 +3459,7 @@ async function performCloudSync(manual = false) {
 }
 
 async function syncCloudSaves({ manual = false } = {}) {
-  if (!cloudAccount || typeof fetch !== "function") return false;
+  if (!cloudAccount?.profileComplete || typeof fetch !== "function") return false;
   if (cloudSyncPromise) {
     cloudSyncQueued = true;
     return cloudSyncPromise;
@@ -3434,7 +3486,7 @@ async function syncCloudSaves({ manual = false } = {}) {
 }
 
 function scheduleCloudSync() {
-  if (!cloudAccount || typeof setTimeout !== "function") return;
+  if (!cloudAccount?.profileComplete || typeof setTimeout !== "function") return;
   if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => {
     cloudSyncTimer = null;
@@ -3444,24 +3496,48 @@ function scheduleCloudSync() {
 
 async function submitCloudAccount(event) {
   event.preventDefault();
-  const username = accountUsernameInputEl.value.trim().toLowerCase();
-  const passcode = accountPasscodeInputEl.value;
-  accountMessageEl.textContent = accountMode === "signup" ? "Creating account..." : "Signing in...";
+  const username = accountUsernameInputEl.value.trim();
+  const tag = accountTagInputEl.value.trim().toLowerCase();
+  const password = accountPasscodeInputEl.value;
+  const confirmPassword = accountConfirmPasswordInputEl.value;
+  accountMessageEl.textContent = accountMode === "profile"
+    ? "Saving your username..."
+    : accountMode === "signup" ? "Creating account..." : "Signing in...";
   accountMessageEl.classList.remove("error");
   accountSubmitButtonEl.disabled = true;
   try {
-    const result = await accountApi(`/api/auth/${accountMode}`, {
-      method: "POST",
-      body: JSON.stringify({ username, passcode }),
-    });
-    cloudAccount = { username: result.username };
+    const result = await accountApi(
+      accountMode === "profile" ? "/api/auth/profile" : `/api/auth/${accountMode}`,
+      {
+        method: "POST",
+        body: JSON.stringify(accountMode === "profile"
+          ? { username }
+          : accountMode === "signup"
+            ? { username, tag, password, confirmPassword }
+            : { tag, password }),
+      }
+    );
+    cloudAccount = {
+      username: result.username || "",
+      tag: result.tag || tag,
+      profileComplete: Boolean(result.profileComplete),
+    };
     accountOnlineLinkEl.hidden = true;
-    cloudSyncState = "syncing";
+    cloudSyncState = cloudAccount.profileComplete ? "syncing" : "local";
     accountPasscodeInputEl.value = "";
+    accountConfirmPasswordInputEl.value = "";
     accountSignedInMessageEl.classList.remove("error");
+    if (!cloudAccount.profileComplete) {
+      setAccountMode("profile");
+      renderCloudAccount();
+      accountUsernameInputEl.focus();
+      return;
+    }
     accountSignedInMessageEl.textContent = accountMode === "signup"
       ? "Account created. Uploading your local saves..."
-      : "Signed in. Merging your newest saves...";
+      : accountMode === "profile"
+        ? "Username saved. Merging your newest saves..."
+        : "Signed in. Merging your newest saves...";
     renderCloudAccount();
     await syncCloudSaves({ manual: true });
     await flushLeaderboardQueue();
@@ -3478,8 +3554,10 @@ async function submitCloudAccount(event) {
 async function signOutCloudAccount() {
   accountSignoutButtonEl.disabled = true;
   if (!communityModalEl.hidden) closeCommunity();
-  await syncCloudSaves();
-  await flushLeaderboardQueue();
+  if (cloudAccount?.profileComplete) {
+    await syncCloudSaves();
+    await flushLeaderboardQueue();
+  }
   try {
     await accountApi("/api/auth/signout", { method: "POST" });
   } catch {
@@ -3501,12 +3579,18 @@ async function initializeCloudAccount() {
   try {
     const session = await accountApi("/api/auth/session");
     if (session.authenticated) {
-      cloudAccount = { username: session.username };
-      cloudSyncState = "syncing";
+      cloudAccount = {
+        username: session.username || "",
+        tag: session.tag || "",
+        profileComplete: Boolean(session.profileComplete),
+      };
+      cloudSyncState = cloudAccount.profileComplete ? "syncing" : "local";
       renderCloudAccount();
-      await syncCloudSaves();
-      await flushLeaderboardQueue();
-      await refreshLeaderboard();
+      if (cloudAccount.profileComplete) {
+        await syncCloudSaves();
+        await flushLeaderboardQueue();
+        await refreshLeaderboard();
+      }
     }
   } catch {
     setCloudSyncStatus("Offline - local saves", "error");
@@ -9682,6 +9766,7 @@ accountSigninModeButtonEl.addEventListener("click", () => setAccountMode("signin
 accountSignupModeButtonEl.addEventListener("click", () => setAccountMode("signup"));
 accountFormEl.addEventListener("submit", submitCloudAccount);
 accountSignoutButtonEl.addEventListener("click", signOutCloudAccount);
+accountProfileSignoutButtonEl.addEventListener("click", signOutCloudAccount);
 accountSyncButtonEl.addEventListener("click", () => syncCloudSaves({ manual: true }));
 accountModalEl.addEventListener("click", (event) => {
   if (event.target === accountModalEl) closeAccountModal();

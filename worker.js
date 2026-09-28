@@ -110,18 +110,45 @@ export function normalizeUsername(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function usernameError(username) {
-  if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-    return "Username must be 3-24 characters using letters, numbers, or underscores.";
+export function normalizeDisplayName(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function tagError(tag) {
+  if (!/^[a-z0-9_]{3,24}$/.test(tag)) {
+    return "Tag must be 3-24 characters using letters, numbers, or underscores.";
   }
   return "";
 }
 
-function passcodeError(passcode) {
-  if (typeof passcode !== "string" || passcode.length < 8 || passcode.length > 128) {
-    return "Passcode must be 8-128 characters.";
+function displayNameError(username, tag = "") {
+  if (!/^[A-Za-z0-9][A-Za-z0-9 _'-]{1,23}$/.test(username)) {
+    return "Username must be 2-24 characters using letters, numbers, spaces, underscores, apostrophes, or hyphens.";
+  }
+  if (tag && username.toLowerCase() === tag.toLowerCase()) {
+    return "Your username must be different from your tag.";
   }
   return "";
+}
+
+function passwordError(password) {
+  if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+    return "Password must be 8-128 characters.";
+  }
+  return "";
+}
+
+function passwordFromBody(body) {
+  return typeof body.password === "string" ? body.password : body.passcode;
+}
+
+function accountIdentity(user) {
+  const username = normalizeDisplayName(user?.display_name);
+  return {
+    username,
+    tag: user?.tag || user?.username || "",
+    profileComplete: Boolean(username),
+  };
 }
 
 export async function hashPassword(password, salt = null) {
@@ -318,6 +345,7 @@ export class AccountStore {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE COLLATE NOCASE,
         username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        display_name TEXT,
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         created_at INTEGER NOT NULL
@@ -432,7 +460,19 @@ export class AccountStore {
         ON friend_messages(conversation_id, created_at);
       CREATE INDEX IF NOT EXISTS friend_messages_user_created
         ON friend_messages(user_id, created_at);
+      CREATE TABLE IF NOT EXISTS _sql_schema_migrations (
+        id INTEGER PRIMARY KEY,
+        applied_at INTEGER NOT NULL
+      );
     `);
+    const userColumns = this.sql.exec("PRAGMA table_info(users)").toArray();
+    if (!userColumns.some((column) => column.name === "display_name")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN display_name TEXT");
+    }
+    this.sql.exec(
+      "INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (2, ?)",
+      Date.now()
+    );
     this.removeUnsupportedLeaderboardEntries();
   }
 
@@ -504,7 +544,7 @@ export class AccountStore {
     const tokenHash = await sha256(token);
     const now = Date.now();
     const user = this.one(
-      `SELECT users.id, users.username, sessions.expires_at
+      `SELECT users.id, users.username AS tag, users.display_name, sessions.expires_at
        FROM sessions JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ?`,
       tokenHash
@@ -513,7 +553,13 @@ export class AccountStore {
       this.sql.exec("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
       return null;
     }
-    return { id: user.id, username: user.username, tokenHash };
+    return { id: user.id, ...accountIdentity(user), tokenHash };
+  }
+
+  requireCompleteProfile(user) {
+    return user.profileComplete
+      ? null
+      : errorResponse("Add your separate username to finish updating your account.", 428);
   }
 
   async handleSignup(request) {
@@ -524,25 +570,33 @@ export class AccountStore {
       });
     }
     const body = await readJson(request);
-    const username = normalizeUsername(body.username);
-    const usernameMessage = usernameError(username);
-    const passcodeMessage = passcodeError(body.passcode);
-    if (usernameMessage || passcodeMessage) {
-      return errorResponse(usernameMessage || passcodeMessage);
+    const username = normalizeDisplayName(body.username);
+    const tag = normalizeUsername(body.tag);
+    const password = passwordFromBody(body);
+    const usernameMessage = displayNameError(username, tag);
+    const tagMessage = tagError(tag);
+    const passwordMessage = passwordError(password);
+    if (usernameMessage || tagMessage || passwordMessage) {
+      return errorResponse(usernameMessage || tagMessage || passwordMessage);
     }
-    if (this.one("SELECT id FROM users WHERE username = ?", username)) {
-      return errorResponse("That username is already taken.", 409);
+    const confirmation = typeof body.confirmPassword === "string"
+      ? body.confirmPassword
+      : body.confirmPasscode;
+    if (password !== confirmation) return errorResponse("Passwords do not match.");
+    if (this.one("SELECT id FROM users WHERE username = ?", tag)) {
+      return errorResponse("That tag is already taken.", 409);
     }
-    const credentials = await hashPassword(body.passcode);
+    const credentials = await hashPassword(password);
     const userId = crypto.randomUUID();
     const now = Date.now();
-    const legacyEmailPlaceholder = `${username}@accounts.retrorun.invalid`;
+    const legacyEmailPlaceholder = `${tag}@accounts.retrorun.invalid`;
     this.sql.exec(
       `INSERT INTO users (
-         id, email, username, password_salt, password_hash, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?)`,
+         id, email, username, display_name, password_salt, password_hash, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       userId,
       legacyEmailPlaceholder,
+      tag,
       username,
       credentials.salt,
       credentials.hash,
@@ -551,7 +605,7 @@ export class AccountStore {
     const token = await this.createSession(userId);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
-      { authenticated: true, username },
+      { authenticated: true, username, tag, profileComplete: true },
       201,
       { "Set-Cookie": sessionCookie(token) }
     );
@@ -565,23 +619,46 @@ export class AccountStore {
       });
     }
     const body = await readJson(request);
-    const username = normalizeUsername(body.username);
+    const tag = normalizeUsername(body.tag || body.username);
+    const password = passwordFromBody(body);
     const user = this.one(
-      `SELECT id, username, password_salt, password_hash FROM users
+      `SELECT id, username AS tag, display_name, password_salt, password_hash FROM users
        WHERE username = ?`,
-      username
+      tag
     );
-    const valid = user && typeof body.passcode === "string"
-      ? await verifyPassword(body.passcode, user.password_salt, user.password_hash)
+    const valid = user && typeof password === "string"
+      ? await verifyPassword(password, user.password_salt, user.password_hash)
       : false;
-    if (!valid) return errorResponse("Incorrect username or passcode.", 401);
+    if (!valid) return errorResponse("Incorrect tag or password.", 401);
     const token = await this.createSession(user.id);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
-      { authenticated: true, username: user.username },
+      { authenticated: true, ...accountIdentity(user) },
       200,
       { "Set-Cookie": sessionCookie(token) }
     );
+  }
+
+  async handleProfileUpdate(request) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to finish updating your account.", 401);
+    if (user.profileComplete) return errorResponse("Your username is already set.", 409);
+    const body = await readJson(request);
+    const username = normalizeDisplayName(body.username);
+    const message = displayNameError(username, user.tag);
+    if (message) return errorResponse(message);
+    this.sql.exec(
+      `UPDATE users SET display_name = ?
+       WHERE id = ? AND (display_name IS NULL OR trim(display_name) = '')`,
+      username,
+      user.id
+    );
+    const updated = this.one(
+      "SELECT id, username AS tag, display_name FROM users WHERE id = ?",
+      user.id
+    );
+    if (!updated?.display_name) return errorResponse("Your username could not be saved.", 409);
+    return jsonResponse({ authenticated: true, ...accountIdentity(updated) });
   }
 
   async handleSignout(request) {
@@ -597,6 +674,8 @@ export class AccountStore {
   async handleSaveRead(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to use cloud saves.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const saved = this.one("SELECT payload, updated_at FROM saves WHERE user_id = ?", user.id);
     const saves = saved ? normalizeSaveBundle(JSON.parse(saved.payload)) : normalizeSaveBundle(null);
     return jsonResponse({ saves, updatedAt: saved?.updated_at || 0 });
@@ -605,6 +684,8 @@ export class AccountStore {
   async handleSaveWrite(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to use cloud saves.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const body = await readJson(request);
     const incoming = normalizeSaveBundle(body.saves);
     const saved = this.one("SELECT payload FROM saves WHERE user_id = ?", user.id);
@@ -675,11 +756,15 @@ export class AccountStore {
          WHERE published_at IS NOT NULL
          AND game_id IN (${LEADERBOARD_GAME_PLACEHOLDERS})
        )
-       SELECT username, played_at, game_id, season, week,
+       SELECT COALESCE(NULLIF(users.display_name, ''), personal_bests.username) AS display_name,
+              COALESCE(users.username, personal_bests.username) AS tag,
+              played_at, game_id, season, week,
               game_score, player_score, franchise_score
        FROM personal_bests
+       LEFT JOIN users ON users.id = personal_bests.user_id
        WHERE personal_rank = 1
-       ORDER BY (game_score + player_score + franchise_score) DESC, played_at ASC, id ASC
+       ORDER BY (game_score + player_score + franchise_score) DESC,
+                personal_bests.played_at ASC, personal_bests.id ASC
        LIMIT 25`,
       ...LEADERBOARD_GAME_IDS
     ).toArray();
@@ -703,7 +788,8 @@ export class AccountStore {
     if (Number(pendingAny?.count) > 0) await this.scheduleLeaderboardAlarm(nextUpdateAt);
     return jsonResponse({
       entries: rows.map((row) => ({
-        username: row.username,
+        username: row.display_name,
+        tag: row.tag,
         playedAt: Number(row.played_at),
         gameName: LEADERBOARD_GAMES[row.game_id],
         season: Number(row.season),
@@ -721,6 +807,8 @@ export class AccountStore {
   async handleLeaderboardWrite(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to enter the leaderboard.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const now = Date.now();
     const recent = this.one(
       "SELECT COUNT(*) AS count FROM leaderboard_entries WHERE user_id = ? AND submitted_at >= ?",
@@ -816,8 +904,10 @@ export class AccountStore {
   async handleSocialRead(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to view friends and followers.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const following = this.sql.exec(
-      `SELECT users.username, follows.created_at,
+      `SELECT users.username AS tag, users.display_name, follows.created_at,
               EXISTS(
                 SELECT 1 FROM follows AS reverse_follow
                 WHERE reverse_follow.follower_user_id = follows.followed_user_id
@@ -825,18 +915,19 @@ export class AccountStore {
               ) AS follows_you
        FROM follows JOIN users ON users.id = follows.followed_user_id
        WHERE follows.follower_user_id = ?
-       ORDER BY users.username COLLATE NOCASE ASC
+       ORDER BY users.display_name COLLATE NOCASE ASC, users.username COLLATE NOCASE ASC
        LIMIT ?`,
       user.id,
       MAX_FOLLOWS
     ).toArray().map((entry) => ({
-      username: entry.username,
+      username: entry.display_name || entry.tag,
+      tag: entry.tag,
       followedAt: Number(entry.created_at),
       followsYou: Boolean(entry.follows_you),
       friend: Boolean(entry.follows_you),
     }));
     const followers = this.sql.exec(
-      `SELECT users.username, follows.created_at,
+      `SELECT users.username AS tag, users.display_name, follows.created_at,
               EXISTS(
                 SELECT 1 FROM follows AS reverse_follow
                 WHERE reverse_follow.follower_user_id = follows.followed_user_id
@@ -844,18 +935,20 @@ export class AccountStore {
               ) AS following
        FROM follows JOIN users ON users.id = follows.follower_user_id
        WHERE follows.followed_user_id = ?
-       ORDER BY users.username COLLATE NOCASE ASC
+       ORDER BY users.display_name COLLATE NOCASE ASC, users.username COLLATE NOCASE ASC
        LIMIT ?`,
       user.id,
       MAX_FOLLOWS
     ).toArray().map((entry) => ({
-      username: entry.username,
+      username: entry.display_name || entry.tag,
+      tag: entry.tag,
       followedAt: Number(entry.created_at),
       following: Boolean(entry.following),
       friend: Boolean(entry.following),
     }));
     return jsonResponse({
       username: user.username,
+      tag: user.tag,
       friends: following.filter((entry) => entry.friend),
       following,
       followers,
@@ -866,14 +959,23 @@ export class AccountStore {
   async handleFollowWrite(request, shouldFollow) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to follow players.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const body = await readJson(request);
-    const username = normalizeUsername(body.username);
-    const target = this.one("SELECT id, username FROM users WHERE username = ?", username);
+    const tag = normalizeUsername(body.tag || body.username);
+    const target = this.one(
+      "SELECT id, username AS tag, display_name FROM users WHERE username = ?",
+      tag
+    );
     if (!target) return errorResponse("That player was not found.", 404);
     if (target.id === user.id) return errorResponse("You cannot follow yourself.");
     const current = this.relationship(user.id, target.id);
     if (current.following === shouldFollow) {
-      return jsonResponse({ username: target.username, ...current });
+      return jsonResponse({
+        username: target.display_name || target.tag,
+        tag: target.tag,
+        ...current,
+      });
     }
     if (shouldFollow) {
       const count = this.one(
@@ -903,7 +1005,8 @@ export class AccountStore {
       );
     }
     return jsonResponse({
-      username: target.username,
+      username: target.display_name || target.tag,
+      tag: target.tag,
       ...this.relationship(user.id, target.id),
     }, shouldFollow ? 201 : 200);
   }
@@ -911,8 +1014,13 @@ export class AccountStore {
   async handleChatRead(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to open the Locker Room.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const messages = this.sql.exec(
-      `SELECT messages.id, messages.username, messages.body, messages.created_at,
+      `SELECT messages.id, messages.user_id,
+              COALESCE(NULLIF(users.display_name, ''), messages.username) AS display_name,
+              COALESCE(users.username, messages.username) AS tag,
+              messages.body, messages.created_at,
               EXISTS(
                 SELECT 1 FROM follows
                 WHERE follower_user_id = ? AND followed_user_id = messages.user_id
@@ -922,6 +1030,7 @@ export class AccountStore {
                 WHERE follower_user_id = messages.user_id AND followed_user_id = ?
               ) AS follows_you
        FROM chat_messages AS messages
+       LEFT JOIN users ON users.id = messages.user_id
        ORDER BY messages.created_at DESC, messages.id DESC
        LIMIT ?`,
       user.id,
@@ -931,15 +1040,17 @@ export class AccountStore {
     return jsonResponse({
       messages: messages.map((message) => ({
         id: message.id,
-        username: message.username,
+        username: message.display_name,
+        tag: message.tag,
         body: message.body,
         createdAt: Number(message.created_at),
-        mine: message.username === user.username,
+        mine: message.user_id === user.id,
         following: Boolean(message.following),
         followsYou: Boolean(message.follows_you),
         friend: Boolean(message.following) && Boolean(message.follows_you),
       })),
       username: user.username,
+      tag: user.tag,
       maximumLength: MAX_CHAT_MESSAGE_LENGTH,
     });
   }
@@ -947,6 +1058,8 @@ export class AccountStore {
   async handleChatWrite(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to send Locker Room messages.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const now = Date.now();
     if (this.recentMessageCount(user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
       return errorResponse("You're sending messages too quickly. Wait a minute and try again.", 429);
@@ -972,7 +1085,14 @@ export class AccountStore {
       now - CHAT_RETENTION_MS
     );
     return jsonResponse({
-      message: { id, username: user.username, body: message, createdAt: now, mine: true },
+      message: {
+        id,
+        username: user.username,
+        tag: user.tag,
+        body: message,
+        createdAt: now,
+        mine: true,
+      },
     }, 201);
   }
 
@@ -1008,6 +1128,8 @@ export class AccountStore {
   async handleFriendConversationsRead(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to open friend messages.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const conversations = this.sql.exec(
       `SELECT conversations.id
        FROM friend_conversations AS conversations
@@ -1028,25 +1150,27 @@ export class AccountStore {
   async handleFriendConversationCreate(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to message friends.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const body = await readJson(request);
-    const usernames = [...new Set(
-      (Array.isArray(body.usernames) ? body.usernames : [])
+    const tags = [...new Set(
+      (Array.isArray(body.tags) ? body.tags : Array.isArray(body.usernames) ? body.usernames : [])
         .map(normalizeUsername)
         .filter(Boolean)
     )];
-    if (usernames.length < 1) return errorResponse("Choose at least one friend.");
-    if (usernames.length > MAX_FRIEND_CHAT_MEMBERS - 1) {
+    if (tags.length < 1) return errorResponse("Choose at least one friend.");
+    if (tags.length > MAX_FRIEND_CHAT_MEMBERS - 1) {
       return errorResponse(`Friend chats can include up to ${MAX_FRIEND_CHAT_MEMBERS} people.`, 409);
     }
-    if (usernames.includes(user.username)) return errorResponse("You are already included in the chat.");
-    const placeholders = usernames.map(() => "?").join(", ");
+    if (tags.includes(user.tag)) return errorResponse("You are already included in the chat.");
+    const placeholders = tags.map(() => "?").join(", ");
     const targets = this.sql.exec(
       `SELECT id, username FROM users WHERE username IN (${placeholders})`,
-      ...usernames
+      ...tags
     ).toArray();
-    if (targets.length !== usernames.length) return errorResponse("One or more players were not found.", 404);
+    if (targets.length !== tags.length) return errorResponse("One or more players were not found.", 404);
     const targetByUsername = new Map(targets.map((target) => [target.username, target]));
-    const orderedTargets = usernames.map((username) => targetByUsername.get(username));
+    const orderedTargets = tags.map((tag) => targetByUsername.get(tag));
     if (orderedTargets.some((target) => !this.relationship(user.id, target.id).friend)) {
       return errorResponse("You can only start chats with mutual friends.", 403);
     }
@@ -1090,23 +1214,30 @@ export class AccountStore {
   async handleFriendMessagesRead(request, url) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to read friend messages.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const conversationId = String(url.searchParams.get("conversationId") || "");
     const conversation = this.friendConversation(user.id, conversationId);
     if (!conversation) return errorResponse("That friend chat was not found.", 404);
     const messages = this.sql.exec(
-      `SELECT id, username, body, created_at
-       FROM friend_messages
-       WHERE conversation_id = ?
-       ORDER BY created_at DESC, id DESC
+      `SELECT messages.id, messages.user_id,
+              COALESCE(NULLIF(users.display_name, ''), messages.username) AS display_name,
+              COALESCE(users.username, messages.username) AS tag,
+              messages.body, messages.created_at
+       FROM friend_messages AS messages
+       LEFT JOIN users ON users.id = messages.user_id
+       WHERE messages.conversation_id = ?
+       ORDER BY messages.created_at DESC, messages.id DESC
        LIMIT ?`,
       conversationId,
       CHAT_HISTORY_LIMIT
     ).toArray().reverse().map((message) => ({
       id: message.id,
-      username: message.username,
+      username: message.display_name,
+      tag: message.tag,
       body: message.body,
       createdAt: Number(message.created_at),
-      mine: message.username === user.username,
+      mine: message.user_id === user.id,
     }));
     return jsonResponse({ conversation, messages, maximumLength: MAX_CHAT_MESSAGE_LENGTH });
   }
@@ -1114,6 +1245,8 @@ export class AccountStore {
   async handleFriendMessageWrite(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to message friends.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const now = Date.now();
     if (this.recentMessageCount(user.id, now - 60_000) >= MAX_CHAT_MESSAGES_PER_MINUTE) {
       return errorResponse("You're sending messages too quickly. Wait a minute and try again.", 429);
@@ -1145,7 +1278,14 @@ export class AccountStore {
       now - CHAT_RETENTION_MS
     );
     return jsonResponse({
-      message: { id, username: user.username, body: message, createdAt: now, mine: true },
+      message: {
+        id,
+        username: user.username,
+        tag: user.tag,
+        body: message,
+        createdAt: now,
+        mine: true,
+      },
     }, 201);
   }
 
@@ -1211,6 +1351,8 @@ export class AccountStore {
   async handlePlayerReport(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to report a player.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const body = await readJson(request);
     const messageId = String(body.messageId || "");
     if (!/^[a-f0-9-]{20,50}$/i.test(messageId)) return errorResponse("Choose a valid message to report.");
@@ -1218,17 +1360,26 @@ export class AccountStore {
     if (!PLAYER_REPORT_REASONS.has(reason)) return errorResponse("Choose a report reason.");
     const details = normalizeReportDetails(body.details, 500);
     let target = this.one(
-      "SELECT id, user_id, username, body, created_at FROM chat_messages WHERE id = ?",
+      `SELECT messages.id, messages.user_id,
+              COALESCE(NULLIF(users.display_name, ''), messages.username) AS username,
+              COALESCE(users.username, messages.username) AS tag,
+              messages.body, messages.created_at
+       FROM chat_messages AS messages
+       LEFT JOIN users ON users.id = messages.user_id
+       WHERE messages.id = ?`,
       messageId
     );
     let messageLocation = "Public Locker Room";
     if (!target) {
       target = this.one(
-        `SELECT messages.id, messages.user_id, messages.username, messages.body,
-                messages.created_at, messages.conversation_id
+        `SELECT messages.id, messages.user_id,
+                COALESCE(NULLIF(users.display_name, ''), messages.username) AS username,
+                COALESCE(users.username, messages.username) AS tag,
+                messages.body, messages.created_at, messages.conversation_id
          FROM friend_messages AS messages
          JOIN friend_conversation_members AS membership
            ON membership.conversation_id = messages.conversation_id
+         LEFT JOIN users ON users.id = messages.user_id
          WHERE messages.id = ? AND membership.user_id = ?`,
         messageId,
         user.id
@@ -1260,8 +1411,8 @@ export class AccountStore {
     if (reserved.response) return reserved.response;
     const emailText = [
       `Report ID: ${reserved.reportId}`,
-      `Reported by: @${user.username}`,
-      `Reported player: @${target.username}`,
+      `Reported by: ${user.username} (@${user.tag})`,
+      `Reported player: ${target.username} (@${target.tag})`,
       `Reason: ${reason}`,
       `Location: ${messageLocation}`,
       `Message date: ${new Date(Number(target.created_at)).toISOString()}`,
@@ -1271,7 +1422,7 @@ export class AccountStore {
     const delivery = await this.sendReportEmail(
       this.env.PLAYER_REPORT_EMAIL,
       "reports@retrorun.win",
-      `Retro Run player report: @${target.username}`,
+      `Retro Run player report: @${target.tag}`,
       emailText
     );
     this.finishReportEmail(reserved.reportId, delivery);
@@ -1281,6 +1432,8 @@ export class AccountStore {
   async handleIssueReport(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to report a game issue.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
     const body = await readJson(request);
     const category = String(body.category || "");
     if (!ISSUE_REPORT_CATEGORIES.has(category)) return errorResponse("Choose an issue category.");
@@ -1303,7 +1456,7 @@ export class AccountStore {
     if (reserved.response) return reserved.response;
     const emailText = [
       `Report ID: ${reserved.reportId}`,
-      `Reported by: @${user.username}`,
+      `Reported by: ${user.username} (@${user.tag})`,
       `Category: ${category}`,
       `Game: ${context.gameName} (${context.gameId})`,
       `Device layout: ${context.device}`,
@@ -1336,7 +1489,12 @@ export class AccountStore {
       if (url.pathname === "/api/auth/session" && request.method === "GET") {
         const user = await this.currentUser(request);
         return jsonResponse(user
-          ? { authenticated: true, username: user.username }
+          ? {
+            authenticated: true,
+            username: user.username,
+            tag: user.tag,
+            profileComplete: user.profileComplete,
+          }
           : { authenticated: false });
       }
       if (url.pathname === "/api/auth/signup" && request.method === "POST") {
@@ -1344,6 +1502,9 @@ export class AccountStore {
       }
       if (url.pathname === "/api/auth/signin" && request.method === "POST") {
         return await this.handleSignin(request);
+      }
+      if (url.pathname === "/api/auth/profile" && request.method === "POST") {
+        return await this.handleProfileUpdate(request);
       }
       if (url.pathname === "/api/auth/signout" && request.method === "POST") {
         return await this.handleSignout(request);
@@ -1413,7 +1574,7 @@ export default {
       return jsonResponse({
         ok: true,
         service: "retro-run-cloud-saves",
-        usernameOnlyAccounts: true,
+        usernameTagAccounts: true,
       });
     }
     if (url.pathname.startsWith("/api/")) {

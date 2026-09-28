@@ -2318,12 +2318,25 @@ body.franchise-slot-selecting #loadSavePanel {
 }
 
 .account-card {
-  width: min(94vw, 470px);
+  width: min(94vw, 560px);
   border-color: #0a111a;
   box-shadow:
     inset 0 0 0 4px rgba(255, 255, 255, 0.05),
     0 12px 0 rgba(8, 15, 22, 0.5),
     0 0 0 4px var(--menu-accent);
+}
+
+@media (min-width: 560px) {
+  .account-form[data-mode="signup"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-form[data-mode="signup"] > .account-help,
+  .account-form[data-mode="signup"] > .account-message,
+  .account-form[data-mode="signup"] > .account-online-link,
+  .account-form[data-mode="signup"] > button {
+    grid-column: 1 / -1;
+  }
 }
 
 .account-card-head {
@@ -2457,6 +2470,21 @@ body.franchise-slot-selecting #loadSavePanel {
   background: #10263a;
   border: 3px solid var(--line);
   border-left: 7px solid var(--menu-accent);
+}
+
+.account-profile small {
+  color: var(--menu-accent);
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.community-social-player small {
+  display: block;
+  color: var(--menu-accent);
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 
 .account-profile span {
