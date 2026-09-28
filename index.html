@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260927-player-identity-upgrade" />
+    <link rel="stylesheet" href="styles.css?v=20260927-tag-finder" />
   </head>
   <body>
     <main class="game-shell">
@@ -1094,15 +1094,22 @@
         </section>
 
         <section id="communityFriendsPanel" hidden>
-          <p class="community-safety-note">Follow a player by exact tag. When two players follow each other, they become friends.</p>
+          <p class="community-safety-note">Search all players by tag. Exact and closest matches appear first. When two players follow each other, they become friends.</p>
           <form id="followPlayerForm" class="community-follow-form">
             <label class="setup-field" for="followPlayerUsername">
-              <span class="label">Player Tag</span>
-              <input id="followPlayerUsername" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="off" placeholder="player_name" required />
+              <span class="label">Search Player Tags</span>
+              <input id="followPlayerUsername" type="search" minlength="1" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="off" placeholder="player_tag" required />
             </label>
-            <button id="followPlayerSubmitButton" type="submit">Follow Player</button>
+            <button id="followPlayerSubmitButton" type="submit">Search</button>
           </form>
           <p class="account-message" id="socialMessage" role="status" aria-live="polite"></p>
+          <section id="playerSearchPanel" class="community-player-search" aria-labelledby="playerSearchTitle" hidden>
+            <div class="community-social-head">
+              <h4 id="playerSearchTitle">Matching Players</h4>
+              <span id="playerSearchCount">0</span>
+            </div>
+            <div id="playerSearchResults" class="community-social-list" role="list"></div>
+          </section>
           <div class="community-social-groups">
             <section class="community-social-group" aria-labelledby="friendsListTitle">
               <div class="community-social-head">
@@ -1303,8 +1310,8 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260927-player-identity-upgrade"></script>
-    <script src="pocket-dynasty.js?v=20260927-player-identity-upgrade"></script>
+    <script src="game.js?v=20260927-tag-finder"></script>
+    <script src="pocket-dynasty.js?v=20260927-tag-finder"></script>
     <script src="seasonal-profile.js?v=20260908-normal-arcade-restore"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
     <script src="seasonal-games.js?v=20260908-normal-arcade-restore"></script>

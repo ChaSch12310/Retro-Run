@@ -182,6 +182,9 @@ const followPlayerFormEl = document.getElementById("followPlayerForm");
 const followPlayerUsernameEl = document.getElementById("followPlayerUsername");
 const followPlayerSubmitButtonEl = document.getElementById("followPlayerSubmitButton");
 const socialMessageEl = document.getElementById("socialMessage");
+const playerSearchPanelEl = document.getElementById("playerSearchPanel");
+const playerSearchCountEl = document.getElementById("playerSearchCount");
+const playerSearchResultsEl = document.getElementById("playerSearchResults");
 const friendsCountEl = document.getElementById("friendsCount");
 const followingCountEl = document.getElementById("followingCount");
 const followersCountEl = document.getElementById("followersCount");
@@ -1511,6 +1514,8 @@ let communityMode = "chat";
 let communityPollTimer = null;
 let chatRefreshPromise = null;
 let socialRefreshPromise = null;
+let playerSearchTimer = null;
+let playerSearchRequestId = 0;
 let friendChatRefreshPromise = null;
 let activeFriendConversationId = "";
 let playerReportTarget = null;
@@ -2670,7 +2675,12 @@ async function changeFollow(tag, shouldFollow, button = null) {
           ? `You are following @${tag}.`
           : `You unfollowed @${tag}.`
     );
-    if (communityMode === "friends") await refreshSocial({ quiet: true });
+    if (communityMode === "friends") {
+      await refreshSocial({ quiet: true });
+      if (followPlayerUsernameEl.value.trim()) {
+        await searchPlayers(followPlayerUsernameEl.value, { quiet: true });
+      }
+    }
     if (communityMode === "chat") await refreshChat({ quiet: true });
     return relationship;
   } catch (error) {
@@ -2683,6 +2693,113 @@ async function changeFollow(tag, shouldFollow, button = null) {
   } finally {
     if (button) button.disabled = false;
   }
+}
+
+function clearPlayerSearch() {
+  playerSearchRequestId += 1;
+  playerSearchPanelEl.hidden = true;
+  playerSearchCountEl.textContent = "0";
+  playerSearchResultsEl.replaceChildren();
+}
+
+function playerSearchRelationship(entry) {
+  if (entry.friend) return "Friend";
+  if (entry.following) return "Following";
+  if (entry.followsYou) return "Follows you";
+  return "Player";
+}
+
+function renderPlayerSearchResults(players, query) {
+  playerSearchResultsEl.replaceChildren();
+  playerSearchPanelEl.hidden = false;
+  playerSearchCountEl.textContent = String(players.length);
+  if (!players.length) {
+    const empty = document.createElement("p");
+    empty.className = "community-social-empty";
+    empty.textContent = `No player tags match “${query}”.`;
+    playerSearchResultsEl.appendChild(empty);
+    return;
+  }
+  players.forEach((entry) => {
+    const row = document.createElement("div");
+    row.className = "community-social-player player-search-result";
+    row.setAttribute("role", "listitem");
+    const identity = document.createElement("div");
+    const username = document.createElement("strong");
+    username.textContent = entry.username;
+    const tag = document.createElement("small");
+    tag.textContent = `@${entry.tag}`;
+    const relationship = document.createElement("span");
+    relationship.textContent = playerSearchRelationship(entry);
+    identity.append(username, tag, relationship);
+    const actions = document.createElement("div");
+    actions.className = "community-social-actions";
+    if (entry.friend) {
+      const chatButton = document.createElement("button");
+      chatButton.type = "button";
+      chatButton.className = "community-chat-button";
+      chatButton.textContent = "Chat";
+      chatButton.addEventListener("click", () => startFriendChat([entry.tag], chatButton));
+      actions.appendChild(chatButton);
+    }
+    const followButton = document.createElement("button");
+    followButton.type = "button";
+    const shouldFollow = !entry.following;
+    followButton.className = shouldFollow ? "community-follow-button" : "community-unfollow-button";
+    followButton.textContent = shouldFollow
+      ? entry.followsYou ? "Follow Back" : "Follow"
+      : "Unfollow";
+    followButton.addEventListener("click", () => changeFollow(entry.tag, shouldFollow, followButton));
+    actions.appendChild(followButton);
+    row.append(identity, actions);
+    playerSearchResultsEl.appendChild(row);
+  });
+}
+
+async function searchPlayers(rawQuery, { quiet = false } = {}) {
+  const query = String(rawQuery || "").trim().replace(/^@/, "").toLowerCase();
+  if (!query) {
+    clearPlayerSearch();
+    if (!quiet) setCommunityStatus(socialMessageEl, "Type part of a player tag to search.");
+    return [];
+  }
+  const requestId = ++playerSearchRequestId;
+  if (!quiet) setCommunityStatus(socialMessageEl, `Searching for tags like @${query}...`);
+  try {
+    const data = await accountApi(`/api/social/search?q=${encodeURIComponent(query)}`);
+    if (requestId !== playerSearchRequestId) return [];
+    const players = Array.isArray(data.players) ? data.players : [];
+    renderPlayerSearchResults(players, query);
+    if (!quiet) {
+      setCommunityStatus(
+        socialMessageEl,
+        players.length
+          ? `${players.length} matching player${players.length === 1 ? "" : "s"} found.`
+          : `No player tags match @${query}.`
+      );
+    }
+    return players;
+  } catch (error) {
+    if (requestId === playerSearchRequestId) {
+      clearPlayerSearch();
+      setCommunityStatus(socialMessageEl, error.message, true);
+    }
+    return [];
+  }
+}
+
+function schedulePlayerSearch() {
+  if (playerSearchTimer) clearTimeout(playerSearchTimer);
+  const query = followPlayerUsernameEl.value.trim();
+  if (!query) {
+    clearPlayerSearch();
+    setCommunityStatus(socialMessageEl, "Type part of a player tag to search.");
+    return;
+  }
+  playerSearchTimer = setTimeout(() => {
+    playerSearchTimer = null;
+    searchPlayers(query);
+  }, 250);
 }
 
 function renderSocialList(element, entries, listType) {
@@ -3100,6 +3217,7 @@ function setCommunityMode(mode) {
     issueReportDetailsEl.focus();
   } else if (showingFriends) {
     refreshSocial();
+    if (followPlayerUsernameEl.value.trim()) schedulePlayerSearch();
     followPlayerUsernameEl.focus();
   } else if (showingDirect) {
     refreshFriendChats();
@@ -3140,6 +3258,8 @@ function closeCommunity() {
   communityModalEl.hidden = true;
   if (communityPollTimer) clearInterval(communityPollTimer);
   communityPollTimer = null;
+  if (playerSearchTimer) clearTimeout(playerSearchTimer);
+  playerSearchTimer = null;
   playerReportTarget = null;
   playerReportFormEl.hidden = true;
   communityButtonEl.focus();
@@ -3168,14 +3288,12 @@ async function submitCommunityMessage(event) {
 
 async function submitFollowPlayer(event) {
   event.preventDefault();
-  const tag = followPlayerUsernameEl.value.trim();
+  if (playerSearchTimer) clearTimeout(playerSearchTimer);
+  playerSearchTimer = null;
   followPlayerSubmitButtonEl.disabled = true;
-  const relationship = await changeFollow(tag, true);
-  if (relationship) {
-    followPlayerFormEl.reset();
-    followPlayerUsernameEl.focus();
-  }
+  await searchPlayers(followPlayerUsernameEl.value);
   followPlayerSubmitButtonEl.disabled = false;
+  followPlayerUsernameEl.focus();
 }
 
 async function submitPlayerReport(event) {
@@ -9779,6 +9897,7 @@ communityIssueModeButtonEl.addEventListener("click", () => setCommunityMode("iss
 communityChatFormEl.addEventListener("submit", submitCommunityMessage);
 communityMessageInputEl.addEventListener("input", updateCommunityCharacterCount);
 followPlayerFormEl.addEventListener("submit", submitFollowPlayer);
+followPlayerUsernameEl.addEventListener("input", schedulePlayerSearch);
 friendChatCreateFormEl.addEventListener("submit", submitFriendChatCreate);
 friendMessageFormEl.addEventListener("submit", submitFriendMessage);
 friendMessageInputEl.addEventListener("input", updateFriendMessageCharacterCount);

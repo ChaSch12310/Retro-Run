@@ -2662,6 +2662,27 @@ body.franchise-slot-selecting #loadSavePanel {
   min-height: 48px;
 }
 
+.community-player-search {
+  margin: 8px 0 11px;
+  padding: 9px;
+  background: #0b1d2d;
+  border: 3px solid var(--line);
+}
+
+.community-player-search[hidden] {
+  display: none !important;
+}
+
+.community-player-search .community-social-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: clamp(150px, 25vh, 230px);
+  overflow-y: auto;
+}
+
+.player-search-result {
+  border-left-color: var(--menu-accent);
+}
+
 .community-social-groups {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6656,6 +6677,7 @@ body[data-device="mobile"] .community-mode-switch button {
 }
 
 body[data-device="mobile"] .community-follow-form,
+body[data-device="mobile"] .community-player-search .community-social-list,
 body[data-device="mobile"] .community-social-groups {
   grid-template-columns: 1fr;
 }

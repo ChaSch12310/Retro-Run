@@ -108,6 +108,7 @@ async function createAccount(tag) {
 try {
   assert.equal((await api("/api/chat")).status, 401);
   assert.equal((await api("/api/social")).status, 401);
+  assert.equal((await api("/api/social/search?q=chat")).status, 401);
   assert.equal((await api("/api/friend-chats")).status, 401);
   assert.equal((await api("/api/friend-chats/messages?conversationId=missing")).status, 401);
   assert.equal((await api("/api/reports/issue", {
@@ -182,6 +183,45 @@ try {
 
   const aliceCookie = await createAccount("alice_chat");
   const bobCookie = await createAccount("bob_chat");
+  const charlieCookie = await createAccount("charlie_chat");
+
+  const similarSearch = await api("/api/social/search?q=chat", { cookie: aliceCookie });
+  assert.equal(similarSearch.status, 200);
+  assert.deepEqual(await similarSearch.json(), {
+    query: "chat",
+    players: [
+      {
+        username: "Bob Runner",
+        tag: "bob_chat",
+        following: false,
+        followsYou: false,
+        friend: false,
+      },
+      {
+        username: "Charlie Runner",
+        tag: "charlie_chat",
+        following: false,
+        followsYou: false,
+        friend: false,
+      },
+    ],
+    maximumResults: 20,
+  });
+  const exactSearch = await (await api("/api/social/search?q=bob_chat", {
+    cookie: aliceCookie,
+  })).json();
+  assert.equal(exactSearch.players.length, 1);
+  assert.equal(exactSearch.players[0].tag, "bob_chat");
+  assert.deepEqual(
+    (await (await api("/api/social/search?q=alice_", { cookie: aliceCookie })).json()).players,
+    [],
+    "Search should exclude the current player and treat underscores literally."
+  );
+  assert.equal((await api("/api/social/search?q=bad-tag!", { cookie: aliceCookie })).status, 400);
+  assert.deepEqual(
+    await (await api("/api/social/search", { cookie: aliceCookie })).json(),
+    { query: "", players: [] }
+  );
 
   const aliceFollowsBob = await api("/api/social/follow", {
     method: "POST",
@@ -196,6 +236,11 @@ try {
     followsYou: false,
     friend: false,
   });
+  const followedSearch = await (await api("/api/social/search?q=bob", {
+    cookie: aliceCookie,
+  })).json();
+  assert.equal(followedSearch.players[0].following, true);
+  assert.equal(followedSearch.players[0].friend, false);
   assert.equal((await api("/api/social/follow", {
     method: "POST",
     cookie: aliceCookie,
@@ -250,6 +295,10 @@ try {
   });
   assert.equal(bobFollowsAlice.status, 201);
   assert.equal((await bobFollowsAlice.json()).friend, true);
+  const friendSearch = await (await api("/api/social/search?q=alice", {
+    cookie: bobCookie,
+  })).json();
+  assert.equal(friendSearch.players[0].friend, true);
   const bobSocial = await (await api("/api/social", { cookie: bobCookie })).json();
   assert.equal(bobSocial.friends[0].username, "Alice Runner");
   assert.equal(bobSocial.friends[0].tag, "alice_chat");
@@ -274,7 +323,6 @@ try {
   assert.equal(duplicateDirect.status, 200);
   assert.equal((await duplicateDirect.json()).conversation.id, directConversation.id);
 
-  const charlieCookie = await createAccount("charlie_chat");
   assert.equal((await api("/api/friend-chats", {
     method: "POST",
     cookie: aliceCookie,

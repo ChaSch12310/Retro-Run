@@ -13,6 +13,7 @@ const MAX_CHAT_MESSAGES_PER_DAY = 100;
 const MAX_REPORTS_PER_DAY = 10;
 const MAX_FOLLOWS = 200;
 const MAX_FOLLOW_CHANGES_PER_DAY = 100;
+const MAX_PLAYER_SEARCH_RESULTS = 20;
 const MAX_FRIEND_CHAT_MEMBERS = 10;
 const MAX_FRIEND_CONVERSATIONS = 100;
 const CHAT_HISTORY_LIMIT = 50;
@@ -956,6 +957,57 @@ export class AccountStore {
     });
   }
 
+  async handlePlayerSearch(request, url) {
+    const user = await this.currentUser(request);
+    if (!user) return errorResponse("Sign in to search for players.", 401);
+    const incomplete = this.requireCompleteProfile(user);
+    if (incomplete) return incomplete;
+    const query = normalizeUsername(url.searchParams.get("q"));
+    if (!query) return jsonResponse({ query: "", players: [] });
+    if (!/^[a-z0-9_]{1,24}$/.test(query)) {
+      return errorResponse("Search tags using letters, numbers, or underscores.");
+    }
+    const escapedQuery = query.replace(/[\\%_]/g, "\\$&");
+    const containsPattern = `%${escapedQuery}%`;
+    const prefixPattern = `${escapedQuery}%`;
+    const players = this.sql.exec(
+      `SELECT users.username AS tag, users.display_name,
+              EXISTS(
+                SELECT 1 FROM follows
+                WHERE follower_user_id = ? AND followed_user_id = users.id
+              ) AS following,
+              EXISTS(
+                SELECT 1 FROM follows
+                WHERE follower_user_id = users.id AND followed_user_id = ?
+              ) AS follows_you
+       FROM users
+       WHERE users.id <> ?
+       AND users.username LIKE ? ESCAPE '\\'
+       ORDER BY CASE
+         WHEN users.username = ? THEN 0
+         WHEN users.username LIKE ? ESCAPE '\\' THEN 1
+         ELSE 2
+       END,
+       length(users.username) ASC,
+       users.username COLLATE NOCASE ASC
+       LIMIT ?`,
+      user.id,
+      user.id,
+      user.id,
+      containsPattern,
+      query,
+      prefixPattern,
+      MAX_PLAYER_SEARCH_RESULTS
+    ).toArray().map((entry) => ({
+      username: entry.display_name || entry.tag,
+      tag: entry.tag,
+      following: Boolean(entry.following),
+      followsYou: Boolean(entry.follows_you),
+      friend: Boolean(entry.following) && Boolean(entry.follows_you),
+    }));
+    return jsonResponse({ query, players, maximumResults: MAX_PLAYER_SEARCH_RESULTS });
+  }
+
   async handleFollowWrite(request, shouldFollow) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to follow players.", 401);
@@ -1529,6 +1581,9 @@ export class AccountStore {
       }
       if (url.pathname === "/api/social" && request.method === "GET") {
         return await this.handleSocialRead(request);
+      }
+      if (url.pathname === "/api/social/search" && request.method === "GET") {
+        return await this.handlePlayerSearch(request, url);
       }
       if (url.pathname === "/api/social/follow" && request.method === "POST") {
         return await this.handleFollowWrite(request, true);

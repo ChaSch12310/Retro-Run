@@ -197,6 +197,8 @@ assert.match(html, /id="communityDirectModeButton"/);
 assert.match(html, /id="communityFriendsPanel"/);
 assert.match(html, /id="communityDirectPanel"/);
 assert.match(html, /id="followPlayerForm"/);
+assert.match(html, /id="playerSearchPanel"/);
+assert.match(html, /id="playerSearchResults"/);
 assert.match(html, /id="friendsList"/);
 assert.match(html, /id="followingList"/);
 assert.match(html, /id="followersList"/);
@@ -204,6 +206,7 @@ assert.match(html, /id="playerReportForm"/);
 assert.match(html, /id="issueReportForm"/);
 assert.match(workerSource, /url\.pathname === "\/api\/chat"/);
 assert.match(workerSource, /url\.pathname === "\/api\/social"/);
+assert.match(workerSource, /url\.pathname === "\/api\/social\/search"/);
 assert.match(workerSource, /url\.pathname === "\/api\/social\/follow"/);
 assert.match(workerSource, /url\.pathname === "\/api\/social\/unfollow"/);
 assert.match(workerSource, /url\.pathname === "\/api\/friend-chats"/);
@@ -217,8 +220,10 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260927-player-identity-upgrade/);
-assert.match(html, /styles\.css\?v=20260927-player-identity-upgrade/);
+assert.match(html, /game\.js\?v=20260927-tag-finder/);
+assert.match(html, /styles\.css\?v=20260927-tag-finder/);
+assert.match(source, /function searchPlayers\(/);
+assert.match(styles, /\.community-player-search\s*\{/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
 assert.match(html, /id="careerPathJourney"[^>]*value="journey"/);
 assert.match(html, /id="careerPathFavorite"[^>]*value="favorite"/);
@@ -227,7 +232,7 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260927-player-identity-upgrade/);
+assert.match(html, /pocket-dynasty\.js\?v=20260927-tag-finder/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -539,7 +544,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260927-player-identity-upgrade/);
+assert.match(html, /20260927-tag-finder/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
