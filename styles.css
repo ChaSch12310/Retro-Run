@@ -2380,6 +2380,40 @@ body.franchise-slot-selecting #loadSavePanel {
   white-space: nowrap;
 }
 
+.account-profile-prompt {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 12px;
+  padding: 11px 12px;
+  color: #172334;
+  background: var(--menu-accent);
+  border: 3px solid #09131e;
+  border-left-width: 8px;
+  box-shadow: inset 0 -5px 0 rgba(91, 69, 17, 0.24);
+}
+
+.account-profile-prompt[hidden] {
+  display: none !important;
+}
+
+.account-profile-prompt strong {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.account-profile-prompt span {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.account-form[data-mode="profile"] {
+  padding: 12px;
+  background: #10263a;
+  border: 3px solid var(--line);
+}
+
 .account-mode-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

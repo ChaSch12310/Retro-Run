@@ -128,6 +128,7 @@ const accountSigninModeButtonEl = document.getElementById("accountSigninModeButt
 const accountSignupModeButtonEl = document.getElementById("accountSignupModeButton");
 const accountModeSwitchEl = document.getElementById("accountModeSwitch");
 const accountCredentialFieldsEl = document.getElementById("accountCredentialFields");
+const accountProfilePromptEl = document.getElementById("accountProfilePrompt");
 const accountFormEl = document.getElementById("accountForm");
 const accountUsernameFieldEl = document.getElementById("accountUsernameField");
 const accountUsernameInputEl = document.getElementById("accountUsernameInput");
@@ -2552,6 +2553,7 @@ function setAccountMode(mode) {
   accountFormEl.dataset.mode = accountMode;
   const creating = accountMode === "signup";
   const completingProfile = accountMode === "profile";
+  accountProfilePromptEl.hidden = !completingProfile;
   accountModeSwitchEl.hidden = completingProfile;
   accountSigninModeButtonEl.classList.toggle("selected", !creating && !completingProfile);
   accountSignupModeButtonEl.classList.toggle("selected", creating);
@@ -2584,6 +2586,21 @@ function setAccountMode(mode) {
   accountMessageEl.textContent = "";
   accountMessageEl.classList.remove("error");
   accountOnlineLinkEl.hidden = globalThis.location?.protocol !== "file:";
+}
+
+function requireUsernameUpdate(tag = "", message = "") {
+  cloudAccount = {
+    username: "",
+    tag: tag || cloudAccount?.tag || "",
+    profileComplete: false,
+  };
+  cloudSyncState = "local";
+  setAccountMode("profile");
+  renderCloudAccount();
+  accountModalEl.hidden = false;
+  accountMessageEl.textContent = message || "Enter and save your username below to finish updating your account.";
+  accountMessageEl.classList.remove("error");
+  accountUsernameInputEl.focus();
 }
 
 function openAccountModal() {
@@ -2629,6 +2646,9 @@ async function accountApi(path, options = {}) {
     data = {};
   }
   if (!response.ok) {
+    if (response.status === 428 && data.profileUpdateRequired) {
+      requireUsernameUpdate(data.tag, "Choose and save your username below to continue.");
+    }
     const error = new Error(data.error || "Cloud Locker is temporarily unavailable.");
     error.status = response.status;
     throw error;
@@ -3646,9 +3666,7 @@ async function submitCloudAccount(event) {
     accountConfirmPasswordInputEl.value = "";
     accountSignedInMessageEl.classList.remove("error");
     if (!cloudAccount.profileComplete) {
-      setAccountMode("profile");
-      renderCloudAccount();
-      accountUsernameInputEl.focus();
+      requireUsernameUpdate(cloudAccount.tag, "Choose and save your username below to finish creating your player identity.");
       return;
     }
     accountSignedInMessageEl.textContent = accountMode === "signup"
@@ -3708,6 +3726,8 @@ async function initializeCloudAccount() {
         await syncCloudSaves();
         await flushLeaderboardQueue();
         await refreshLeaderboard();
+      } else {
+        requireUsernameUpdate(cloudAccount.tag);
       }
     }
   } catch {

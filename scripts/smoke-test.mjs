@@ -220,8 +220,8 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260927-tag-finder/);
-assert.match(html, /styles\.css\?v=20260927-tag-finder/);
+assert.match(html, /game\.js\?v=20260928-username-gateway/);
+assert.match(html, /styles\.css\?v=20260928-username-gateway/);
 assert.match(source, /function searchPlayers\(/);
 assert.match(styles, /\.community-player-search\s*\{/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
@@ -232,7 +232,7 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260927-tag-finder/);
+assert.match(html, /pocket-dynasty\.js\?v=20260928-username-gateway/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -335,6 +335,7 @@ assert.doesNotMatch(html, /accountEmail|type="email"/);
 assert.match(html, /Tag \+ Password/);
 assert.match(html, /No email required/);
 assert.match(html, /id="accountUsernameInput"/);
+assert.match(html, /id="accountProfilePrompt"/);
 assert.match(html, /id="accountTagInput"/);
 assert.match(html, /id="accountPasscodeInput" type="password"/);
 assert.match(html, /id="accountConfirmPasswordInput" type="password"/);
@@ -357,6 +358,8 @@ assert.match(source, /markCloudSlotChanged/);
 assert.doesNotMatch(source, /accountEmail|requiresVerification|Confirmation sent/);
 assert.match(source, /Sign in with your unique tag and password\. No email required\./);
 assert.match(source, /choose a separate username\. This can only be set once\./);
+assert.match(source, /function requireUsernameUpdate\(/);
+assert.match(source, /response\.status === 428 && data\.profileUpdateRequired/);
 assert.match(source, /accountSyncButtonEl\.hidden = cloudSyncState === "saved"/);
 assert.match(source, /setAccountMode\("signin"\);\s+renderCloudAccount\(\);/);
 assert.match(workerSource, /export class AccountStore/);
@@ -544,7 +547,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260927-tag-finder/);
+assert.match(html, /20260928-username-gateway/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
@@ -1302,6 +1305,15 @@ const hooks = `
 globalThis.__retroRunTest = {
   get activeGameId() { return activeGameId; },
   get gameLibraryOpen() { return gameLibraryOpen; },
+  get accountMode() { return accountMode; },
+  get cloudAccount() { return cloudAccount ? { ...cloudAccount } : null; },
+  requireUsernameUpdate,
+  resetCloudAccountForTest() {
+    cloudAccount = null;
+    accountModalEl.hidden = true;
+    setAccountMode("signin");
+    renderCloudAccount();
+  },
   get franchiseSlots() { return franchiseSlots; },
   collectLocalCloudBundle,
   mergeCloudBundles: mergeClientCloudBundles,
@@ -1556,6 +1568,22 @@ globalThis.__retroRunTest = {
 vm.runInContext(`${source}\n${hooks}`, context, { filename: "game.js" });
 
 const game = context.__retroRunTest;
+
+game.requireUsernameUpdate("legacy_tag");
+assert.equal(game.accountMode, "profile");
+assert.deepEqual({ ...game.cloudAccount }, {
+  username: "",
+  tag: "legacy_tag",
+  profileComplete: false,
+});
+assert.equal(elements.get("accountModal").hidden, false);
+assert.equal(elements.get("accountProfilePrompt").hidden, false);
+assert.equal(elements.get("accountUsernameField").hidden, false);
+assert.equal(elements.get("accountTagField").hidden, true);
+assert.equal(elements.get("accountPasswordField").hidden, true);
+assert.equal(elements.get("accountSubmitButton").textContent, "Save Username");
+assert.match(elements.get("accountMessage").textContent, /Enter and save your username/);
+game.resetCloudAccountForTest();
 
 function resolveRequiredPostgameDecisions() {
   assert.notEqual(game.pendingProblem, null);

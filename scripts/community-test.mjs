@@ -151,7 +151,13 @@ try {
     profileComplete: false,
   });
   const legacyCookie = sessionCookie(legacySignin);
-  assert.equal((await api("/api/saves", { cookie: legacyCookie })).status, 428);
+  const incompleteProfileResponse = await api("/api/saves", { cookie: legacyCookie });
+  assert.equal(incompleteProfileResponse.status, 428);
+  assert.deepEqual(await incompleteProfileResponse.json(), {
+    error: "Add your separate username to finish updating your account.",
+    profileUpdateRequired: true,
+    tag: "legacy_tag",
+  });
   assert.equal((await api("/api/auth/profile", {
     method: "POST",
     cookie: legacyCookie,

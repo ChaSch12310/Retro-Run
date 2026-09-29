@@ -29,7 +29,7 @@
     <meta name="twitter:image" content="https://retrorun.win/assets/retro-run-share.png" />
     <link rel="icon" type="image/png" href="assets/retro-run-icon-transparent.png" />
     <link rel="apple-touch-icon" href="assets/retro-run-icon-transparent.png" />
-    <link rel="stylesheet" href="styles.css?v=20260927-tag-finder" />
+    <link rel="stylesheet" href="styles.css?v=20260928-username-gateway" />
   </head>
   <body>
     <main class="game-shell">
@@ -1014,6 +1014,7 @@
 
         <section id="accountSignedOut">
           <p class="account-credentials-note" id="accountCredentialsNote"><strong id="accountCredentialFields">Tag + Password</strong><span>No email required</span></p>
+          <p class="account-profile-prompt" id="accountProfilePrompt" hidden><strong>Choose Your Username</strong><span>Your sign-in tag stays the same. Enter the public username other players will see.</span></p>
           <div class="account-mode-switch" id="accountModeSwitch" aria-label="Account action">
             <button id="accountSigninModeButton" class="account-mode-button selected" type="button" aria-pressed="true">Sign In</button>
             <button id="accountSignupModeButton" class="account-mode-button" type="button" aria-pressed="false">Create Account</button>
@@ -1310,8 +1311,8 @@
       </div>
     </div>
 
-    <script src="game.js?v=20260927-tag-finder"></script>
-    <script src="pocket-dynasty.js?v=20260927-tag-finder"></script>
+    <script src="game.js?v=20260928-username-gateway"></script>
+    <script src="pocket-dynasty.js?v=20260928-username-gateway"></script>
     <script src="seasonal-profile.js?v=20260908-normal-arcade-restore"></script>
     <script>globalThis.RETRO_RUN_SEASONAL_PARITY = true;</script>
     <script src="seasonal-games.js?v=20260908-normal-arcade-restore"></script>

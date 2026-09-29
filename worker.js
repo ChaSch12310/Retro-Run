@@ -560,7 +560,11 @@ export class AccountStore {
   requireCompleteProfile(user) {
     return user.profileComplete
       ? null
-      : errorResponse("Add your separate username to finish updating your account.", 428);
+      : jsonResponse({
+        error: "Add your separate username to finish updating your account.",
+        profileUpdateRequired: true,
+        tag: user.tag,
+      }, 428);
   }
 
   async handleSignup(request) {
