@@ -4,9 +4,6 @@ run-name: Username Gateway production promotion
 
 on:
   workflow_dispatch:
-  schedule:
-    # Prepare before the September 28, 2026 9:00 PM America/Chicago leaderboard update.
-    - cron: "40 1 29 9 *"
 
 permissions:
   contents: read
