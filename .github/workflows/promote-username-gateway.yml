@@ -1,0 +1,142 @@
+name: Username Gateway Production
+
+run-name: Username Gateway production promotion
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Prepare before the September 28, 2026 9:00 PM America/Chicago leaderboard update.
+    - cron: "40 1 29 9 *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-run-production-release
+  cancel-in-progress: false
+
+jobs:
+  release-window:
+    runs-on: ubuntu-latest
+    outputs:
+      promote: ${{ steps.check.outputs.promote }}
+    steps:
+      - name: Check one-time Central release date
+        id: check
+        shell: bash
+        run: |
+          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-09-28" ]]; then
+            echo "promote=true" >> "$GITHUB_OUTPUT"
+            echo "Username Gateway is approved for the 9:00 PM Central leaderboard update."
+          else
+            echo "promote=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: this release is approved only for September 28, 2026."
+          fi
+
+  deploy-production:
+    needs: release-window
+    if: needs.release-window.outputs.promote == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check out the approved preview source
+        uses: actions/checkout@v4
+        with:
+          ref: d44f27ae6cd0e48d7b681f453a92255f101822ba
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Check deployment credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test the approved release
+        run: pnpm test
+
+      - name: Build the standard arcade without holiday games
+        env:
+          RETRO_RUN_SEASONAL_PROFILE: standard
+        run: pnpm run build
+
+      - name: Wait for the hourly leaderboard boundary
+        shell: bash
+        run: |
+          target_epoch="$(date -u -d '2026-09-29 02:00:00Z' +%s)"
+          current_epoch="$(date -u +%s)"
+          if (( current_epoch < target_epoch )); then
+            sleep "$((target_epoch - current_epoch))"
+          fi
+          echo "Starting production promotion with the 9:00 PM Central leaderboard update."
+
+      - name: Update the production account and community backend
+        run: >-
+          pnpm exec wrangler deploy
+          --config wrangler.account.jsonc
+          --strict --keep-vars
+          --message "Username Gateway - Production API"
+
+      - name: Publish the standard arcade with production accounts
+        run: >-
+          pnpm exec wrangler deploy
+          --config wrangler.jsonc
+          --strict --keep-vars
+          --message "Username Gateway - Production"
+
+      - name: Verify the production release
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { setTimeout } from "node:timers/promises";
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            try {
+              const read = async (path, options = {}) => fetch(`https://retrorun.win/${path}`, {
+                cache: "no-store",
+                signal: AbortSignal.timeout(15000),
+                ...options,
+              });
+              const health = await read("api/health");
+              assert.equal(health.status, 200);
+              assert.equal((await health.json()).usernameTagAccounts, true);
+              const home = await read("");
+              assert.equal(home.status, 200);
+              const html = await home.text();
+              assert.match(html, /20260928-username-gateway/);
+              assert.match(html, /id="accountProfilePrompt"/);
+              const game = await read("game.js?v=20260928-username-gateway");
+              assert.equal(game.status, 200);
+              assert.match(await game.text(), /function requireUsernameUpdate/);
+              const profile = await read("seasonal-profile.js");
+              assert.equal(profile.status, 200);
+              assert.match(await profile.text(), /"standard"/);
+              const unauthenticatedUpdate = await read("api/auth/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Origin: "https://retrorun.win" },
+                body: JSON.stringify({ username: "Test Player" }),
+              });
+              assert.equal(unauthenticatedUpdate.status, 401);
+              console.log("Verified Username Gateway on production.");
+              break;
+            } catch (error) {
+              if (attempt === 6) throw error;
+              await setTimeout(10000);
+            }
+          }
+          NODE
