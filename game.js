@@ -16,6 +16,19 @@ const downsLabelEl = document.getElementById("downsLabel");
 const keyboardInstructionsEl = document.getElementById("keyboardInstructions");
 const touchInstructionsEl = document.getElementById("touchInstructions");
 const progressInstructionsEl = document.getElementById("progressInstructions");
+const retroKeyboardEl = document.getElementById("retroKeyboard");
+const retroKeyboardKeysEl = document.getElementById("retroKeyboardKeys");
+const retroKeyboardFieldLabelEl = document.getElementById("retroKeyboardFieldLabel");
+const retroKeyboardCloseButtonEl = document.getElementById("retroKeyboardCloseButton");
+
+let retroKeyboardTarget = null;
+let retroKeyboardShifted = false;
+let retroKeyboardSymbolMode = false;
+let retroKeyboardOriginalReadOnly = false;
+let retroKeyboardOriginalInputMode = null;
+let retroKeyboardDirty = false;
+let retroKeyboardInitialized = false;
+let retroKeyboardEnabled = false;
 
 const overlayEl = document.getElementById("overlay");
 const overlayTitleEl = document.getElementById("overlayTitle");
@@ -1764,6 +1777,281 @@ function detectDeviceProfile() {
   return "desktop";
 }
 
+function shouldUseRetroKeyboard() {
+  const localTouchPreview = typeof location !== "undefined"
+    && ["localhost", "127.0.0.1"].includes(location.hostname)
+    && new URLSearchParams(location.search).has("touchKeyboard");
+  if (localTouchPreview) return true;
+  if (typeof navigator === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  const touchDevice = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+  const computerPointer = window.matchMedia("(any-pointer: fine)").matches
+    && window.matchMedia("(any-hover: hover)").matches;
+  const compactDevice = detectDeviceProfile() === "mobile" || detectDeviceProfile() === "tablet";
+  return touchDevice && compactDevice && !computerPointer;
+}
+
+function isRetroKeyboardField(field) {
+  if (!field || field.disabled || (field.readOnly && field !== retroKeyboardTarget)) {
+    return false;
+  }
+  const tagName = String(field.tagName || "").toLowerCase();
+  if (tagName === "textarea") return true;
+  if (tagName !== "input") return false;
+  return !["button", "checkbox", "color", "file", "hidden", "radio", "range", "reset", "submit"].includes(field.type);
+}
+
+function fieldForRetroKeyboardTarget(target) {
+  const directField = target?.closest?.("input, textarea");
+  if (isRetroKeyboardField(directField)) return directField;
+  const labelField = target?.closest?.("label")?.querySelector?.("input, textarea");
+  return isRetroKeyboardField(labelField) ? labelField : null;
+}
+
+function retroKeyboardFieldName(field) {
+  const labelText = field.closest?.("label")?.querySelector?.(".label")?.textContent?.trim();
+  return labelText || field.getAttribute?.("aria-label") || field.placeholder || "Text Entry";
+}
+
+function createRetroKey(label, value = "", action = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.dataset.value = value;
+  button.dataset.action = action;
+  if (action) button.classList.add(`retro-key-${action}`);
+  return button;
+}
+
+function renderRetroKeyboard() {
+  if (!retroKeyboardKeysEl || !retroKeyboardTarget) return;
+  const numericOnly = retroKeyboardTarget.type === "number";
+  const letterRows = [
+    [..."qwertyuiop"],
+    [..."asdfghjkl"],
+    ["SHIFT", ..."zxcvbnm", "DELETE"],
+    ["123", "'", "SPACE", "-", "NEXT", "DONE"],
+  ];
+  const symbolRows = numericOnly
+    ? [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["DELETE", "0", "DONE"]]
+    : [
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+      ["-", "_", "'", ".", ",", "!", "?", "@", "#"],
+      ["ABC", "SPACE", "DELETE", "NEXT", "DONE"],
+    ];
+  const rows = numericOnly || retroKeyboardSymbolMode ? symbolRows : letterRows;
+  const fragments = rows.map((keys) => {
+    const row = document.createElement("div");
+    row.className = "retro-keyboard-row";
+    keys.forEach((keyLabel) => {
+      let action = "";
+      let value = keyLabel;
+      let label = keyLabel;
+      if (keyLabel === "SHIFT") action = "shift";
+      else if (keyLabel === "DELETE") action = "delete";
+      else if (keyLabel === "SPACE") {
+        action = "space";
+        value = " ";
+      } else if (keyLabel === "123") action = "symbols";
+      else if (keyLabel === "ABC") action = "letters";
+      else if (keyLabel === "NEXT") {
+        action = retroKeyboardTarget.tagName.toLowerCase() === "textarea" ? "return" : "next";
+        label = action === "return" ? "RETURN" : "NEXT";
+      } else if (keyLabel === "DONE") action = "done";
+      else if (!numericOnly && !retroKeyboardSymbolMode && retroKeyboardShifted) {
+        value = keyLabel.toUpperCase();
+        label = value;
+      }
+      row.appendChild(createRetroKey(label, value, action));
+    });
+    return row;
+  });
+  retroKeyboardKeysEl.replaceChildren(...fragments);
+  retroKeyboardKeysEl.querySelector?.(".retro-key-shift")?.classList.toggle("selected", retroKeyboardShifted);
+}
+
+function restoreRetroKeyboardField(field) {
+  if (!field) return;
+  field.blur();
+  field.readOnly = retroKeyboardOriginalReadOnly;
+  if (retroKeyboardOriginalInputMode === null) field.removeAttribute("inputmode");
+  else field.setAttribute("inputmode", retroKeyboardOriginalInputMode);
+  if (retroKeyboardDirty) field.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function closeRetroKeyboard() {
+  const field = retroKeyboardTarget;
+  retroKeyboardTarget = null;
+  restoreRetroKeyboardField(field);
+  retroKeyboardDirty = false;
+  document.body.classList.remove("retro-keyboard-open");
+  if (retroKeyboardEl) retroKeyboardEl.hidden = true;
+}
+
+function openRetroKeyboard(field) {
+  if (!retroKeyboardEnabled || !isRetroKeyboardField(field) || !retroKeyboardEl) return;
+  if (retroKeyboardTarget === field) {
+    field.focus({ preventScroll: true });
+    return;
+  }
+  if (retroKeyboardTarget && retroKeyboardTarget !== field) closeRetroKeyboard();
+  retroKeyboardTarget = field;
+  retroKeyboardOriginalReadOnly = Boolean(field.readOnly);
+  retroKeyboardOriginalInputMode = field.getAttribute("inputmode");
+  retroKeyboardDirty = false;
+  retroKeyboardShifted = false;
+  retroKeyboardSymbolMode = field.type === "number";
+  field.readOnly = true;
+  field.setAttribute("inputmode", "none");
+  retroKeyboardFieldLabelEl.textContent = retroKeyboardFieldName(field);
+  retroKeyboardEl.hidden = false;
+  document.body.classList.add("retro-keyboard-open");
+  field.focus({ preventScroll: true });
+  renderRetroKeyboard();
+  requestAnimationFrame(() => field.scrollIntoView({ behavior: "smooth", block: "center" }));
+}
+
+function replaceRetroKeyboardSelection(text) {
+  const field = retroKeyboardTarget;
+  if (!field) return;
+  const currentValue = String(field.value || "");
+  let start = currentValue.length;
+  let end = currentValue.length;
+  try {
+    start = field.selectionStart ?? currentValue.length;
+    end = field.selectionEnd ?? start;
+  } catch {
+    // Number inputs do not expose a text selection in every browser.
+  }
+  const nextValue = `${currentValue.slice(0, start)}${text}${currentValue.slice(end)}`;
+  if (field.maxLength > 0 && nextValue.length > field.maxLength) return;
+  field.value = nextValue;
+  const caret = start + text.length;
+  try {
+    field.setSelectionRange(caret, caret);
+  } catch {
+    // Number inputs do not support setSelectionRange.
+  }
+  retroKeyboardDirty = true;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function deleteRetroKeyboardSelection() {
+  const field = retroKeyboardTarget;
+  if (!field) return;
+  const currentValue = String(field.value || "");
+  let start = currentValue.length;
+  let end = currentValue.length;
+  try {
+    start = field.selectionStart ?? currentValue.length;
+    end = field.selectionEnd ?? start;
+  } catch {
+    // Number inputs do not expose a text selection in every browser.
+  }
+  if (start === end && start > 0) start -= 1;
+  field.value = `${currentValue.slice(0, start)}${currentValue.slice(end)}`;
+  try {
+    field.setSelectionRange(start, start);
+  } catch {
+    // Number inputs do not support setSelectionRange.
+  }
+  retroKeyboardDirty = true;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function moveToNextRetroKeyboardField() {
+  const fields = [...(document.querySelectorAll?.("input, textarea") || [])]
+    .filter((field) => isRetroKeyboardField(field) && field.getClientRects().length > 0);
+  const currentIndex = fields.indexOf(retroKeyboardTarget);
+  const nextField = fields[currentIndex + 1];
+  if (!nextField) {
+    closeRetroKeyboard();
+    return;
+  }
+  closeRetroKeyboard();
+  openRetroKeyboard(nextField);
+}
+
+function handleRetroKeyboardAction(action, value) {
+  if (!retroKeyboardTarget) return;
+  if (action === "shift") {
+    retroKeyboardShifted = !retroKeyboardShifted;
+    renderRetroKeyboard();
+  } else if (action === "delete") {
+    deleteRetroKeyboardSelection();
+  } else if (action === "symbols") {
+    retroKeyboardSymbolMode = true;
+    renderRetroKeyboard();
+  } else if (action === "letters") {
+    retroKeyboardSymbolMode = false;
+    renderRetroKeyboard();
+  } else if (action === "next") {
+    moveToNextRetroKeyboardField();
+  } else if (action === "return") {
+    replaceRetroKeyboardSelection("\n");
+  } else if (action === "done") {
+    closeRetroKeyboard();
+  } else {
+    replaceRetroKeyboardSelection(action === "space" ? " " : value);
+    if (retroKeyboardShifted) {
+      retroKeyboardShifted = false;
+      renderRetroKeyboard();
+    }
+  }
+}
+
+function syncRetroKeyboardAvailability() {
+  retroKeyboardEnabled = shouldUseRetroKeyboard();
+  document.body.classList.toggle("retro-keyboard-available", retroKeyboardEnabled);
+  if (!retroKeyboardEnabled && retroKeyboardTarget) closeRetroKeyboard();
+}
+
+function initializeRetroKeyboard() {
+  if (retroKeyboardInitialized || !retroKeyboardEl) return;
+  retroKeyboardInitialized = true;
+  if (typeof document.addEventListener !== "function") {
+    syncRetroKeyboardAvailability();
+    return;
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (!retroKeyboardEnabled || retroKeyboardEl.contains(event.target)) return;
+    const field = fieldForRetroKeyboardTarget(event.target);
+    if (!field) return;
+    event.preventDefault();
+    openRetroKeyboard(field);
+  }, true);
+  document.addEventListener("focusin", (event) => {
+    if (retroKeyboardTarget && event.target !== retroKeyboardTarget && !retroKeyboardEl.contains(event.target)) {
+      closeRetroKeyboard();
+    }
+  }, true);
+  document.addEventListener("keydown", (event) => {
+    if (!retroKeyboardTarget) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeRetroKeyboard();
+    } else if (event.key === "Backspace") {
+      event.preventDefault();
+      deleteRetroKeyboardSelection();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      handleRetroKeyboardAction(retroKeyboardTarget.tagName.toLowerCase() === "textarea" ? "return" : "next", "");
+    } else if (event.key.length === 1) {
+      event.preventDefault();
+      replaceRetroKeyboardSelection(event.key);
+    }
+  }, true);
+  retroKeyboardCloseButtonEl.addEventListener("click", closeRetroKeyboard);
+  retroKeyboardKeysEl.addEventListener("pointerdown", (event) => event.preventDefault());
+  retroKeyboardKeysEl.addEventListener("click", (event) => {
+    const key = event.target.closest("button");
+    if (!key) return;
+    handleRetroKeyboardAction(key.dataset.action, key.dataset.value);
+  });
+  syncRetroKeyboardAvailability();
+}
+
 function applyDeviceProfile() {
   const previousDevice = document.body.dataset.device;
   document.body.dataset.device = detectDeviceProfile();
@@ -1772,6 +2060,7 @@ function applyDeviceProfile() {
   if (previousDevice && previousDevice !== document.body.dataset.device) {
     renderRunnerCards();
   }
+  syncRetroKeyboardAvailability();
 }
 
 function usesTouchControls() {
@@ -9969,6 +10258,7 @@ tutorialNextButtonEl.addEventListener("click", showNextTutorialSlide);
 window.addEventListener("resize", applyDeviceProfile);
 window.addEventListener("orientationchange", applyDeviceProfile);
 
+initializeRetroKeyboard();
 applyDeviceProfile();
 updateGameLibrarySelection();
 syncFranchiseSetupState();

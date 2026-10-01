@@ -220,8 +220,8 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260930-se-field-fit/);
-assert.match(html, /styles\.css\?v=20260930-se-field-fit/);
+assert.match(html, /game\.js\?v=20260930-pocket-keys/);
+assert.match(html, /styles\.css\?v=20260930-pocket-keys/);
 assert.match(source, /function searchPlayers\(/);
 assert.match(styles, /\.community-player-search\s*\{/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
@@ -232,8 +232,8 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260930-se-field-fit/);
-assert.match(html, /seasonal-games\.js\?v=20260930-se-field-fit/);
+assert.match(html, /pocket-dynasty\.js\?v=20260930-pocket-keys/);
+assert.match(html, /seasonal-games\.js\?v=20260930-pocket-keys/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -548,7 +548,17 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260930-se-field-fit/);
+assert.match(html, /20260930-pocket-keys/);
+assert.match(html, /id="retroKeyboard"[^>]*aria-label="Retro Run keyboard"[^>]*hidden/);
+assert.match(html, /id="retroKeyboardKeys"/);
+assert.match(source, /function shouldUseRetroKeyboard\(/);
+assert.match(source, /new URLSearchParams\(location\.search\)\.has\("touchKeyboard"\)/);
+assert.match(source, /\(any-pointer: fine\)/);
+assert.match(source, /function initializeRetroKeyboard\(/);
+assert.match(source, /field\.setAttribute\("inputmode", "none"\)/);
+assert.match(source, /initializeRetroKeyboard\(\);\s*applyDeviceProfile\(\);/);
+assert.match(styles, /\.retro-keyboard\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*80/s);
+assert.match(styles, /body\.retro-keyboard-open input:read-only/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,

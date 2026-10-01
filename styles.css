@@ -7971,6 +7971,163 @@ body[data-device="mobile"] #seasonalCanvas {
   border: 0 !important;
 }
 
+.retro-keyboard {
+  position: fixed;
+  z-index: 80;
+  inset: auto 0 0;
+  width: min(100%, 620px);
+  margin: 0 auto;
+  padding: 7px max(6px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  color: #f6f3de;
+  background: #10263a;
+  border: 4px solid #07131f;
+  border-bottom: 0;
+  box-shadow: inset 0 0 0 3px #294967, 0 -7px 0 rgba(7, 15, 24, 0.38);
+  touch-action: manipulation;
+}
+
+.retro-keyboard[hidden] {
+  display: none !important;
+}
+
+.retro-keyboard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  margin-bottom: 6px;
+  padding: 4px 6px 4px 9px;
+  background: #1c3a56;
+  border: 2px solid #07131f;
+}
+
+.retro-keyboard-head div,
+.retro-keyboard-head span,
+.retro-keyboard-head strong {
+  min-width: 0;
+}
+
+.retro-keyboard-head span,
+.retro-keyboard-head strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.retro-keyboard-head span {
+  color: #f0bf43;
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+}
+
+.retro-keyboard-head strong {
+  max-width: 245px;
+  font-size: 0.68rem;
+}
+
+.retro-keyboard-head button,
+.retro-keyboard-row button {
+  min-width: 0;
+  margin: 0;
+  color: #f6f3de;
+  background: #294967;
+  border: 2px solid #07131f;
+  box-shadow: inset 0 -3px 0 rgba(7, 15, 24, 0.3);
+  font: 800 0.72rem/1 "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.retro-keyboard-head button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 5px 10px;
+  color: #10263a;
+  background: #f0bf43;
+}
+
+.retro-keyboard-keys {
+  display: grid;
+  gap: 4px;
+}
+
+.retro-keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.retro-keyboard-row button {
+  flex: 1 1 0;
+  height: 38px;
+  padding: 0 2px;
+}
+
+.retro-keyboard-row button:active,
+.retro-keyboard-row button.selected {
+  color: #10263a;
+  background: #f0bf43;
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.retro-keyboard-row .retro-key-space {
+  flex-grow: 4;
+}
+
+.retro-keyboard-row .retro-key-shift,
+.retro-keyboard-row .retro-key-delete,
+.retro-keyboard-row .retro-key-symbols,
+.retro-keyboard-row .retro-key-letters,
+.retro-keyboard-row .retro-key-next,
+.retro-keyboard-row .retro-key-return,
+.retro-keyboard-row .retro-key-done {
+  flex-grow: 1.7;
+  font-size: 0.55rem;
+}
+
+.retro-keyboard-row .retro-key-done {
+  color: #10263a;
+  background: #f0bf43;
+}
+
+body.retro-keyboard-open {
+  touch-action: pan-y;
+}
+
+body.retro-keyboard-open .homepage,
+body.retro-keyboard-open .account-card,
+body.retro-keyboard-open .community-card,
+body.retro-keyboard-open .creator-card,
+body.retro-keyboard-open .game-library {
+  scroll-padding-bottom: 250px;
+}
+
+body.retro-keyboard-open input:read-only,
+body.retro-keyboard-open textarea:read-only {
+  border-color: #f0bf43;
+  box-shadow: inset 0 0 0 2px #10263a, 0 0 0 2px #f0bf43;
+}
+
+@media (max-height: 560px) {
+  .retro-keyboard {
+    padding-top: 4px;
+  }
+
+  .retro-keyboard-head {
+    min-height: 30px;
+    margin-bottom: 4px;
+  }
+
+  .retro-keyboard-row button {
+    height: 32px;
+  }
+}
+
 .seasonal-scoreboard .score-card strong {
   font-size: 1.12rem;
   overflow: visible;
