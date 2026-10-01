@@ -220,8 +220,8 @@ assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
-assert.match(html, /game\.js\?v=20260928-username-gateway/);
-assert.match(html, /styles\.css\?v=20260928-username-gateway/);
+assert.match(html, /game\.js\?v=20260930-se-field-fit/);
+assert.match(html, /styles\.css\?v=20260930-se-field-fit/);
 assert.match(source, /function searchPlayers\(/);
 assert.match(styles, /\.community-player-search\s*\{/);
 assert.match(html, /id="careerPathCustom"[^>]*value="custom"[^>]*checked/);
@@ -232,7 +232,8 @@ assert.match(styles, /\.career-path-picker\s*\{/);
 assert.match(html, /id="pocketDynastyTrigger"/);
 assert.match(html, /id="pocketDynastyScreen"[^>]*hidden/);
 assert.match(html, /id="pocketDynastyCanvas"/);
-assert.match(html, /pocket-dynasty\.js\?v=20260928-username-gateway/);
+assert.match(html, /pocket-dynasty\.js\?v=20260930-se-field-fit/);
+assert.match(html, /seasonal-games\.js\?v=20260930-se-field-fit/);
 assert.match(pocketDynastySource, /const GAME_COUNT = 12/);
 assert.match(pocketDynastySource, /function callPlay\(type\)/);
 assert.match(pocketDynastySource, /function upgradePlayer\(playerId\)/);
@@ -547,7 +548,7 @@ assert.match(seasonalSource, /Santa hops down the chimney and pulls the present 
 assert.match(seasonalSource, /const SEASONAL_LANE_COUNT = 6/);
 assert.match(seasonalSource, /function beginSeasonalChallenge\(/);
 assert.match(seasonalSource, /function completeSeasonalFinale\(/);
-assert.match(html, /20260928-username-gateway/);
+assert.match(html, /20260930-se-field-fit/);
 assert.match(
   styles,
   /body\[data-device="desktop"\] #gameCanvas\s*\{[^}]*width:\s*auto[^}]*height:\s*min\(100%, calc\(100dvh - 132px\)\)[^}]*aspect-ratio:\s*3 \/ 4/s,
@@ -605,6 +606,10 @@ seasonalPlayerTypes.forEach((playerType) => {
 });
 assert.match(styles, /body\[data-device="mobile"\] #seasonalCanvas\s*\{[^}]*width:\s*min\(100%, calc\(\(100dvh - 120px\) \* 0\.75\)\)[^}]*height:\s*auto/s);
 assert.match(styles, /body\[data-device="laptop"\] #seasonalCanvas\s*\{[^}]*width:\s*min\(100%, calc\(\(100dvh - 150px\) \* 0\.75\)\)[^}]*height:\s*auto/s);
+assert.match(source, /document\.body\.classList\.toggle\("gameplay-active", gameState === "playing"\)/);
+assert.match(seasonalSource, /document\.body\.classList\.add\("seasonal-gameplay-active"\)/);
+assert.match(styles, /@media \(max-width: 430px\) and \(max-height: 740px\) and \(orientation: portrait\)/);
+assert.match(styles, /body\[data-device="mobile"\]\.gameplay-active #gameCanvas\s*,[\s\S]*?width:\s*min\(100%, calc\(\(100dvh - 34px\) \* 0\.75\)\)[\s\S]*?aspect-ratio:\s*3 \/ 4/);
 
 function runSeasonalProfile(profileId) {
   const seasonalIds = [

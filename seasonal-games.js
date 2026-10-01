@@ -662,6 +662,7 @@ function currentSeasonalCrosserColors() {
 }
 
 function setSeasonalOverlay(title, text, buttonText, kicker) {
+  document.body.classList.remove("seasonal-gameplay-active");
   seasonalOverlay.hidden = false;
   seasonalOverlayTitle.textContent = title;
   seasonalOverlayText.textContent = text;
@@ -725,6 +726,7 @@ function closeSeasonalGame() {
   seasonalScreen.hidden = true;
   gameLibrary.hidden = false;
   document.body.classList.remove("seasonal-game-open");
+  document.body.classList.remove("seasonal-gameplay-active");
   document.body.classList.add("game-library-open");
 }
 
@@ -779,6 +781,7 @@ function beginSeasonalLevel(newRun = false) {
   };
   createSeasonalLanes();
   seasonalOverlay.hidden = true;
+  document.body.classList.add("seasonal-gameplay-active");
   syncSeasonalHud();
 }
 

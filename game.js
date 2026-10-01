@@ -6938,6 +6938,7 @@ function openGameLibrary() {
   if (activeSlotIndex !== null) {
     saveFranchise();
   }
+  document.body.classList.remove("gameplay-active");
   gameLibraryOpen = true;
   gameState = "menu";
   fieldGoalPanelEl.hidden = true;
@@ -9712,11 +9713,13 @@ function timeLocked() {
 
 function showOverlay() {
   overlayEl.classList.remove("hidden");
+  document.body.classList.remove("gameplay-active");
   document.body.classList.add("menu-scroll-enabled");
 }
 
 function hideOverlay() {
   overlayEl.classList.add("hidden");
+  document.body.classList.toggle("gameplay-active", gameState === "playing");
   document.body.classList.remove("menu-scroll-enabled");
   homepagePanelEl.hidden = true;
 }
