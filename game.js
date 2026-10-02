@@ -2803,6 +2803,34 @@ function setCloudSyncStatus(message, state = "") {
   else delete cloudSyncStatusEl.dataset.state;
 }
 
+function newAccountIdentityLooksReserved(username, tag) {
+  const reservedTerms = [
+    "retrorun",
+    "creator",
+    "founder",
+    "developer",
+    "administrator",
+    "admin",
+    "moderator",
+    "official",
+    "owner",
+    "staff",
+    "support",
+    "schwartzdev",
+    "gamemaker",
+    "gameauthor",
+    "createdby",
+    "madeby",
+  ];
+  return [username, tag].some((value) => {
+    const identity = String(value || "")
+      .normalize("NFKD")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+    return reservedTerms.some((term) => identity.includes(term));
+  });
+}
+
 function renderCloudAccount() {
   const signedIn = Boolean(cloudAccount?.profileComplete);
   const profilePending = Boolean(cloudAccount && !cloudAccount.profileComplete);
@@ -2870,7 +2898,7 @@ function setAccountMode(mode) {
   accountHelpTextEl.textContent = completingProfile
     ? `Keep @${cloudAccount?.tag || "your_tag"} as your sign-in tag and choose a separate username. This can only be set once.`
     : creating
-      ? "Choose a display username and a unique sign-in tag, then enter and confirm your password. No email required."
+      ? "Choose a display username and unique sign-in tag. Creator, owner, developer, admin, staff, support, official, and Retro Run identity terms are reserved."
       : "Sign in with your unique tag and password. No email required.";
   accountMessageEl.textContent = "";
   accountMessageEl.classList.remove("error");
@@ -3927,6 +3955,11 @@ async function submitCloudAccount(event) {
   const tag = accountTagInputEl.value.trim().toLowerCase();
   const password = accountPasscodeInputEl.value;
   const confirmPassword = accountConfirmPasswordInputEl.value;
+  if (accountMode === "signup" && newAccountIdentityLooksReserved(username, tag)) {
+    accountMessageEl.textContent = "Choose a different username and tag. Creator, owner, developer, admin, staff, support, official, and Retro Run identity terms are reserved.";
+    accountMessageEl.classList.add("error");
+    return;
+  }
   accountMessageEl.textContent = accountMode === "profile"
     ? "Saving your username..."
     : accountMode === "signup" ? "Creating account..." : "Signing in...";

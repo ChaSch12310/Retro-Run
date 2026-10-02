@@ -126,6 +126,18 @@ try {
     },
   })).status, 400);
 
+  const reservedSignup = await api("/api/auth/signup", {
+    method: "POST",
+    body: {
+      username: "Retro Run Creator",
+      tag: "new_runner",
+      password: "test-password-42",
+      confirmPassword: "test-password-42",
+    },
+  });
+  assert.equal(reservedSignup.status, 400);
+  assert.match((await reservedSignup.json()).error, /identity terms are reserved/);
+
   const legacyCredentials = await hashPassword("legacy-password-42");
   sql.exec(
     `INSERT INTO users (
@@ -184,6 +196,31 @@ try {
     authenticated: true,
     username: "Legacy Runner",
     tag: "legacy_tag",
+    profileComplete: true,
+  });
+
+  const creatorCredentials = await hashPassword("creator-password-42");
+  sql.exec(
+    `INSERT INTO users (
+       id, email, username, display_name, password_salt, password_hash, created_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    "existing-creator-id",
+    "creator@accounts.retrorun.invalid",
+    "creator",
+    "Retro Run Creator",
+    creatorCredentials.salt,
+    creatorCredentials.hash,
+    Date.now()
+  );
+  const existingCreatorSignin = await api("/api/auth/signin", {
+    method: "POST",
+    body: { tag: "creator", password: "creator-password-42" },
+  });
+  assert.equal(existingCreatorSignin.status, 200);
+  assert.deepEqual(await existingCreatorSignin.json(), {
+    authenticated: true,
+    username: "Retro Run Creator",
+    tag: "creator",
     profileComplete: true,
   });
 

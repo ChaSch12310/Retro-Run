@@ -7,6 +7,7 @@ import worker, {
   mergeSaveBundles,
   nextHourlyUpdate,
   normalizeDisplayName,
+  newAccountIdentityError,
   normalizeLeaderboardSubmission,
   normalizeSaveBundle,
   normalizeUsername,
@@ -16,6 +17,9 @@ import siteWorker from "../site-worker.js";
 
 assert.equal(normalizeUsername("  Player_One  "), "player_one");
 assert.equal(normalizeDisplayName("  Player   One  "), "Player One");
+assert.match(newAccountIdentityError("Retro Run Creator", "runner_42"), /identity terms are reserved/);
+assert.match(newAccountIdentityError("Regular Runner", "retro_run_admin"), /identity terms are reserved/);
+assert.equal(newAccountIdentityError("Regular Runner", "runner_42"), "");
 assert.equal(SAVE_KEYS.length, 10);
 assert.equal(Object.keys(LEADERBOARD_GAMES).length, 10);
 

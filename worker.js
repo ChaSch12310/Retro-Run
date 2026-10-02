@@ -32,6 +32,24 @@ const ISSUE_REPORT_CATEGORIES = new Set([
   "account",
   "other",
 ]);
+const RESERVED_NEW_ACCOUNT_IDENTITIES = [
+  "retrorun",
+  "creator",
+  "founder",
+  "developer",
+  "administrator",
+  "admin",
+  "moderator",
+  "official",
+  "owner",
+  "staff",
+  "support",
+  "schwartzdev",
+  "gamemaker",
+  "gameauthor",
+  "createdby",
+  "madeby",
+];
 
 export const LEADERBOARD_GAMES = {
   gridiron: "Gridiron Dash",
@@ -113,6 +131,19 @@ export function normalizeUsername(value) {
 
 export function normalizeDisplayName(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+export function newAccountIdentityError(username, tag) {
+  const identities = [username, tag].map((value) => String(value || "")
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ""));
+  const reserved = identities.some((identity) => RESERVED_NEW_ACCOUNT_IDENTITIES.some(
+    (term) => identity.includes(term)
+  ));
+  return reserved
+    ? "Choose a different username and tag. Creator, owner, developer, admin, staff, support, official, and Retro Run identity terms are reserved."
+    : "";
 }
 
 function tagError(tag) {
@@ -581,8 +612,9 @@ export class AccountStore {
     const usernameMessage = displayNameError(username, tag);
     const tagMessage = tagError(tag);
     const passwordMessage = passwordError(password);
-    if (usernameMessage || tagMessage || passwordMessage) {
-      return errorResponse(usernameMessage || tagMessage || passwordMessage);
+    const identityMessage = newAccountIdentityError(username, tag);
+    if (usernameMessage || tagMessage || passwordMessage || identityMessage) {
+      return errorResponse(usernameMessage || tagMessage || passwordMessage || identityMessage);
     }
     const confirmation = typeof body.confirmPassword === "string"
       ? body.confirmPassword
