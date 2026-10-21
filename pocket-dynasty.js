@@ -295,6 +295,7 @@
 
   function startGame() {
     if (state.pendingEvent || state.offseason || state.game?.active) return;
+    window.retroRunCloseKeyboard?.();
     state.game = {
       active: true,
       playerScore: 0,
@@ -1362,6 +1363,7 @@
   }
 
   function open() {
+    window.retroRunCloseKeyboard?.();
     screen.hidden = false;
     gameLibrary.hidden = true;
     document.body.classList.add("pocket-dynasty-open");
@@ -1370,6 +1372,7 @@
   }
 
   function close() {
+    window.retroRunCloseKeyboard?.();
     screen.hidden = true;
     gameLibrary.hidden = false;
     document.body.classList.remove("pocket-dynasty-open");

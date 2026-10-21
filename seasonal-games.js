@@ -691,6 +691,7 @@ function syncSeasonalHud() {
 function openSeasonalGame(gameId) {
   const game = seasonalGameById(gameId);
   if (!game || !seasonalScreen) return;
+  globalThis.retroRunCloseKeyboard?.();
   activeSeasonalGame = game;
   seasonalState = "menu";
   document.body.classList.add("seasonal-game-open");
@@ -722,6 +723,7 @@ function openSeasonalGame(gameId) {
 
 function closeSeasonalGame() {
   if (!seasonalScreen || seasonalScreen.hidden) return;
+  globalThis.retroRunCloseKeyboard?.();
   seasonalState = "menu";
   seasonalScreen.hidden = true;
   gameLibrary.hidden = false;
@@ -758,6 +760,7 @@ function createSeasonalLanes() {
 }
 
 function beginSeasonalLevel(newRun = false) {
+  globalThis.retroRunCloseKeyboard?.();
   if (newRun) {
     seasonalLevel = 0;
     seasonalRunScore = 0;

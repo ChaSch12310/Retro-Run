@@ -8025,6 +8025,12 @@ body[data-device="mobile"] #seasonalCanvas {
   display: none !important;
 }
 
+body.gameplay-active .retro-keyboard,
+body.seasonal-gameplay-active .retro-keyboard,
+body.pocket-dynasty-open .retro-keyboard {
+  display: none !important;
+}
+
 .retro-keyboard-head {
   display: flex;
   align-items: center;

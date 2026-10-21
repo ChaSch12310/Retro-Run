@@ -1889,6 +1889,15 @@ function closeRetroKeyboard() {
   if (retroKeyboardEl) retroKeyboardEl.hidden = true;
 }
 
+function focusWithoutTouchKeyboard(field) {
+  if (!field) return;
+  if (retroKeyboardEnabled && isRetroKeyboardField(field)) {
+    field.blur?.();
+    return;
+  }
+  field.focus();
+}
+
 function openRetroKeyboard(field) {
   if (!retroKeyboardEnabled || !isRetroKeyboardField(field) || !retroKeyboardEl) return;
   if (retroKeyboardTarget === field) {
@@ -2017,7 +2026,10 @@ function initializeRetroKeyboard() {
   document.addEventListener("pointerdown", (event) => {
     if (!retroKeyboardEnabled || retroKeyboardEl.contains(event.target)) return;
     const field = fieldForRetroKeyboardTarget(event.target);
-    if (!field) return;
+    if (!field) {
+      if (retroKeyboardTarget) closeRetroKeyboard();
+      return;
+    }
     event.preventDefault();
     openRetroKeyboard(field);
   }, true);
@@ -2049,6 +2061,7 @@ function initializeRetroKeyboard() {
     if (!key) return;
     handleRetroKeyboardAction(key.dataset.action, key.dataset.value);
   });
+  globalThis.retroRunCloseKeyboard = closeRetroKeyboard;
   syncRetroKeyboardAvailability();
 }
 
@@ -2178,6 +2191,7 @@ function createFranchiseFromForm() {
 }
 
 function startLevel() {
+  closeRetroKeyboard();
   if (!ensureHealthyRunner()) {
     franchise.roster.forEach((runner) => { runner.injuredGames = 0; });
     ensureHealthyRunner();
@@ -2917,21 +2931,22 @@ function requireUsernameUpdate(tag = "", message = "") {
   accountModalEl.hidden = false;
   accountMessageEl.textContent = message || "Enter and save your username below to finish updating your account.";
   accountMessageEl.classList.remove("error");
-  accountUsernameInputEl.focus();
+  focusWithoutTouchKeyboard(accountUsernameInputEl);
 }
 
 function openAccountModal() {
   accountModalEl.hidden = false;
   renderCloudAccount();
   if (!cloudAccount) {
-    (accountMode === "signup" ? accountUsernameInputEl : accountTagInputEl).focus();
+    focusWithoutTouchKeyboard(accountMode === "signup" ? accountUsernameInputEl : accountTagInputEl);
   } else if (!cloudAccount.profileComplete) {
-    accountUsernameInputEl.focus();
+    focusWithoutTouchKeyboard(accountUsernameInputEl);
   }
   else (accountSyncButtonEl.hidden ? accountSignoutButtonEl : accountSyncButtonEl).focus();
 }
 
 function closeAccountModal() {
+  closeRetroKeyboard();
   accountModalEl.hidden = true;
   accountPasscodeInputEl.value = "";
   accountConfirmPasswordInputEl.value = "";
@@ -3324,7 +3339,7 @@ async function selectFriendConversation(conversationId) {
   setCommunityStatus(friendChatMessageEl, "Opening friend chat...");
   try {
     await refreshFriendChats({ quiet: true });
-    friendMessageInputEl.focus();
+    focusWithoutTouchKeyboard(friendMessageInputEl);
   } catch (error) {
     setCommunityStatus(friendChatMessageEl, error.message, true);
   }
@@ -3414,7 +3429,7 @@ async function submitFriendMessage(event) {
     friendMessageInputEl.value = "";
     updateFriendMessageCharacterCount();
     await refreshFriendChats();
-    friendMessageInputEl.focus();
+    focusWithoutTouchKeyboard(friendMessageInputEl);
   } catch (error) {
     setCommunityStatus(friendChatMessageEl, error.message, true);
   } finally {
@@ -3551,18 +3566,18 @@ function setCommunityMode(mode) {
   communityDirectModeButtonEl.setAttribute("aria-pressed", String(showingDirect));
   communityIssueModeButtonEl.setAttribute("aria-pressed", String(showingIssue));
   if (showingIssue) {
-    issueReportDetailsEl.focus();
+    focusWithoutTouchKeyboard(issueReportDetailsEl);
   } else if (showingFriends) {
     refreshSocial();
     if (followPlayerUsernameEl.value.trim()) schedulePlayerSearch();
-    followPlayerUsernameEl.focus();
+    focusWithoutTouchKeyboard(followPlayerUsernameEl);
   } else if (showingDirect) {
     refreshFriendChats();
-    if (activeFriendConversationId) friendMessageInputEl.focus();
-    else friendChatUsernamesEl.focus();
+    if (activeFriendConversationId) focusWithoutTouchKeyboard(friendMessageInputEl);
+    else focusWithoutTouchKeyboard(friendChatUsernamesEl);
   } else {
     refreshChat();
-    communityMessageInputEl.focus();
+    focusWithoutTouchKeyboard(communityMessageInputEl);
   }
 }
 
@@ -3592,6 +3607,7 @@ function openCommunity(mode = "chat") {
 }
 
 function closeCommunity() {
+  closeRetroKeyboard();
   communityModalEl.hidden = true;
   if (communityPollTimer) clearInterval(communityPollTimer);
   communityPollTimer = null;
@@ -3615,7 +3631,7 @@ async function submitCommunityMessage(event) {
     communityMessageInputEl.value = "";
     updateCommunityCharacterCount();
     await refreshChat();
-    communityMessageInputEl.focus();
+    focusWithoutTouchKeyboard(communityMessageInputEl);
   } catch (error) {
     setCommunityStatus(communityMessageEl, error.message, true);
   } finally {
@@ -3630,7 +3646,7 @@ async function submitFollowPlayer(event) {
   followPlayerSubmitButtonEl.disabled = true;
   await searchPlayers(followPlayerUsernameEl.value);
   followPlayerSubmitButtonEl.disabled = false;
-  followPlayerUsernameEl.focus();
+  focusWithoutTouchKeyboard(followPlayerUsernameEl);
 }
 
 async function submitPlayerReport(event) {
@@ -4238,7 +4254,7 @@ function openCreatorTools(requestedRunnerId = null) {
   creatorMessageEl.textContent = "Enter creator access to edit player levels and season position.";
   updateCreatorAttemptsText();
   creatorModalEl.hidden = false;
-  creatorUsernameInputEl.focus();
+  focusWithoutTouchKeyboard(creatorUsernameInputEl);
 }
 
 function openCreatorToolsFromRunnerPower(runnerId) {
@@ -4250,6 +4266,7 @@ function openCreatorToolsFromRunnerPower(runnerId) {
 }
 
 function closeCreatorTools() {
+  closeRetroKeyboard();
   creatorModalEl.hidden = true;
   if (gameState === "creatorTools") {
     gameState = creatorReturnGameState || "menu";
@@ -4312,7 +4329,7 @@ async function unlockCreatorTools(event) {
     creatorLoginFormEl.hidden = true;
     creatorLevelsFormEl.hidden = false;
     creatorAttemptsTextEl.textContent = "Unlocked";
-    creatorSpeedInputEl.focus();
+    focusWithoutTouchKeyboard(creatorSpeedInputEl);
     return;
   }
 
@@ -4325,7 +4342,7 @@ async function unlockCreatorTools(event) {
 
   creatorMessageEl.textContent = `Access denied. ${creatorAttemptsRemaining} ${creatorAttemptsRemaining === 1 ? "try" : "tries"} left.`;
   creatorPasswordInputEl.value = "";
-  creatorPasswordInputEl.focus();
+  focusWithoutTouchKeyboard(creatorPasswordInputEl);
 }
 
 function saveCreatorLevels(event) {
@@ -7191,6 +7208,7 @@ function updateGameLibrarySelection() {
 }
 
 function selectArcadeGame(gameId) {
+  closeRetroKeyboard();
   if (activeSlotIndex !== null) {
     saveFranchise();
   }
@@ -7257,6 +7275,7 @@ function openDodgeballDash() {
 }
 
 function openGameLibrary() {
+  closeRetroKeyboard();
   if (activeSlotIndex !== null) {
     saveFranchise();
   }
@@ -10034,12 +10053,14 @@ function timeLocked() {
 }
 
 function showOverlay() {
+  closeRetroKeyboard();
   overlayEl.classList.remove("hidden");
   document.body.classList.remove("gameplay-active");
   document.body.classList.add("menu-scroll-enabled");
 }
 
 function hideOverlay() {
+  closeRetroKeyboard();
   overlayEl.classList.add("hidden");
   document.body.classList.toggle("gameplay-active", gameState === "playing");
   document.body.classList.remove("menu-scroll-enabled");
