@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Report Control Center | Retro Run</title>
+    <link rel="icon" href="assets/retro-run-icon-transparent.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css?v=20261020-report-control-center" />
+  </head>
+  <body class="moderation-page">
+    <main class="moderation-shell">
+      <a class="moderation-home-link" href="/" aria-label="Return to Retro Run">Retro Run</a>
+      <section class="moderation-card" aria-labelledby="moderationTitle">
+        <header class="moderation-header">
+          <div>
+            <span class="eyebrow">Creator Access</span>
+            <h1 id="moderationTitle">Report Control Center</h1>
+          </div>
+          <span class="moderation-lock" aria-hidden="true">Locked</span>
+        </header>
+
+        <form id="moderationLoginForm" class="moderation-login">
+          <label for="moderationPassword">Moderation password</label>
+          <input
+            id="moderationPassword"
+            name="password"
+            type="password"
+            minlength="8"
+            maxlength="128"
+            autocomplete="current-password"
+            required
+          />
+          <button class="primary-button" type="submit">Open Report</button>
+        </form>
+
+        <p id="moderationStatus" class="moderation-status" role="status">
+          Enter the creator account password to review this report.
+        </p>
+
+        <section id="moderationReport" class="moderation-report" hidden>
+          <div class="moderation-report-heading">
+            <div>
+              <span id="moderationType" class="eyebrow"></span>
+              <h2 id="moderationReportId">Report</h2>
+            </div>
+            <time id="moderationDate"></time>
+          </div>
+          <dl id="moderationDetails" class="moderation-details"></dl>
+          <div id="moderationActions" class="moderation-actions" hidden>
+            <button id="moderationRemoveButton" class="secondary-button danger-button" type="button">
+              Take Down Post
+            </button>
+            <button id="moderationBanButton" class="primary-button danger-button" type="button">
+              Ban Account
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="moderation.js?v=20261020-report-control-center"></script>
+  </body>
+</html>

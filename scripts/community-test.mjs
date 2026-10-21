@@ -35,6 +35,16 @@ assert.ok(
     .some((column) => column.name === "display_name"),
   "Existing account databases should gain the display_name column."
 );
+assert.ok(
+  legacySchemaSql.exec("PRAGMA table_info(users)").toArray()
+    .some((column) => column.name === "banned_at"),
+  "Existing account databases should gain the banned_at column."
+);
+assert.ok(
+  legacySchemaSql.exec("PRAGMA table_info(users)").toArray()
+    .some((column) => column.name === "ban_reason"),
+  "Existing account databases should gain the ban_reason column."
+);
 legacySchemaDatabase.close();
 
 const database = new DatabaseSync(":memory:");
@@ -396,7 +406,9 @@ try {
   });
   assert.equal(privateReport.status, 201);
   assert.equal(sentPlayerReports.length, 1);
+  assert.equal(sentPlayerReports[0].to, "retrorun@schwartzdev.com");
   assert.match(sentPlayerReports[0].text, /Location: Friend chat/);
+  assert.match(sentPlayerReports[0].text, /moderate\.html\?report=/);
 
   for (const [cookie, username] of [
     [aliceCookie, "charlie_chat"],
@@ -448,11 +460,27 @@ try {
     },
   });
   assert.equal(playerReport.status, 201);
-  assert.equal((await playerReport.json()).emailSent, true);
+  const playerReportData = await playerReport.json();
+  assert.equal(playerReportData.emailSent, true);
   assert.equal(sentPlayerReports.length, 2);
-  assert.equal(sentPlayerReports[1].to, "reports@retrorun.win");
+  assert.equal(sentPlayerReports[1].to, "retrorun@schwartzdev.com");
   assert.match(sentPlayerReports[1].text, /Reported player: Alice Runner \(@alice_chat\)/);
   assert.match(sentPlayerReports[1].text, /Message: Great run, Bob!/);
+  assert.match(sentPlayerReports[1].text, new RegExp(`moderate\\.html\\?report=${playerReportData.reportId}`));
+
+  assert.equal((await api("/api/moderation/report", {
+    method: "POST",
+    body: { reportId: playerReportData.reportId, password: "wrong-password" },
+  })).status, 401);
+  const moderationReport = await api("/api/moderation/report", {
+    method: "POST",
+    body: { reportId: playerReportData.reportId, password: "creator-password-42" },
+  });
+  assert.equal(moderationReport.status, 200);
+  const moderationReportData = (await moderationReport.json()).report;
+  assert.equal(moderationReportData.target.tag, "alice_chat");
+  assert.equal(moderationReportData.canBan, true);
+  assert.equal(moderationReportData.canRemove, true);
 
   assert.equal((await api("/api/reports/player", {
     method: "POST",
@@ -464,6 +492,18 @@ try {
     cookie: aliceCookie,
     body: { messageId: sentMessage.id, reason: "other" },
   })).status, 400);
+
+  const removePost = await api("/api/moderation/action", {
+    method: "POST",
+    body: {
+      reportId: playerReportData.reportId,
+      password: "creator-password-42",
+      action: "remove-message",
+    },
+  });
+  assert.equal(removePost.status, 200);
+  assert.equal((await removePost.json()).report.canRemove, false);
+  assert.equal((await (await api("/api/chat", { cookie: bobCookie })).json()).messages.length, 0);
 
   const issueReport = await api("/api/reports/issue", {
     method: "POST",
@@ -479,11 +519,12 @@ try {
   assert.equal(issueReport.status, 201);
   assert.equal((await issueReport.json()).emailSent, true);
   assert.equal(sentIssueReports.length, 1);
-  assert.equal(sentIssueReports[0].to, "updates@retrorun.win");
+  assert.equal(sentIssueReports[0].to, "retrorun@schwartzdev.com");
   assert.match(sentIssueReports[0].text, /Game: Gridiron Dash/);
   assert.match(sentIssueReports[0].text, /1920x1080/);
+  assert.match(sentIssueReports[0].text, /moderate\.html\?report=/);
 
-  for (let index = 0; index < 5; index += 1) {
+  for (let index = 0; index < 6; index += 1) {
     assert.equal((await api("/api/chat", {
       method: "POST",
       cookie: aliceCookie,
@@ -495,6 +536,38 @@ try {
     cookie: aliceCookie,
     body: { message: "One message too many" },
   })).status, 429);
+
+  const banAccount = await api("/api/moderation/action", {
+    method: "POST",
+    body: {
+      reportId: playerReportData.reportId,
+      password: "creator-password-42",
+      action: "ban-account",
+    },
+  });
+  assert.equal(banAccount.status, 200);
+  assert.equal((await banAccount.json()).report.target.banned, true);
+  assert.deepEqual(await (await api("/api/auth/session", { cookie: aliceCookie })).json(), {
+    authenticated: false,
+  });
+  assert.equal((await api("/api/auth/signin", {
+    method: "POST",
+    body: { tag: "alice_chat", password: "test-password-42" },
+  })).status, 403);
+  assert.equal((await api("/api/chat", { cookie: aliceCookie })).status, 401);
+  const searchAfterBan = await (await api("/api/social/search?q=alice", {
+    cookie: bobCookie,
+  })).json();
+  assert.equal(searchAfterBan.players.length, 0);
+
+  assert.equal((await api("/api/moderation/action", {
+    method: "POST",
+    body: {
+      reportId: playerReportData.reportId,
+      password: "wrong-password",
+      action: "ban-account",
+    },
+  })).status, 401);
 
   const storedReports = sql.exec(
     "SELECT report_type, email_status FROM community_reports ORDER BY created_at"

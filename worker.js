@@ -451,6 +451,17 @@ export class AccountStore {
       );
       CREATE INDEX IF NOT EXISTS community_reports_created_at ON community_reports(created_at);
       CREATE INDEX IF NOT EXISTS community_reports_target ON community_reports(target_user_id, created_at);
+      CREATE TABLE IF NOT EXISTS moderation_actions (
+        id TEXT PRIMARY KEY,
+        report_id TEXT NOT NULL,
+        moderator_user_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        target_user_id TEXT,
+        message_id TEXT,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS moderation_actions_report
+        ON moderation_actions(report_id, created_at);
       CREATE TABLE IF NOT EXISTS follows (
         follower_user_id TEXT NOT NULL,
         followed_user_id TEXT NOT NULL,
@@ -501,8 +512,14 @@ export class AccountStore {
     if (!userColumns.some((column) => column.name === "display_name")) {
       this.sql.exec("ALTER TABLE users ADD COLUMN display_name TEXT");
     }
+    if (!userColumns.some((column) => column.name === "banned_at")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN banned_at INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!userColumns.some((column) => column.name === "ban_reason")) {
+      this.sql.exec("ALTER TABLE users ADD COLUMN ban_reason TEXT NOT NULL DEFAULT ''");
+    }
     this.sql.exec(
-      "INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (2, ?)",
+      "INSERT OR IGNORE INTO _sql_schema_migrations (id, applied_at) VALUES (3, ?)",
       Date.now()
     );
     this.removeUnsupportedLeaderboardEntries();
@@ -576,12 +593,13 @@ export class AccountStore {
     const tokenHash = await sha256(token);
     const now = Date.now();
     const user = this.one(
-      `SELECT users.id, users.username AS tag, users.display_name, sessions.expires_at
+      `SELECT users.id, users.username AS tag, users.display_name, users.banned_at,
+              sessions.expires_at
        FROM sessions JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ?`,
       tokenHash
     );
-    if (!user || user.expires_at <= now) {
+    if (!user || user.expires_at <= now || Number(user.banned_at) > 0) {
       this.sql.exec("DELETE FROM sessions WHERE token_hash = ?", tokenHash);
       return null;
     }
@@ -659,7 +677,7 @@ export class AccountStore {
     const tag = normalizeUsername(body.tag || body.username);
     const password = passwordFromBody(body);
     const user = this.one(
-      `SELECT id, username AS tag, display_name, password_salt, password_hash FROM users
+      `SELECT id, username AS tag, display_name, password_salt, password_hash, banned_at FROM users
        WHERE username = ?`,
       tag
     );
@@ -667,6 +685,9 @@ export class AccountStore {
       ? await verifyPassword(password, user.password_salt, user.password_hash)
       : false;
     if (!valid) return errorResponse("Incorrect tag or password.", 401);
+    if (Number(user.banned_at) > 0) {
+      return errorResponse("This account has been banned from Retro Run.", 403);
+    }
     const token = await this.createSession(user.id);
     this.clearAuthAttempts(rate.rateKey);
     return jsonResponse(
@@ -799,7 +820,7 @@ export class AccountStore {
               game_score, player_score, franchise_score
        FROM personal_bests
        LEFT JOIN users ON users.id = personal_bests.user_id
-       WHERE personal_rank = 1
+       WHERE personal_rank = 1 AND COALESCE(users.banned_at, 0) = 0
        ORDER BY (game_score + player_score + franchise_score) DESC,
                 personal_bests.played_at ASC, personal_bests.id ASC
        LIMIT 25`,
@@ -951,7 +972,7 @@ export class AccountStore {
                 AND reverse_follow.followed_user_id = follows.follower_user_id
               ) AS follows_you
        FROM follows JOIN users ON users.id = follows.followed_user_id
-       WHERE follows.follower_user_id = ?
+       WHERE follows.follower_user_id = ? AND users.banned_at = 0
        ORDER BY users.display_name COLLATE NOCASE ASC, users.username COLLATE NOCASE ASC
        LIMIT ?`,
       user.id,
@@ -971,7 +992,7 @@ export class AccountStore {
                 AND reverse_follow.followed_user_id = follows.follower_user_id
               ) AS following
        FROM follows JOIN users ON users.id = follows.follower_user_id
-       WHERE follows.followed_user_id = ?
+       WHERE follows.followed_user_id = ? AND users.banned_at = 0
        ORDER BY users.display_name COLLATE NOCASE ASC, users.username COLLATE NOCASE ASC
        LIMIT ?`,
       user.id,
@@ -1018,6 +1039,7 @@ export class AccountStore {
               ) AS follows_you
        FROM users
        WHERE users.id <> ?
+       AND users.banned_at = 0
        AND users.username LIKE ? ESCAPE '\\'
        ORDER BY CASE
          WHEN users.username = ? THEN 0
@@ -1052,7 +1074,7 @@ export class AccountStore {
     const body = await readJson(request);
     const tag = normalizeUsername(body.tag || body.username);
     const target = this.one(
-      "SELECT id, username AS tag, display_name FROM users WHERE username = ?",
+      "SELECT id, username AS tag, display_name FROM users WHERE username = ? AND banned_at = 0",
       tag
     );
     if (!target) return errorResponse("That player was not found.", 404);
@@ -1119,6 +1141,7 @@ export class AccountStore {
               ) AS follows_you
        FROM chat_messages AS messages
        LEFT JOIN users ON users.id = messages.user_id
+       WHERE COALESCE(users.banned_at, 0) = 0
        ORDER BY messages.created_at DESC, messages.id DESC
        LIMIT ?`,
       user.id,
@@ -1200,7 +1223,7 @@ export class AccountStore {
       `SELECT users.username
        FROM friend_conversation_members AS membership
        JOIN users ON users.id = membership.user_id
-       WHERE membership.conversation_id = ?
+       WHERE membership.conversation_id = ? AND users.banned_at = 0
        ORDER BY users.username COLLATE NOCASE ASC`,
       conversationId
     ).toArray().map((entry) => entry.username);
@@ -1253,7 +1276,8 @@ export class AccountStore {
     if (tags.includes(user.tag)) return errorResponse("You are already included in the chat.");
     const placeholders = tags.map(() => "?").join(", ");
     const targets = this.sql.exec(
-      `SELECT id, username FROM users WHERE username IN (${placeholders})`,
+      `SELECT id, username FROM users
+       WHERE banned_at = 0 AND username IN (${placeholders})`,
       ...tags
     ).toArray();
     if (targets.length !== tags.length) return errorResponse("One or more players were not found.", 404);
@@ -1314,7 +1338,7 @@ export class AccountStore {
               messages.body, messages.created_at
        FROM friend_messages AS messages
        LEFT JOIN users ON users.id = messages.user_id
-       WHERE messages.conversation_id = ?
+       WHERE messages.conversation_id = ? AND COALESCE(users.banned_at, 0) = 0
        ORDER BY messages.created_at DESC, messages.id DESC
        LIMIT ?`,
       conversationId,
@@ -1436,6 +1460,140 @@ export class AccountStore {
     );
   }
 
+  moderationReport(reportId) {
+    const report = this.one(
+      `SELECT reports.id, reports.report_type, reports.reporter_username,
+              reports.message_id, reports.target_user_id, reports.target_username,
+              reports.reason, reports.details, reports.context, reports.created_at,
+              COALESCE(targets.username, '') AS target_tag,
+              COALESCE(targets.display_name, reports.target_username, '') AS target_display_name,
+              COALESCE(targets.banned_at, 0) AS target_banned_at
+       FROM community_reports AS reports
+       LEFT JOIN users AS targets ON targets.id = reports.target_user_id
+       WHERE reports.id = ?`,
+      reportId
+    );
+    if (!report) return null;
+    let context = {};
+    try {
+      context = JSON.parse(report.context || "{}");
+    } catch {
+      context = {};
+    }
+    const actions = this.sql.exec(
+      `SELECT action, created_at FROM moderation_actions
+       WHERE report_id = ? ORDER BY created_at ASC, id ASC`,
+      reportId
+    ).toArray().map((action) => ({
+      action: action.action,
+      createdAt: Number(action.created_at),
+    }));
+    return {
+      id: report.id,
+      type: report.report_type,
+      reporter: report.reporter_username,
+      target: report.target_user_id ? {
+        tag: report.target_tag,
+        username: report.target_display_name,
+        banned: Number(report.target_banned_at) > 0,
+      } : null,
+      reason: report.reason,
+      details: report.details,
+      context,
+      createdAt: Number(report.created_at),
+      actions,
+      canBan: Boolean(report.target_user_id) && Number(report.target_banned_at) === 0,
+      canRemove: Boolean(report.message_id) && !actions.some((action) => action.action === "remove-message"),
+    };
+  }
+
+  async authenticateModerator(request, body) {
+    const rate = await this.consumeAuthAttempt(request, "moderation");
+    if (!rate.allowed) {
+      return {
+        response: errorResponse("Too many attempts. Return to Retro Run and try again later.", 429, {
+          "Retry-After": String(rate.retryAfter),
+        }),
+      };
+    }
+    const adminTag = normalizeUsername(this.env.MODERATION_ADMIN_TAG || "creator");
+    const moderator = this.one(
+      `SELECT id, username AS tag, password_salt, password_hash, banned_at
+       FROM users WHERE username = ?`,
+      adminTag
+    );
+    const password = passwordFromBody(body);
+    const valid = moderator && Number(moderator.banned_at) === 0 && typeof password === "string"
+      ? await verifyPassword(password, moderator.password_salt, moderator.password_hash)
+      : false;
+    if (!valid) return { response: errorResponse("Incorrect moderation password.", 401) };
+    this.clearAuthAttempts(rate.rateKey);
+    return { moderator };
+  }
+
+  async handleModerationReport(request) {
+    const body = await readJson(request);
+    const authentication = await this.authenticateModerator(request, body);
+    if (authentication.response) return authentication.response;
+    const reportId = String(body.reportId || "");
+    if (!/^[a-f0-9-]{20,50}$/i.test(reportId)) return errorResponse("Invalid report link.");
+    const report = this.moderationReport(reportId);
+    return report ? jsonResponse({ report }) : errorResponse("That report was not found.", 404);
+  }
+
+  async handleModerationAction(request) {
+    const body = await readJson(request);
+    const authentication = await this.authenticateModerator(request, body);
+    if (authentication.response) return authentication.response;
+    const reportId = String(body.reportId || "");
+    if (!/^[a-f0-9-]{20,50}$/i.test(reportId)) return errorResponse("Invalid report link.");
+    const source = this.one(
+      `SELECT id, target_user_id, message_id FROM community_reports WHERE id = ?`,
+      reportId
+    );
+    if (!source) return errorResponse("That report was not found.", 404);
+    const action = String(body.action || "");
+    if (!new Set(["ban-account", "remove-message"]).has(action)) {
+      return errorResponse("Choose a valid moderation action.");
+    }
+    const existing = this.one(
+      "SELECT id FROM moderation_actions WHERE report_id = ? AND action = ?",
+      reportId,
+      action
+    );
+    if (existing) return jsonResponse({ completed: true, report: this.moderationReport(reportId) });
+    if (action === "ban-account") {
+      if (!source.target_user_id) return errorResponse("This report has no player account to ban.", 409);
+      if (source.target_user_id === authentication.moderator.id) {
+        return errorResponse("The moderation account cannot ban itself.", 403);
+      }
+      this.sql.exec(
+        "UPDATE users SET banned_at = ?, ban_reason = ? WHERE id = ?",
+        Date.now(),
+        `Community report ${reportId}`,
+        source.target_user_id
+      );
+      this.sql.exec("DELETE FROM sessions WHERE user_id = ?", source.target_user_id);
+    } else {
+      if (!source.message_id) return errorResponse("This report has no post to take down.", 409);
+      this.sql.exec("DELETE FROM chat_messages WHERE id = ?", source.message_id);
+      this.sql.exec("DELETE FROM friend_messages WHERE id = ?", source.message_id);
+    }
+    this.sql.exec(
+      `INSERT INTO moderation_actions (
+         id, report_id, moderator_user_id, action, target_user_id, message_id, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      crypto.randomUUID(),
+      reportId,
+      authentication.moderator.id,
+      action,
+      source.target_user_id || null,
+      source.message_id || null,
+      Date.now()
+    );
+    return jsonResponse({ completed: true, report: this.moderationReport(reportId) });
+  }
+
   async handlePlayerReport(request) {
     const user = await this.currentUser(request);
     if (!user) return errorResponse("Sign in to report a player.", 401);
@@ -1506,10 +1664,12 @@ export class AccountStore {
       `Message date: ${new Date(Number(target.created_at)).toISOString()}`,
       `Message: ${target.body}`,
       `Additional details: ${details || "None"}`,
+      "",
+      `Review and moderate: ${new URL(`/moderate.html?report=${reserved.reportId}`, request.url).href}`,
     ].join("\n");
     const delivery = await this.sendReportEmail(
       this.env.PLAYER_REPORT_EMAIL,
-      "reports@retrorun.win",
+      "retrorun@schwartzdev.com",
       `Retro Run player report: @${target.tag}`,
       emailText
     );
@@ -1551,10 +1711,12 @@ export class AccountStore {
       `Viewport: ${context.viewport}`,
       "",
       details,
+      "",
+      `Review report: ${new URL(`/moderate.html?report=${reserved.reportId}`, request.url).href}`,
     ].join("\n");
     const delivery = await this.sendReportEmail(
       this.env.ISSUE_REPORT_EMAIL,
-      "updates@retrorun.win",
+      "retrorun@schwartzdev.com",
       `Retro Run issue: ${context.gameName} - ${category}`,
       emailText
     );
@@ -1644,6 +1806,12 @@ export class AccountStore {
       }
       if (url.pathname === "/api/reports/issue" && request.method === "POST") {
         return await this.handleIssueReport(request);
+      }
+      if (url.pathname === "/api/moderation/report" && request.method === "POST") {
+        return await this.handleModerationReport(request);
+      }
+      if (url.pathname === "/api/moderation/action" && request.method === "POST") {
+        return await this.handleModerationAction(request);
       }
       return errorResponse("API route not found.", 404);
     } catch (error) {
