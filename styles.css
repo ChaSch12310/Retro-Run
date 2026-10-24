@@ -8333,6 +8333,117 @@ body.retro-keyboard-open textarea:read-only {
   font-weight: 800;
 }
 
+.moderation-inbox {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 5px solid #07131f;
+}
+
+.moderation-inbox-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.moderation-inbox-heading h2 {
+  margin: 5px 0 0;
+  color: #f6f3de;
+  font: 900 clamp(1.4rem, 4vw, 2.35rem)/1 "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+}
+
+.moderation-inbox-heading > strong {
+  flex: 0 0 auto;
+  color: #f0bf43;
+  text-transform: uppercase;
+}
+
+.moderation-inbox-list {
+  display: grid;
+  gap: 9px;
+  max-height: min(58dvh, 620px);
+  padding: 4px;
+  overflow-y: auto;
+  background: #0d2437;
+  border: 4px solid #07131f;
+}
+
+.moderation-inbox-item {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 15px;
+  color: #f6f3de;
+  text-align: left;
+  background: #213f5b;
+  border: 3px solid #294967;
+  box-shadow: inset 6px 0 0 #f0bf43;
+  cursor: pointer;
+}
+
+.moderation-inbox-item:hover,
+.moderation-inbox-item:focus-visible {
+  color: #10263a;
+  background: #f0bf43;
+  border-color: #f6f3de;
+  box-shadow: inset 6px 0 0 #10263a;
+}
+
+.moderation-inbox-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.moderation-inbox-item-heading strong,
+.moderation-inbox-item > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.moderation-inbox-item > span:last-child {
+  color: #c6d0bf;
+  font: 800 0.7rem/1.4 "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+}
+
+.moderation-inbox-item:hover > span:last-child,
+.moderation-inbox-item:focus-visible > span:last-child {
+  color: #294967;
+}
+
+.moderation-inbox-state {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  color: #10263a;
+  background: #f0bf43;
+  border: 2px solid #07131f;
+  font: 900 0.62rem/1 "Arial Black", Impact, sans-serif;
+  text-transform: uppercase;
+}
+
+.moderation-inbox-state.handled {
+  color: #07131f;
+  background: #8ed3a5;
+}
+
+.moderation-inbox-empty {
+  margin: 0;
+  padding: 24px;
+  color: #c6d0bf;
+  text-align: center;
+}
+
+.moderation-back-button {
+  width: auto;
+  margin-bottom: 16px;
+}
+
 .moderation-report {
   margin-top: 22px;
   padding-top: 22px;
@@ -8400,6 +8511,19 @@ body.retro-keyboard-open textarea:read-only {
 
   .moderation-login button {
     min-width: 0;
+  }
+
+  .moderation-inbox-heading,
+  .moderation-inbox-item-heading {
+    align-items: start;
+  }
+
+  .moderation-inbox-item-heading {
+    display: grid;
+  }
+
+  .moderation-inbox-state {
+    justify-self: start;
   }
 
   .moderation-details {

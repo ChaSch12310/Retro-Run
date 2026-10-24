@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Report Control Center | Retro Run</title>
     <link rel="icon" href="assets/retro-run-icon-transparent.png" type="image/png" />
-    <link rel="stylesheet" href="styles.css?v=20261020-report-control-center" />
+    <link rel="stylesheet" href="styles.css?v=20261024-report-inbox" />
   </head>
   <body class="moderation-page">
     <main class="moderation-shell">
@@ -17,7 +17,7 @@
             <span class="eyebrow">Creator Access</span>
             <h1 id="moderationTitle">Report Control Center</h1>
           </div>
-          <span class="moderation-lock" aria-hidden="true">Locked</span>
+          <span id="moderationLock" class="moderation-lock" aria-hidden="true">Locked</span>
         </header>
 
         <form id="moderationLoginForm" class="moderation-login">
@@ -31,14 +31,28 @@
             autocomplete="current-password"
             required
           />
-          <button class="primary-button" type="submit">Open Report</button>
+          <button class="primary-button" type="submit">Open Report Inbox</button>
         </form>
 
         <p id="moderationStatus" class="moderation-status" role="status">
-          Enter the creator account password to review this report.
+          Enter the moderation password to review current and previous reports.
         </p>
 
+        <section id="moderationInbox" class="moderation-inbox" hidden>
+          <div class="moderation-inbox-heading">
+            <div>
+              <span class="eyebrow">Stored Reports</span>
+              <h2>Report Inbox</h2>
+            </div>
+            <strong id="moderationInboxCount">0 reports</strong>
+          </div>
+          <div id="moderationInboxList" class="moderation-inbox-list"></div>
+        </section>
+
         <section id="moderationReport" class="moderation-report" hidden>
+          <button id="moderationBackButton" class="secondary-button moderation-back-button" type="button">
+            Back to Inbox
+          </button>
           <div class="moderation-report-heading">
             <div>
               <span id="moderationType" class="eyebrow"></span>
@@ -58,6 +72,6 @@
         </section>
       </section>
     </main>
-    <script src="moderation.js?v=20261020-report-control-center"></script>
+    <script src="moderation.js?v=20261024-report-inbox"></script>
   </body>
 </html>

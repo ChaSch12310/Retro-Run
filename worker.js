@@ -1559,6 +1559,23 @@ export class AccountStore {
     return report ? jsonResponse({ report }) : errorResponse("That report was not found.", 404);
   }
 
+  async handleModerationReports(request) {
+    const body = await readJson(request);
+    const authentication = await this.authenticateModerator(request, body);
+    if (authentication.response) return authentication.response;
+    const reportIds = this.sql.exec(
+      `SELECT id FROM community_reports
+       ORDER BY created_at DESC, id DESC
+       LIMIT 250`
+    ).toArray();
+    const total = Number(this.one("SELECT COUNT(*) AS count FROM community_reports")?.count) || 0;
+    return jsonResponse({
+      reports: reportIds.map((entry) => this.moderationReport(entry.id)).filter(Boolean),
+      total,
+      limited: total > reportIds.length,
+    });
+  }
+
   async handleModerationAction(request) {
     const body = await readJson(request);
     const authentication = await this.authenticateModerator(request, body);
@@ -1827,6 +1844,9 @@ export class AccountStore {
       }
       if (url.pathname === "/api/moderation/report" && request.method === "POST") {
         return await this.handleModerationReport(request);
+      }
+      if (url.pathname === "/api/moderation/reports" && request.method === "POST") {
+        return await this.handleModerationReports(request);
       }
       if (url.pathname === "/api/moderation/action" && request.method === "POST") {
         return await this.handleModerationAction(request);

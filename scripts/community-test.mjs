@@ -522,12 +522,29 @@ try {
     },
   });
   assert.equal(issueReport.status, 201);
-  assert.equal((await issueReport.json()).emailSent, true);
+  const issueReportData = await issueReport.json();
+  assert.equal(issueReportData.emailSent, true);
   assert.equal(sentIssueReports.length, 1);
   assert.equal(sentIssueReports[0].to, "retrorun@schwartzdev.com");
   assert.match(sentIssueReports[0].text, /Game: Gridiron Dash/);
   assert.match(sentIssueReports[0].text, /1920x1080/);
   assert.match(sentIssueReports[0].text, /moderate\.html\?report=/);
+
+  assert.equal((await api("/api/moderation/reports", {
+    method: "POST",
+    body: { password: "wrong-password" },
+  })).status, 401);
+  const inboxResponse = await api("/api/moderation/reports", {
+    method: "POST",
+    body: { password: "test-moderation-password" },
+  });
+  assert.equal(inboxResponse.status, 200);
+  const inbox = await inboxResponse.json();
+  assert.equal(inbox.total, 3);
+  assert.equal(inbox.limited, false);
+  assert.equal(inbox.reports.length, 3);
+  assert.ok(inbox.reports.some((report) => report.id === playerReportData.reportId));
+  assert.ok(inbox.reports.some((report) => report.id === issueReportData.reportId));
 
   for (let index = 0; index < 6; index += 1) {
     assert.equal((await api("/api/chat", {
