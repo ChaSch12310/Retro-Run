@@ -45,7 +45,7 @@ jobs:
       - name: Check out the approved preview source
         uses: actions/checkout@v4
         with:
-          ref: 23eec9fd67633290cbad3bdad658d90aad4fc10e
+          ref: 34436191e752bae360c4ed662c77eaac5918e1f8
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4

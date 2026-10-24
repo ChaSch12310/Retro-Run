@@ -535,7 +535,7 @@ assert.ok(connectionGuardPromotionWorkflow.indexOf("Wait for the hourly leaderbo
 assert.match(moderationKeyPromotionWorkflow, /name: Moderation Key Change Production/);
 assert.match(moderationKeyPromotionWorkflow, /cron: "0 5 25 10 \*"/);
 assert.match(moderationKeyPromotionWorkflow, /== "2026-10-25"/);
-assert.match(moderationKeyPromotionWorkflow, /ref: 23eec9fd67633290cbad3bdad658d90aad4fc10e/);
+assert.match(moderationKeyPromotionWorkflow, /ref: 34436191e752bae360c4ed662c77eaac5918e1f8/);
 assert.match(moderationKeyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.account\.jsonc/);
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.jsonc/);
