@@ -75,6 +75,7 @@ const store = new AccountStore(
     ISSUE_REPORT_EMAIL: {
       async send(message) { sentIssueReports.push(message); },
     },
+    MODERATION_PASSWORD: "test-moderation-password",
   }
 );
 
@@ -472,9 +473,13 @@ try {
     method: "POST",
     body: { reportId: playerReportData.reportId, password: "wrong-password" },
   })).status, 401);
-  const moderationReport = await api("/api/moderation/report", {
+  assert.equal((await api("/api/moderation/report", {
     method: "POST",
     body: { reportId: playerReportData.reportId, password: "creator-password-42" },
+  })).status, 401);
+  const moderationReport = await api("/api/moderation/report", {
+    method: "POST",
+    body: { reportId: playerReportData.reportId, password: "test-moderation-password" },
   });
   assert.equal(moderationReport.status, 200);
   const moderationReportData = (await moderationReport.json()).report;
@@ -497,7 +502,7 @@ try {
     method: "POST",
     body: {
       reportId: playerReportData.reportId,
-      password: "creator-password-42",
+      password: "test-moderation-password",
       action: "remove-message",
     },
   });
@@ -541,7 +546,7 @@ try {
     method: "POST",
     body: {
       reportId: playerReportData.reportId,
-      password: "creator-password-42",
+      password: "test-moderation-password",
       action: "ban-account",
     },
   });

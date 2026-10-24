@@ -125,6 +125,19 @@ async function sha256(value) {
   return base64FromBytes(new Uint8Array(digest));
 }
 
+async function secureStringEqual(actual, expected) {
+  if (typeof actual !== "string" || typeof expected !== "string") return false;
+  const [actualHash, expectedHash] = await Promise.all([sha256(actual), sha256(expected)]);
+  const actualBytes = bytesFromBase64(actualHash);
+  const expectedBytes = bytesFromBase64(expectedHash);
+  let difference = actualBytes.length ^ expectedBytes.length;
+  const length = Math.max(actualBytes.length, expectedBytes.length);
+  for (let index = 0; index < length; index += 1) {
+    difference |= (actualBytes[index] || 0) ^ (expectedBytes[index] || 0);
+  }
+  return difference === 0;
+}
+
 export function normalizeUsername(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -1523,12 +1536,17 @@ export class AccountStore {
       adminTag
     );
     const password = passwordFromBody(body);
-    const valid = moderator && Number(moderator.banned_at) === 0 && typeof password === "string"
-      ? await verifyPassword(password, moderator.password_salt, moderator.password_hash)
-      : false;
+    const configuredPassword = typeof this.env.MODERATION_PASSWORD === "string"
+      ? this.env.MODERATION_PASSWORD
+      : "";
+    const valid = configuredPassword
+      ? await secureStringEqual(password, configuredPassword)
+      : moderator && Number(moderator.banned_at) === 0 && typeof password === "string"
+        ? await verifyPassword(password, moderator.password_salt, moderator.password_hash)
+        : false;
     if (!valid) return { response: errorResponse("Incorrect moderation password.", 401) };
     this.clearAuthAttempts(rate.rateKey);
-    return { moderator };
+    return { moderator: moderator || { id: "moderation-admin", tag: adminTag } };
   }
 
   async handleModerationReport(request) {
