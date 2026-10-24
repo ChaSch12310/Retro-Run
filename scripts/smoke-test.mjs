@@ -170,6 +170,10 @@ const connectionGuardPromotionWorkflow = fs.readFileSync(
   new URL("../.github/workflows/promote-cloud-locker-connection-guard.yml", import.meta.url),
   "utf8"
 );
+const moderationKeyPromotionWorkflow = fs.readFileSync(
+  new URL("../.github/workflows/promote-moderation-key-change.yml", import.meta.url),
+  "utf8"
+);
 
 assert.match(wranglerConfig, /"observability"\s*:\s*\{/);
 assert.match(wranglerConfig, /"enabled"\s*:\s*true/);
@@ -523,6 +527,15 @@ assert.match(connectionGuardPromotionWorkflow, /friendChats\.status, 401/);
 assert.match(connectionGuardPromotionWorkflow, /2026-09-18 03:00:00Z/);
 assert.ok(connectionGuardPromotionWorkflow.indexOf("Wait for the hourly leaderboard boundary")
   < connectionGuardPromotionWorkflow.indexOf("Update the production account and community backend"));
+assert.match(moderationKeyPromotionWorkflow, /name: Moderation Key Change Production/);
+assert.match(moderationKeyPromotionWorkflow, /cron: "0 5 25 10 \*"/);
+assert.match(moderationKeyPromotionWorkflow, /== "2026-10-25"/);
+assert.match(moderationKeyPromotionWorkflow, /ref: 23eec9fd67633290cbad3bdad658d90aad4fc10e/);
+assert.match(moderationKeyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
+assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.account\.jsonc/);
+assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.jsonc/);
+assert.doesNotMatch(moderationKeyPromotionWorkflow, /MODERATION_PASSWORD/);
+assert.match(moderationKeyPromotionWorkflow, /Moderation Key Change - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
