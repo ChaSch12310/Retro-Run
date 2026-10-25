@@ -1,6 +1,6 @@
-name: Moderation Key Change Production
+name: Read-Only Report Inbox Production
 
-run-name: Moderation Key Change production promotion
+run-name: Read-Only Report Inbox production promotion
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
         run: |
           if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-10-25" ]]; then
             echo "promote=true" >> "$GITHUB_OUTPUT"
-            echo "Moderation Key Change is approved for production now."
+            echo "Read-Only Report Inbox is approved for production now."
           else
             echo "promote=false" >> "$GITHUB_OUTPUT"
             echo "Skipping: this release is approved only for October 25, 2026 at midnight Central."
@@ -45,7 +45,7 @@ jobs:
       - name: Check out the approved preview source
         uses: actions/checkout@v4
         with:
-          ref: 34436191e752bae360c4ed662c77eaac5918e1f8
+          ref: 4b56723d0c002885970d9194cf6ba3b62e98a72a
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -80,14 +80,14 @@ jobs:
           pnpm exec wrangler deploy
           --config wrangler.account.jsonc
           --strict --keep-vars
-          --message "Moderation Key Change - Production API"
+          --message "Read-Only Report Inbox - Production API"
 
       - name: Publish the approved website with production accounts
         run: >-
           pnpm exec wrangler deploy
           --config wrangler.jsonc
           --strict --keep-vars
-          --message "Moderation Key Change - Production"
+          --message "Read-Only Report Inbox - Production"
 
       - name: Verify the production release
         shell: bash
@@ -110,7 +110,18 @@ jobs:
               const moderation = await read("moderate.html?report=12345678-1234-1234-1234-123456789abc");
               assert.equal(moderation.status, 200);
               assert.match(await moderation.text(), /Report Control Center/);
-              const wrongPassword = await read("api/moderation/report", {
+              const readOnlyReport = await read("api/moderation/report", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Origin: "https://retrorun.win",
+                },
+                body: JSON.stringify({
+                  reportId: "12345678-1234-1234-1234-123456789abc",
+                }),
+              });
+              assert.equal(readOnlyReport.status, 404);
+              const protectedAction = await read("api/moderation/action", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -119,11 +130,12 @@ jobs:
                 body: JSON.stringify({
                   reportId: "12345678-1234-1234-1234-123456789abc",
                   password: "release-verification-wrong-password",
+                  action: "ban-account",
                 }),
               });
-              assert.equal(wrongPassword.status, 401);
+              assert.equal(protectedAction.status, 401);
               assert.match(await (await read("seasonal-profile.js")).text(), /"standard"/);
-              console.log("Verified Moderation Key Change on production.");
+              console.log("Verified Read-Only Report Inbox on production.");
               break;
             } catch (error) {
               if (attempt === 6) throw error;
