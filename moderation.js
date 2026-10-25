@@ -1,8 +1,5 @@
 let activeReportId = new URLSearchParams(location.search).get("report") || "";
-const loginForm = document.getElementById("moderationLoginForm");
-const passwordInput = document.getElementById("moderationPassword");
 const statusElement = document.getElementById("moderationStatus");
-const lockElement = document.getElementById("moderationLock");
 const inboxPanel = document.getElementById("moderationInbox");
 const inboxCountElement = document.getElementById("moderationInboxCount");
 const inboxListElement = document.getElementById("moderationInboxList");
@@ -15,8 +12,6 @@ const actionsElement = document.getElementById("moderationActions");
 const removeButton = document.getElementById("moderationRemoveButton");
 const banButton = document.getElementById("moderationBanButton");
 const backButton = document.getElementById("moderationBackButton");
-
-let moderationPassword = "";
 
 function addDetail(label, value) {
   if (value === undefined || value === null || value === "") return;
@@ -134,15 +129,12 @@ async function callModerationApi(path, body) {
 async function loadReport() {
   const data = await callModerationApi("/api/moderation/report", {
     reportId: activeReportId,
-    password: moderationPassword,
   });
   if (data) renderReport(data.report);
 }
 
 async function loadInbox() {
-  const data = await callModerationApi("/api/moderation/reports", {
-    password: moderationPassword,
-  });
+  const data = await callModerationApi("/api/moderation/reports", {});
   if (data) renderInbox(data.reports, data.total, data.limited);
 }
 
@@ -154,30 +146,19 @@ function showInbox() {
   statusElement.textContent = "Select any current or previous report to review it.";
 }
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  moderationPassword = passwordInput.value;
-  statusElement.textContent = "Checking password...";
-  try {
-    await loadInbox();
-    if (activeReportId) await loadReport();
-    else showInbox();
-    loginForm.hidden = true;
-    passwordInput.value = "";
-    lockElement.textContent = "Unlocked";
-  } catch (error) {
-    statusElement.textContent = error.message;
-  }
-});
-
 async function performAction(action) {
   const label = action === "ban-account" ? "ban this account" : "take down this post";
   if (!confirm(`Are you sure you want to ${label}?`)) return;
+  const password = prompt("Enter the moderation password to complete this action:");
+  if (!password) {
+    statusElement.textContent = "Action canceled. No changes were made.";
+    return;
+  }
   statusElement.textContent = "Applying moderation action...";
   try {
     const data = await callModerationApi("/api/moderation/action", {
       reportId: activeReportId,
-      password: moderationPassword,
+      password,
       action,
     });
     if (data) {
@@ -196,3 +177,15 @@ async function performAction(action) {
 removeButton.addEventListener("click", () => performAction("remove-message"));
 banButton.addEventListener("click", () => performAction("ban-account"));
 backButton.addEventListener("click", showInbox);
+
+async function startModerationInbox() {
+  try {
+    await loadInbox();
+    if (activeReportId) await loadReport();
+    else showInbox();
+  } catch (error) {
+    statusElement.textContent = error.message;
+  }
+}
+
+startModerationInbox();

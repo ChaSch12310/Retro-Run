@@ -469,17 +469,9 @@ try {
   assert.match(sentPlayerReports[1].text, /Message: Great run, Bob!/);
   assert.match(sentPlayerReports[1].text, new RegExp(`moderate\\.html\\?report=${playerReportData.reportId}`));
 
-  assert.equal((await api("/api/moderation/report", {
-    method: "POST",
-    body: { reportId: playerReportData.reportId, password: "wrong-password" },
-  })).status, 401);
-  assert.equal((await api("/api/moderation/report", {
-    method: "POST",
-    body: { reportId: playerReportData.reportId, password: "creator-password-42" },
-  })).status, 401);
   const moderationReport = await api("/api/moderation/report", {
     method: "POST",
-    body: { reportId: playerReportData.reportId, password: "test-moderation-password" },
+    body: { reportId: playerReportData.reportId },
   });
   assert.equal(moderationReport.status, 200);
   const moderationReportData = (await moderationReport.json()).report;
@@ -530,13 +522,9 @@ try {
   assert.match(sentIssueReports[0].text, /1920x1080/);
   assert.match(sentIssueReports[0].text, /moderate\.html\?report=/);
 
-  assert.equal((await api("/api/moderation/reports", {
-    method: "POST",
-    body: { password: "wrong-password" },
-  })).status, 401);
   const inboxResponse = await api("/api/moderation/reports", {
     method: "POST",
-    body: { password: "test-moderation-password" },
+    body: {},
   });
   assert.equal(inboxResponse.status, 200);
   const inbox = await inboxResponse.json();

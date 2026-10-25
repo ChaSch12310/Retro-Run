@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>Report Control Center | Retro Run</title>
     <link rel="icon" href="assets/retro-run-icon-transparent.png" type="image/png" />
-    <link rel="stylesheet" href="styles.css?v=20261024-report-inbox" />
+    <link rel="stylesheet" href="styles.css?v=20261024-read-only-inbox" />
   </head>
   <body class="moderation-page">
     <main class="moderation-shell">
@@ -17,25 +17,11 @@
             <span class="eyebrow">Creator Access</span>
             <h1 id="moderationTitle">Report Control Center</h1>
           </div>
-          <span id="moderationLock" class="moderation-lock" aria-hidden="true">Locked</span>
+          <span class="moderation-lock" aria-hidden="true">Review Mode</span>
         </header>
 
-        <form id="moderationLoginForm" class="moderation-login">
-          <label for="moderationPassword">Moderation password</label>
-          <input
-            id="moderationPassword"
-            name="password"
-            type="password"
-            minlength="8"
-            maxlength="128"
-            autocomplete="current-password"
-            required
-          />
-          <button class="primary-button" type="submit">Open Report Inbox</button>
-        </form>
-
         <p id="moderationStatus" class="moderation-status" role="status">
-          Enter the moderation password to review current and previous reports.
+          Loading current and previous reports...
         </p>
 
         <section id="moderationInbox" class="moderation-inbox" hidden>
@@ -72,6 +58,6 @@
         </section>
       </section>
     </main>
-    <script src="moderation.js?v=20261024-report-inbox"></script>
+    <script src="moderation.js?v=20261024-read-only-inbox"></script>
   </body>
 </html>

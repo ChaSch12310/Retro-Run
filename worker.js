@@ -1551,8 +1551,6 @@ export class AccountStore {
 
   async handleModerationReport(request) {
     const body = await readJson(request);
-    const authentication = await this.authenticateModerator(request, body);
-    if (authentication.response) return authentication.response;
     const reportId = String(body.reportId || "");
     if (!/^[a-f0-9-]{20,50}$/i.test(reportId)) return errorResponse("Invalid report link.");
     const report = this.moderationReport(reportId);
@@ -1560,9 +1558,6 @@ export class AccountStore {
   }
 
   async handleModerationReports(request) {
-    const body = await readJson(request);
-    const authentication = await this.authenticateModerator(request, body);
-    if (authentication.response) return authentication.response;
     const reportIds = this.sql.exec(
       `SELECT id FROM community_reports
        ORDER BY created_at DESC, id DESC
