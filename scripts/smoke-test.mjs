@@ -540,7 +540,7 @@ assert.match(connectionGuardPromotionWorkflow, /friendChats\.status, 401/);
 assert.match(connectionGuardPromotionWorkflow, /2026-09-18 03:00:00Z/);
 assert.ok(connectionGuardPromotionWorkflow.indexOf("Wait for the hourly leaderboard boundary")
   < connectionGuardPromotionWorkflow.indexOf("Update the production account and community backend"));
-assert.match(moderationKeyPromotionWorkflow, /name: Read-Only Report Inbox Production/);
+assert.match(moderationKeyPromotionWorkflow, /name: Admin Report Center Production/);
 assert.match(moderationKeyPromotionWorkflow, /cron: "0 5 25 10 \*"/);
 assert.match(moderationKeyPromotionWorkflow, /== "2026-10-25"/);
 assert.match(moderationKeyPromotionWorkflow, /ref: [a-f0-9]{40}/);
@@ -548,7 +548,7 @@ assert.match(moderationKeyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standa
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.account\.jsonc/);
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.jsonc/);
 assert.doesNotMatch(moderationKeyPromotionWorkflow, /MODERATION_PASSWORD/);
-assert.match(moderationKeyPromotionWorkflow, /Read-Only Report Inbox - Production/);
+assert.match(moderationKeyPromotionWorkflow, /Admin Report Center - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
