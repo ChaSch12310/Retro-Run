@@ -4,9 +4,6 @@ run-name: Admin Report Center production promotion
 
 on:
   workflow_dispatch:
-  schedule:
-    # October 25, 2026 at midnight America/Chicago (CDT).
-    - cron: "0 5 25 10 *"
 
 permissions:
   contents: read
@@ -21,17 +18,12 @@ jobs:
     outputs:
       promote: ${{ steps.check.outputs.promote }}
     steps:
-      - name: Check one-time Central release date
+      - name: Approve manual production rerun
         id: check
         shell: bash
         run: |
-          if [[ "$(TZ=America/Chicago date +%Y-%m-%d)" == "2026-10-25" ]]; then
-            echo "promote=true" >> "$GITHUB_OUTPUT"
-            echo "Admin Report Center is approved for production now."
-          else
-            echo "promote=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping: this release is approved only for October 25, 2026 at midnight Central."
-          fi
+          echo "promote=true" >> "$GITHUB_OUTPUT"
+          echo "Admin Report Center manual production rerun approved."
 
   deploy-production:
     needs: release-window
