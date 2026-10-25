@@ -409,7 +409,7 @@ try {
   assert.equal(sentPlayerReports.length, 1);
   assert.equal(sentPlayerReports[0].to, "retrorun@schwartzdev.com");
   assert.match(sentPlayerReports[0].text, /Location: Friend chat/);
-  assert.match(sentPlayerReports[0].text, /moderate\.html\?report=/);
+  assert.match(sentPlayerReports[0].text, /admin\?report=/);
 
   for (const [cookie, username] of [
     [aliceCookie, "charlie_chat"],
@@ -467,7 +467,7 @@ try {
   assert.equal(sentPlayerReports[1].to, "retrorun@schwartzdev.com");
   assert.match(sentPlayerReports[1].text, /Reported player: Alice Runner \(@alice_chat\)/);
   assert.match(sentPlayerReports[1].text, /Message: Great run, Bob!/);
-  assert.match(sentPlayerReports[1].text, new RegExp(`moderate\\.html\\?report=${playerReportData.reportId}`));
+  assert.match(sentPlayerReports[1].text, new RegExp(`admin\\?report=${playerReportData.reportId}`));
 
   const moderationReport = await api("/api/moderation/report", {
     method: "POST",
@@ -520,7 +520,7 @@ try {
   assert.equal(sentIssueReports[0].to, "retrorun@schwartzdev.com");
   assert.match(sentIssueReports[0].text, /Game: Gridiron Dash/);
   assert.match(sentIssueReports[0].text, /1920x1080/);
-  assert.match(sentIssueReports[0].text, /moderate\.html\?report=/);
+  assert.match(sentIssueReports[0].text, /admin\?report=/);
 
   const inboxResponse = await api("/api/moderation/reports", {
     method: "POST",

@@ -1695,7 +1695,7 @@ export class AccountStore {
       `Message: ${target.body}`,
       `Additional details: ${details || "None"}`,
       "",
-      `Review and moderate: ${new URL(`/moderate.html?report=${reserved.reportId}`, request.url).href}`,
+      `Review and moderate: ${new URL(`/admin?report=${reserved.reportId}`, request.url).href}`,
     ].join("\n");
     const delivery = await this.sendReportEmail(
       this.env.PLAYER_REPORT_EMAIL,
@@ -1742,7 +1742,7 @@ export class AccountStore {
       "",
       details,
       "",
-      `Review report: ${new URL(`/moderate.html?report=${reserved.reportId}`, request.url).href}`,
+      `Review report: ${new URL(`/admin?report=${reserved.reportId}`, request.url).href}`,
     ].join("\n");
     const delivery = await this.sendReportEmail(
       this.env.ISSUE_REPORT_EMAIL,

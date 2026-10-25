@@ -17,6 +17,14 @@ export default {
       }
       return env.ACCOUNT_API.fetch(request);
     }
+    if (url.pathname === "/moderate.html") {
+      url.pathname = "/admin";
+      return Response.redirect(url.href, 308);
+    }
+    if (url.pathname === "/admin" || url.pathname === "/admin/") {
+      url.pathname = "/moderate.html";
+      return env.ASSETS.fetch(new Request(url, request));
+    }
     return env.ASSETS.fetch(request);
   },
 };

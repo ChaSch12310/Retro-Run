@@ -248,6 +248,11 @@ assert.match(previewWranglerConfig, /"service"\s*:\s*"retro-run-account-preview"
 assert.match(packageSource, /cloudflare:preview[^\n]+--config wrangler\.preview\.jsonc/);
 assert.match(seasonalDeploymentSource, /RETRO_RUN_WRANGLER_CONFIG/);
 assert.match(siteWorkerSource, /env\.ACCOUNT_API\.fetch\(request\)/);
+assert.match(siteWorkerSource, /url\.pathname === "\/admin"/);
+assert.match(siteWorkerSource, /url\.pathname === "\/moderate\.html"/);
+assert.match(siteWorkerSource, /Response\.redirect\(url\.href, 308\)/);
+assert.match(wranglerConfig, /"\/admin"/);
+assert.match(previewWranglerConfig, /"\/admin"/);
 assert.doesNotMatch(html, /More games coming soon/i);
 assert.doesNotMatch(styles, /library-coming-soon/);
 assert.match(html, /game\.js\?v=20261024-report-inbox/);
@@ -535,15 +540,15 @@ assert.match(connectionGuardPromotionWorkflow, /friendChats\.status, 401/);
 assert.match(connectionGuardPromotionWorkflow, /2026-09-18 03:00:00Z/);
 assert.ok(connectionGuardPromotionWorkflow.indexOf("Wait for the hourly leaderboard boundary")
   < connectionGuardPromotionWorkflow.indexOf("Update the production account and community backend"));
-assert.match(moderationKeyPromotionWorkflow, /name: Moderation Key Change Production/);
+assert.match(moderationKeyPromotionWorkflow, /name: Read-Only Report Inbox Production/);
 assert.match(moderationKeyPromotionWorkflow, /cron: "0 5 25 10 \*"/);
 assert.match(moderationKeyPromotionWorkflow, /== "2026-10-25"/);
-assert.match(moderationKeyPromotionWorkflow, /ref: 34436191e752bae360c4ed662c77eaac5918e1f8/);
+assert.match(moderationKeyPromotionWorkflow, /ref: [a-f0-9]{40}/);
 assert.match(moderationKeyPromotionWorkflow, /RETRO_RUN_SEASONAL_PROFILE: standard/);
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.account\.jsonc/);
 assert.match(moderationKeyPromotionWorkflow, /--config wrangler\.jsonc/);
 assert.doesNotMatch(moderationKeyPromotionWorkflow, /MODERATION_PASSWORD/);
-assert.match(moderationKeyPromotionWorkflow, /Moderation Key Change - Production/);
+assert.match(moderationKeyPromotionWorkflow, /Read-Only Report Inbox - Production/);
 
 const expectedSeasonalTitles = [
   "Sleigh Bell Sprint",
